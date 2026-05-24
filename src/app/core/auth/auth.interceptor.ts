@@ -88,15 +88,27 @@ function attachBearerToken<T extends { clone: (update: { setHeaders: Record<stri
 }
 
 function shouldAttachAuthHeader(url: string): boolean {
-  return !isAuthEndpoint(url);
+  return !isAuthEndpoint(url) && !isExternalStorageUrl(url);
 }
 
 function shouldAttemptRefresh(error: unknown, url: string, hasRetried: boolean): error is HttpErrorResponse {
-  return error instanceof HttpErrorResponse && error.status === 401 && !hasRetried && !isAuthEndpoint(url);
+  return error instanceof HttpErrorResponse && error.status === 401 && !hasRetried && shouldAttachAuthHeader(url);
 }
 
 function isAuthEndpoint(url: string): boolean {
   return url.includes('/api/auth/login') || url.includes('/api/auth/renew');
+}
+
+function isExternalStorageUrl(url: string): boolean {
+  if (!/^https?:\/\//i.test(url)) {
+    return false;
+  }
+
+  try {
+    return new URL(url).hostname.toLowerCase().endsWith('.digitaloceanspaces.com');
+  } catch {
+    return false;
+  }
 }
 
 function handleAuthFailure(sessionService: SessionService, router: Router): void {

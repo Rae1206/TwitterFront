@@ -83,6 +83,26 @@ describe('authInterceptor', () => {
     expect(sessionService.clearSession).toHaveBeenCalledTimes(1);
     expect(router.navigate).toHaveBeenCalledWith(['/login']);
   });
+
+  it('skips bearer auth and refresh for DigitalOcean Spaces requests', async () => {
+    const request = new HttpRequest(
+      'GET',
+      'https://twitter-media-alex-do.sfo3.digitaloceanspaces.com/video/2026/05/example.mp4',
+    );
+
+    const next = vi.fn().mockImplementation((outgoing: HttpRequest<unknown>) => {
+      expect(outgoing.headers.has('Authorization')).toBe(false);
+
+      return throwError(() => new HttpErrorResponse({ status: 401, url: request.url }));
+    });
+
+    await expect(firstValueFrom(TestBed.runInInjectionContext(() => authInterceptor(request, next)))).rejects.toBeTruthy();
+
+    expect(authApi.renew).not.toHaveBeenCalled();
+    expect(sessionService.clearSession).not.toHaveBeenCalled();
+    expect(router.navigate).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalledTimes(1);
+  });
 });
 
 function createAuthResponse(token: string, refreshToken: string): AuthResponse {

@@ -1,5 +1,4 @@
 import { DatePipe, JsonPipe } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, effect, inject, signal, viewChildren } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -41,11 +40,9 @@ export class HomePage {
   private readonly postsApi = inject(PostsApiService);
   private readonly confirm = inject(ConfirmService);
   private readonly sessionService = inject(SessionService);
-  private readonly http = inject(HttpClient);
   private readonly feedVideos = viewChildren<ElementRef<HTMLVideoElement>>('feedVideo');
   readonly attachments = signal<MediaAttachment[]>([]);
   readonly uploadingFile = signal(false);
-  readonly mediaTypes = signal<Record<string, MediaType>>({});
   readonly loadedFeedVideoUrls = signal<Record<string, true>>({});
 
   readonly posts = this.postStore.posts;
@@ -133,44 +130,6 @@ export class HomePage {
 
   constructor() {
     void this.postStore.loadPosts();
-
-    effect(() => {
-      const list = this.posts();
-      list.forEach((post) => {
-        post.mediaUrls?.forEach((url) => {
-          const absUrl = this.getAbsoluteMediaUrl(url);
-          if (this.mediaTypes()[absUrl]) {
-            return;
-          }
-
-          this.http.get(absUrl, { observe: 'response', responseType: 'blob' })
-            .subscribe({
-              next: (res) => {
-                const contentType = res.headers.get('Content-Type') || '';
-                let type: MediaType = 'image';
-                if (contentType.toLowerCase().startsWith('video/')) {
-                  const isWebm = contentType.toLowerCase().includes('webm');
-                  type = (isWebm || this.isPostAudioUrl(absUrl)) ? 'audio' : 'video';
-                } else if (contentType.toLowerCase().startsWith('audio/')) {
-                  type = 'audio';
-                } else if (contentType.toLowerCase().startsWith('image/')) {
-                  type = 'image';
-                }
-                this.mediaTypes.update((types) => ({ ...types, [absUrl]: type }));
-              },
-              error: () => {
-                let fallback: MediaType = 'image';
-                if (this.isPostAudioUrl(absUrl)) {
-                  fallback = 'audio';
-                } else if (this.isPostVideoUrl(absUrl)) {
-                  fallback = 'video';
-                }
-                this.mediaTypes.update((types) => ({ ...types, [absUrl]: fallback }));
-              }
-            });
-        });
-      });
-    });
 
     effect((onCleanup) => {
       const videos = this.feedVideos();
@@ -759,11 +718,6 @@ export class HomePage {
 
   protected getMediaType(url: string): MediaType {
     const absUrl = this.getAbsoluteMediaUrl(url);
-
-    const cached = this.mediaTypes()[absUrl];
-    if (cached) {
-      return cached;
-    }
 
     if (this.isPostAudioUrl(absUrl)) {
       return 'audio';
