@@ -1,43 +1,38 @@
 <section class="page-shell">
   <header class="page-header page-hero">
     <div class="hero-copy">
-      <p class="eyebrow">Users</p>
-      <h1>People directory</h1>
-      <p>Browse people with the same profile-forward visual language used in the refined feed and profile screens.</p>
+      <h1>Personas</h1>
+      <p>Descubre y conecta con la comunidad.</p>
 
       <div class="summary-grid">
         <article class="metric-card">
           <strong>{{ users().length }}</strong>
-          <p>Public user records currently returned by the API.</p>
+          <p>Personas en la comunidad</p>
         </article>
         <article class="metric-card">
           <strong>{{ activeCount() }}</strong>
-          <p>Accounts still active and visible in the directory.</p>
+          <p>Cuentas activas</p>
         </article>
         <article class="metric-card">
           <strong>{{ verifiedCount() }}</strong>
-          <p>Profiles carrying the verified account flag.</p>
-        </article>
-        <article class="metric-card">
-          <strong>{{ deletedCount() }}</strong>
-          <p>Deleted records still surfaced by the current payload.</p>
+          <p>Perfiles verificados</p>
         </article>
       </div>
     </div>
 
     <aside class="hero-spotlight">
-      <p class="eyebrow">Directory focus</p>
+      <p class="eyebrow">Destacado</p>
 
       @if (featuredUser(); as user) {
-        <strong>{{ user.fullName || 'Unknown user' }}</strong>
-        <p>{{ user.email || 'No public email returned for this account.' }}</p>
+        <app-user-avatar class="person-avatar person-avatar-image" [user]="user" />
+        <strong>{{ user.fullName || 'Usuario' }}</strong>
+        <p>{{ user.biography || 'Sin biografía.' }}</p>
         <div class="spotlight-meta">
-          <span class="chip" [class.warn]="statusLabel(user) !== 'Verified' && statusLabel(user) !== 'Active'">{{ statusLabel(user) }}</span>
-          <span>{{ ((user.roles ?? []).join(', ')) || 'User' }}</span>
+          <span class="chip" [class.warn]="statusLabel(user) !== 'Verificado' && statusLabel(user) !== 'Activo'">{{ statusLabel(user) }}</span>
         </div>
       } @else {
-        <strong>No profiles yet</strong>
-        <p>When the people endpoint returns data, the first directory card becomes the spotlight automatically.</p>
+        <strong>Aún no hay perfiles</strong>
+        <p>Cuando haya personas registradas, aparecerán aquí.</p>
       }
     </aside>
   </header>
@@ -53,65 +48,91 @@
   <section class="surface-card">
     <header class="section-head">
       <div>
-        <h2>Public users</h2>
-        <p>{{ loading() ? 'Loading…' : directory().length + ' records loaded' }}</p>
+        <h2>Comunidad</h2>
+        <p>{{ loading() ? 'Cargando…' : directory().length + ' ' + (directory().length === 1 ? 'persona' : 'personas') }}</p>
       </div>
 
-      <button type="button" class="secondary-action small-action" (click)="reload()">Refresh directory</button>
+      <button type="button" class="secondary-action small-action" (click)="reload()">Actualizar</button>
     </header>
+
+    <div class="search-bar" role="search">
+      <span class="search-bar-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+      </span>
+      <input
+        type="search"
+        class="search-bar-input"
+        placeholder="Buscar por nombre, correo o biografía"
+        [value]="searchQuery()"
+        (input)="updateSearch($any($event.target).value)"
+        autocomplete="off"
+      />
+      @if (hasActiveSearch()) {
+        <button type="button" class="search-bar-clear" (click)="clearSearch()" aria-label="Limpiar búsqueda">×</button>
+      }
+    </div>
 
     @if (loading() && !users().length) {
       <app-state-card
         tone="loading"
-        title="Loading people directory"
-        message="Fetching public member records and profile-safe metadata."
+        title="Cargando comunidad"
+        message="Buscando a las personas que forman parte de la comunidad."
       />
     } @else if (!loading() && !users().length) {
       <app-state-card
         tone="empty"
-        title="No people returned"
-        message="The list endpoint responded without visible members. Try again after seeding or registering users."
-        actionLabel="Reload people"
+        title="Aún no hay nadie"
+        message="Cuando se registren personas, aparecerán aquí."
+        actionLabel="Recargar"
         (action)="reload()"
+      />
+    } @else if (hasNoMatches()) {
+      <app-state-card
+        tone="empty"
+        title="Sin coincidencias"
+        message="Ninguna persona coincide con la búsqueda actual. Probá con otro término o limpiá el filtro."
+        actionLabel="Limpiar búsqueda"
+        (action)="clearSearch()"
       />
     } @else {
       <div class="people-grid">
         @for (user of directory(); track user.userId ?? user.email ?? $index) {
           <article class="person-card" [class.selected]="selectedUser()?.userId === user.userId">
             <div class="person-head">
-              <div class="person-avatar" aria-hidden="true">{{ initials(user) }}</div>
+              <app-user-avatar class="person-avatar person-avatar-image" [user]="user" />
 
               <div>
-                <h3>{{ user.fullName || 'Unknown user' }}</h3>
-                <p>{{ user.email || 'No public email returned' }}</p>
+                <h3>{{ user.fullName || 'Usuario' }}</h3>
+                <p>{{ user.email || 'Sin correo' }}</p>
+                <p class="person-biography">{{ user.biography || 'Sin biografía.' }}</p>
               </div>
 
-              <span class="chip" [class.warn]="statusLabel(user) !== 'Verified' && statusLabel(user) !== 'Active'">{{ statusLabel(user) }}</span>
-            </div>
-
-            <div class="person-meta">
-              <span>{{ (user.createdAt | date: 'mediumDate') || 'No join date' }}</span>
-              <span>{{ user.userId || 'No user id' }}</span>
+              <span class="chip" [class.warn]="statusLabel(user) !== 'Verificado' && statusLabel(user) !== 'Activo'">{{ statusLabel(user) }}</span>
             </div>
 
             <div class="role-row">
-              @for (role of user.roles ?? ['User']; track role) {
+              @for (role of user.roles ?? ['Usuario']; track role) {
                 <span class="role-pill">{{ role }}</span>
               }
             </div>
 
             <div class="table-actions">
-              <a class="inline-link" [routerLink]="['/profile', user.userId || 'unknown']">Profile</a>
-              <button type="button" class="secondary-action small-action" (click)="inspect(user)">Inspect</button>
-              @if (canDeleteUsers() && user.userId) {
+              <a class="inline-link" [routerLink]="['/profile', user.userId || 'unknown']">Ver perfil</a>
+              <button type="button" class="secondary-action small-action" (click)="inspect(user)">Detalles</button>
+              @if (canDeleteUsers() && user.userId && !isSelf(user.userId)) {
                 <button
                   type="button"
                   class="danger-action small-action"
                   [disabled]="deletingUserId() === user.userId"
                   (click)="deleteUser(user)"
                 >
-                  {{ deletingUserId() === user.userId ? 'Deleting...' : 'Delete' }}
+                  {{ deletingUserId() === user.userId ? 'Eliminando...' : 'Eliminar' }}
                 </button>
+              } @else if (canDeleteUsers() && isSelf(user.userId)) {
+                <span class="chip" title="No podés eliminar tu propia cuenta">Tu cuenta</span>
               }
             </div>
           </article>
@@ -124,31 +145,36 @@
     <section class="surface-card">
       <header class="section-head">
         <div>
-          <h2>Selected profile snapshot</h2>
-          <p>Inspect the current DTO without leaving the directory flow.</p>
+          <h2>Detalles</h2>
         </div>
       </header>
 
       <div class="fact-grid">
         <article class="fact-card">
-          <span>Status</span>
+          <span>Estado</span>
           <strong>{{ statusLabel(user) }}</strong>
         </article>
         <article class="fact-card">
-          <span>Email</span>
-          <strong>{{ user.email || 'No email returned' }}</strong>
+          <span>Correo</span>
+          <strong>{{ user.email || 'Sin correo' }}</strong>
         </article>
         <article class="fact-card">
           <span>Roles</span>
-          <strong>{{ ((user.roles ?? []).join(', ')) || 'User' }}</strong>
+          <strong>{{ ((user.roles ?? []).join(', ')) || 'Usuario' }}</strong>
         </article>
         <article class="fact-card">
-          <span>Joined</span>
-          <strong>{{ (user.createdAt | date: 'mediumDate') || 'Unknown' }}</strong>
+          <span>Se unió</span>
+          <strong>{{ (user.createdAt | date: 'mediumDate') || '—' }}</strong>
+        </article>
+        <article class="fact-card fact-card-wide">
+          <span>Biografía</span>
+          <strong>{{ user.biography || 'Sin biografía.' }}</strong>
         </article>
       </div>
 
-      <pre class="json-view">{{ user | json }}</pre>
+      <div class="table-actions">
+        <a class="primary-action" [routerLink]="['/profile', user.userId || 'unknown']">Abrir perfil completo</a>
+      </div>
     </section>
   }
 </section>

@@ -1,13 +1,13 @@
 <section class="page-shell">
   <header class="page-header">
     <div>
-      <p class="eyebrow">Admin dashboard</p>
-      <h1>Platform stats</h1>
-      <p>Consumes GET /api/admin/dashboard/stats and POST /api/admin/dashboard/recalculate.</p>
+      <p class="eyebrow">Panel de administración</p>
+      <h1>Estadísticas de la plataforma</h1>
+      <p>Resumen general del estado de la plataforma.</p>
     </div>
     <div class="button-row">
       <button type="button" class="primary-action" [disabled]="recalculating()" (click)="recalculate()">
-        {{ recalculating() ? 'Recalculating...' : 'Recalculate stats' }}
+        {{ recalculating() ? 'Recalculando...' : 'Recalcular estadísticas' }}
       </button>
     </div>
   </header>
@@ -18,13 +18,13 @@
 
   <section class="summary-grid">
     @if (loading() && !entries().length) {
-      <app-state-card tone="loading" title="Loading platform stats" message="Collecting the moderation dashboard counters and system totals." />
+      <app-state-card tone="loading" title="Cargando estadísticas" message="Un momento..." />
     } @else if (!loading() && !entries().length) {
       <app-state-card
         tone="empty"
-        title="No dashboard stats"
-        message="The dashboard endpoint responded without counters yet."
-        actionLabel="Reload stats"
+        title="Sin estadísticas"
+        message="No hay contadores disponibles ahora mismo."
+        actionLabel="Recargar"
         (action)="load()"
       />
     } @else {
@@ -38,19 +38,8 @@
   </section>
 
   @if (stats(); as stats) {
-    <section class="surface-card">
-      <pre class="json-view">{{ stats | json }}</pre>
-    </section>
   }
 
   @if (actionResult(); as result) {
-    <section class="surface-card">
-      <header class="section-head">
-        <div>
-          <h2>Last recalculate response</h2>
-        </div>
-      </header>
-      <pre class="json-view">{{ result | json }}</pre>
-    </section>
   }
 </section>

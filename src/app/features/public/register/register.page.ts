@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { JsonPipe } from '@angular/common';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -11,7 +10,7 @@ import { UsersApiService } from '../../users/users-api.service';
 @Component({
   selector: 'app-register-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [JsonPipe, ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './register.page.html',
   styleUrl: './register.page.scss',
 })
@@ -26,18 +25,9 @@ export class RegisterPage {
     password: ['', [Validators.required, Validators.minLength(6)]],
   });
 
-  readonly testEmailForm = this.formBuilder.group({
-    to: ['', [Validators.required, Validators.email]],
-    subject: ['Angular smoke test', [Validators.required]],
-    body: ['This email was triggered from the Angular frontend integration page.', [Validators.required]],
-  });
-
   readonly loading = signal(false);
-  readonly testEmailLoading = signal(false);
   readonly successMessage = signal<string | null>(null);
   readonly errorMessage = signal<string | null>(null);
-  readonly testEmailResult = signal<unknown>(null);
-  readonly testEmailError = signal<string | null>(null);
 
   protected async register(): Promise<void> {
     if (this.registerForm.invalid || this.loading()) {
@@ -50,32 +40,15 @@ export class RegisterPage {
       this.errorMessage.set(null);
       this.successMessage.set(null);
       await firstValueFrom(this.usersApi.register(this.registerForm.getRawValue()));
-      this.successMessage.set('Registration request sent. You can now try signing in.');
-      this.feedback.success('Account created. You can now sign in.', { title: 'Registration complete' });
+      this.successMessage.set('Solicitud de registro enviada. Ahora puedes intentar iniciar sesión.');
+      this.feedback.success('Cuenta creada. Ahora puedes iniciar sesión.', { title: 'Registro completado' });
       this.registerForm.reset({ fullName: '', email: '', password: '' });
     } catch (error) {
-      const message = getErrorMessage(error, 'We could not create the user yet.');
+      const message = getErrorMessage(error, 'No pudimos crear el usuario todavía.');
       this.errorMessage.set(message);
-      this.feedback.error(message, { title: 'Registration failed' });
+      this.feedback.error(message, { title: 'Error al registrar' });
     } finally {
       this.loading.set(false);
-    }
-  }
-
-  protected async sendTestEmail(): Promise<void> {
-    if (this.testEmailForm.invalid || this.testEmailLoading()) {
-      this.testEmailForm.markAllAsTouched();
-      return;
-    }
-
-    try {
-      this.testEmailLoading.set(true);
-      this.testEmailError.set(null);
-      this.testEmailResult.set(await firstValueFrom(this.usersApi.sendTestEmail(this.testEmailForm.getRawValue())));
-    } catch (error) {
-      this.testEmailError.set(getErrorMessage(error, 'The test email endpoint did not accept this payload.'));
-    } finally {
-      this.testEmailLoading.set(false);
     }
   }
 }

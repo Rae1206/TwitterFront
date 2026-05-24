@@ -4,6 +4,7 @@ export interface UserDto extends JsonRecord {
   userId?: string;
   fullName?: string;
   email?: string;
+  biography?: string | null;
   isActive?: boolean;
   createdAt?: string;
   roles?: string[];
@@ -11,6 +12,9 @@ export interface UserDto extends JsonRecord {
   isShadowBanned?: boolean;
   deletedAt?: string | null;
   isVerified?: boolean;
+  profilePhotoFileName?: string | null;
+  profilePhotoStoragePath?: string | null;
+  profilePhotoUrl?: string | null;
 }
 
 export interface RegisterUserRequest {
@@ -22,6 +26,7 @@ export interface RegisterUserRequest {
 export interface UpdateUserRequest {
   fullName?: string;
   email?: string;
+  biography?: string | null;
   isActive?: boolean;
 }
 

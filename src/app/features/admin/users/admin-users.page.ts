@@ -1,9 +1,10 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { JsonPipe } from '@angular/common';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 
 import { getErrorMessage } from '../../../core/api/api.utils';
+import { SessionService } from '../../../core/auth/session.service';
 import { ConfirmService } from '../../../core/ui/confirm.service';
 import { FeedbackService } from '../../../core/ui/feedback.service';
 import { StateCardComponent } from '../../../shared/components/state-card/state-card.component';
@@ -22,16 +23,23 @@ export class AdminUsersPage {
   private readonly formBuilder = inject(NonNullableFormBuilder);
   private readonly feedback = inject(FeedbackService);
   private readonly confirm = inject(ConfirmService);
+  private readonly sessionService = inject(SessionService);
 
   readonly users = signal<AdminUserRecord[]>([]);
   readonly loading = signal(false);
   readonly actingId = signal<string | null>(null);
   readonly error = signal<string | null>(null);
   readonly selected = signal<AdminUserRecord | null>(null);
+  readonly currentUserId = computed(() => this.sessionService.userId());
   readonly roleForm = this.formBuilder.group({
     userId: ['', [Validators.required]],
     role: ['User', [Validators.required]],
   });
+
+  protected isSelf(userId: string | undefined | null): boolean {
+    const current = this.currentUserId();
+    return Boolean(userId && current && userId === current);
+  }
 
   constructor() {
     void this.load();
@@ -43,7 +51,7 @@ export class AdminUsersPage {
       this.error.set(null);
       this.users.set(await firstValueFrom(this.adminApi.listUsers()));
     } catch (error) {
-      this.error.set(getErrorMessage(error, 'We could not load admin users.'));
+      this.error.set(getErrorMessage(error, 'No pudimos cargar los usuarios de administración.'));
     } finally {
       this.loading.set(false);
     }
@@ -63,9 +71,9 @@ export class AdminUsersPage {
     const { userId, role } = this.roleForm.getRawValue();
     await this.run(userId, async () => {
       await firstValueFrom(this.adminApi.changeUserRole(userId, { role }));
-      this.feedback.success('The user role was updated.', { title: 'Role changed' });
+      this.feedback.success('El rol del usuario se actualizó.', { title: 'Rol cambiado' });
       await this.load();
-    }, 'Role update failed.');
+    }, 'Falló la actualización del rol.');
   }
 
   protected async deleteUser(userId: string | undefined): Promise<void> {
@@ -73,10 +81,18 @@ export class AdminUsersPage {
       return;
     }
 
+    if (this.isSelf(userId)) {
+      this.feedback.error(
+        'No podés eliminar tu propia cuenta desde la consola de administración. Pedile a otro admin que lo haga si es necesario.',
+        { title: 'Acción bloqueada' },
+      );
+      return;
+    }
+
     const confirmed = await this.confirm.confirm({
-      title: 'Delete this user?',
-      message: 'This soft-deletes the account from the admin console and should only be used when the moderation decision is final.',
-      confirmLabel: 'Delete user',
+      title: '¿Eliminar este usuario?',
+      message: 'Esto elimina la cuenta (soft delete) desde la consola de administración. Úsalo solo cuando la decisión de moderación sea final.',
+      confirmLabel: 'Eliminar usuario',
       tone: 'danger',
     });
 
@@ -86,9 +102,9 @@ export class AdminUsersPage {
 
     await this.run(userId, async () => {
       await firstValueFrom(this.adminApi.deleteAdminUser(userId));
-      this.feedback.success('The user was deleted from the admin console.', { title: 'User deleted' });
+      this.feedback.success('El usuario se eliminó desde la consola de administración.', { title: 'Usuario eliminado' });
       await this.load();
-    }, 'User delete failed.');
+    }, 'Falló la eliminación del usuario.');
   }
 
   protected async restoreUser(userId: string | undefined): Promise<void> {
@@ -97,9 +113,9 @@ export class AdminUsersPage {
     }
 
     const confirmed = await this.confirm.confirm({
-      title: 'Restore this user?',
-      message: 'This returns the account to an active moderation state in the admin console.',
-      confirmLabel: 'Restore user',
+      title: '¿Restaurar este usuario?',
+      message: 'Devuelve la cuenta a un estado activo de moderación en la consola de administración.',
+      confirmLabel: 'Restaurar usuario',
     });
 
     if (!confirmed) {
@@ -108,9 +124,9 @@ export class AdminUsersPage {
 
     await this.run(userId, async () => {
       await firstValueFrom(this.adminApi.restoreAdminUser(userId));
-      this.feedback.success('The user account was restored.', { title: 'User restored' });
+      this.feedback.success('La cuenta del usuario se restauró.', { title: 'Usuario restaurado' });
       await this.load();
-    }, 'User restore failed.');
+    }, 'Falló la restauración del usuario.');
   }
 
   protected async verifyUser(userId: string | undefined, verified: boolean): Promise<void> {
@@ -119,11 +135,11 @@ export class AdminUsersPage {
     }
 
     const confirmed = await this.confirm.confirm({
-      title: verified ? 'Remove verification?' : 'Verify this user?',
+      title: verified ? '¿Quitar la verificación?' : '¿Verificar este usuario?',
       message: verified
-        ? 'This removes the verification state from the account and should match your moderation policy.'
-        : 'This marks the account as verified in the admin system.',
-      confirmLabel: verified ? 'Remove verification' : 'Verify user',
+        ? 'Quita el estado de verificación de la cuenta. Debería coincidir con tu política de moderación.'
+        : 'Marca la cuenta como verificada en el sistema de administración.',
+      confirmLabel: verified ? 'Quitar verificación' : 'Verificar usuario',
     });
 
     if (!confirmed) {
@@ -132,11 +148,11 @@ export class AdminUsersPage {
 
     await this.run(userId, async () => {
       await firstValueFrom(verified ? this.adminApi.unverifyUser(userId) : this.adminApi.verifyUser(userId));
-      this.feedback.success(verified ? 'The user was unverified.' : 'The user was verified.', {
-        title: verified ? 'Verification removed' : 'User verified',
+      this.feedback.success(verified ? 'Se quitó la verificación al usuario.' : 'El usuario fue verificado.', {
+        title: verified ? 'Verificación quitada' : 'Usuario verificado',
       });
       await this.load();
-    }, 'User verification action failed.');
+    }, 'Falló la acción de verificación.');
   }
 
   private async run(id: string, task: () => Promise<void>, fallback: string): Promise<void> {
@@ -147,7 +163,7 @@ export class AdminUsersPage {
     } catch (error) {
       const message = getErrorMessage(error, fallback);
       this.error.set(message);
-      this.feedback.error(message, { title: 'Admin action failed' });
+      this.feedback.error(message, { title: 'Error en la acción de administración' });
     } finally {
       this.actingId.set(null);
     }

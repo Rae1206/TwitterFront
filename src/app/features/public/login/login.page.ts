@@ -43,16 +43,16 @@ export class LoginPage {
       const response = await firstValueFrom(this.authApiService.login(this.form.getRawValue()));
       this.assertValidAuthResponse(response);
       this.sessionService.startSession(response);
-      this.feedback.success('Welcome back. Your session is ready.', { title: 'Signed in' });
+      this.feedback.success('Bienvenido de nuevo. Tu sesión está lista.', { title: 'Sesión iniciada' });
       const navigated = await this.router.navigateByUrl(this.resolveReturnUrl(this.returnUrl()));
 
       if (!navigated) {
-        throw new Error('The session was created, but the app could not complete the redirect. Reload the page or open /home.');
+        throw new Error('La sesión se creó, pero la aplicación no pudo completar la redirección. Recarga la página o abre /home.');
       }
     } catch (error) {
-      const message = getErrorMessage(error, 'We could not sign you in with those credentials.');
+      const message = getErrorMessage(error, 'No pudimos iniciar tu sesión con esas credenciales.');
       this.errorMessage.set(message);
-      this.feedback.error(message, { title: 'Sign-in failed' });
+      this.feedback.error(message, { title: 'Error al iniciar sesión' });
     } finally {
       this.submitting.set(false);
     }
@@ -76,17 +76,17 @@ export class LoginPage {
 
   private assertValidAuthResponse(response: unknown): asserts response is { token: string; refreshToken: string } {
     if (!response || typeof response !== 'object') {
-      throw new Error('The login response is empty.');
+      throw new Error('La respuesta de inicio de sesión está vacía.');
     }
 
     const authResponse = response as { token?: unknown; refreshToken?: unknown };
 
     if (typeof authResponse.token !== 'string' || !authResponse.token.trim()) {
-      throw new Error('The login response did not include a valid access token.');
+      throw new Error('La respuesta de inicio de sesión no incluyó un token de acceso válido.');
     }
 
     if (typeof authResponse.refreshToken !== 'string' || !authResponse.refreshToken.trim()) {
-      throw new Error('The login response did not include a valid refresh token.');
+      throw new Error('La respuesta de inicio de sesión no incluyó un token de actualización válido.');
     }
   }
 }

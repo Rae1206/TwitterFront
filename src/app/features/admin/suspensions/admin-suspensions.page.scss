@@ -22,8 +22,9 @@
 .history-item {
   padding: 1rem;
   border-radius: 1.1rem;
-  border: 1px solid rgb(148 163 184 / 0.12);
-  background: rgb(2 6 23 / 0.24);
+  border: 1px solid var(--border-color);
+  background: var(--bg-card-inner);
+  color: var(--text-primary);
 }
 
 .history-head {
@@ -44,7 +45,7 @@
 }
 
 .history-item dt {
-  color: rgb(148 163 184 / 0.8);
+  color: var(--text-secondary);
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -52,6 +53,7 @@
 
 .history-item dd {
   margin-top: 0.25rem;
+  color: var(--text-primary);
 }
 
 @media (width <= 900px) {

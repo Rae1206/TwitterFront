@@ -35,7 +35,7 @@ export class PostStoreService {
       this.loadPersistedInteractions();
       this.postsState.set(await firstValueFrom(this.postsApi.listPosts()));
     } catch (error) {
-      this.errorState.set(getErrorMessage(error, 'We could not load the feed yet.'));
+      this.errorState.set(getErrorMessage(error, 'No pudimos cargar el feed todavía.'));
     } finally {
       this.loadingState.set(false);
     }
@@ -45,13 +45,13 @@ export class PostStoreService {
     return this.save(async () => {
       const userId = this.sessionService.userId();
       if (!userId) {
-        throw new Error('User session not found. Please sign in again.');
+        throw new Error('No se encontró la sesión del usuario. Inicia sesión nuevamente.');
       }
       const post = await firstValueFrom(this.postsApi.createPost({ ...payload, userId }));
       this.postsState.update((posts) => [post, ...posts]);
-      this.feedback.success('Your post is live in the feed.', { title: 'Post created' });
+      this.feedback.success('Tu publicación está visible en el feed.', { title: 'Publicación creada' });
       return post;
-    }, 'We could not create the post.');
+    }, 'No pudimos crear la publicación.');
   }
 
   async updatePost(id: string, payload: SavePostRequest): Promise<PostDto | null> {
@@ -59,9 +59,9 @@ export class PostStoreService {
       const userId = this.sessionService.userId();
       const post = await firstValueFrom(this.postsApi.updatePost(id, { ...payload, userId: userId ?? undefined }));
       this.patchPost(post);
-      this.feedback.success('The post was updated successfully.', { title: 'Post updated' });
+      this.feedback.success('La publicación se actualizó correctamente.', { title: 'Publicación actualizada' });
       return post;
-    }, 'We could not update the post.');
+    }, 'No pudimos actualizar la publicación.');
   }
 
   async uploadMedia(file: File): Promise<{ mediaId: string; url: string } | null> {
@@ -69,12 +69,12 @@ export class PostStoreService {
       this.savingState.set(true);
       this.errorState.set(null);
       const result = await firstValueFrom(this.postsApi.uploadMedia(file));
-      this.feedback.success('Attachment uploaded successfully.', { title: 'Media uploaded' });
+      this.feedback.success('Archivo adjunto subido correctamente.', { title: 'Archivo subido' });
       return result;
     } catch (error) {
-      const message = getErrorMessage(error, 'Attachment upload failed.');
+      const message = getErrorMessage(error, 'La subida del archivo adjunto falló.');
       this.errorState.set(message);
-      this.feedback.error(message, { title: 'Upload failed' });
+      this.feedback.error(message, { title: 'Error al subir' });
       return null;
     } finally {
       this.savingState.set(false);
@@ -85,21 +85,24 @@ export class PostStoreService {
     const postId = post.postId;
 
     if (!postId) {
-      this.errorState.set('The selected post has no identifier.');
-      this.feedback.error('The selected post has no identifier.', { title: 'Status change failed' });
+      this.errorState.set('La publicación seleccionada no tiene identificador.');
+      this.feedback.error('La publicación seleccionada no tiene identificador.', { title: 'Error al cambiar estado' });
       return null;
     }
 
     return this.save(async () => {
-      const updated = await firstValueFrom(
+      const response = await firstValueFrom(
         this.postsApi.changeStatus(postId, { isPublished: !Boolean(post.isPublished) }),
       );
+      // Backend may return null/empty — fall back to optimistic merge
+      const updated: PostDto = response ?? { ...post, isPublished: !Boolean(post.isPublished) };
       this.patchPost(updated);
-      this.feedback.info(updated.isPublished ? 'The post is now published.' : 'The post was moved back to drafts.', {
-        title: updated.isPublished ? 'Post published' : 'Saved as draft',
+      this.feedback.info(updated.isPublished ? 'La publicación ahora está publicada.' : 'La publicación volvió a borradores.', {
+        title: updated.isPublished ? 'Publicada' : 'Guardada como borrador',
       });
+      setTimeout(() => window.location.reload(), 800);
       return updated;
-    }, 'We could not change the publish status.');
+    }, 'No pudimos cambiar el estado de publicación.');
   }
 
   async deletePost(id: string): Promise<boolean> {
@@ -108,12 +111,13 @@ export class PostStoreService {
       this.errorState.set(null);
       await firstValueFrom(this.postsApi.deletePost(id));
       this.postsState.update((posts) => posts.filter((post) => post.postId !== id));
-      this.feedback.success('The post was removed from the feed.', { title: 'Post deleted' });
+      this.feedback.success('La publicación se quitó del feed.', { title: 'Publicación eliminada' });
+      setTimeout(() => window.location.reload(), 800);
       return true;
     } catch (error) {
-      const message = getErrorMessage(error, 'We could not delete the post.');
+      const message = getErrorMessage(error, 'No pudimos eliminar la publicación.');
       this.errorState.set(message);
-      this.feedback.error(message, { title: 'Delete failed' });
+      this.feedback.error(message, { title: 'Error al eliminar' });
       return false;
     } finally {
       this.savingState.set(false);
@@ -159,7 +163,7 @@ export class PostStoreService {
           return p;
         })
       );
-      this.feedback.error(getErrorMessage(error, 'We could not alternate the like state.'), { title: 'Like failed' });
+      this.feedback.error(getErrorMessage(error, 'No pudimos alternar el estado de "me gusta".'), { title: 'Error al dar me gusta' });
     }
   }
 
@@ -178,10 +182,10 @@ export class PostStoreService {
             return p;
           })
         );
-        this.feedback.success('Your comment reply has been posted.', { title: 'Comment created' });
+        this.feedback.success('Tu respuesta se publicó.', { title: 'Comentario creado' });
       }
       return response;
-    }, 'We could not submit the comment.');
+    }, 'No pudimos enviar el comentario.');
   }
 
   async retweet(postId: string, content: string | null): Promise<PostDto | null> {
@@ -203,12 +207,12 @@ export class PostStoreService {
         );
 
         this.feedback.success(
-          content ? 'Quote tweet posted successfully.' : 'Post shared successfully.',
-          { title: content ? 'Quote shared' : 'Retweeted' }
+          content ? 'Cita publicada correctamente.' : 'Publicación compartida correctamente.',
+          { title: content ? 'Cita compartida' : 'Compartida' }
         );
       }
       return response;
-    }, 'We could not retweet the publication.');
+    }, 'No pudimos compartir la publicación.');
   }
 
   private patchPost(post: PostDto): void {
@@ -226,7 +230,7 @@ export class PostStoreService {
     } catch (error) {
       const message = getErrorMessage(error, fallbackMessage);
       this.errorState.set(message);
-      this.feedback.error(message, { title: 'Request failed' });
+      this.feedback.error(message, { title: 'Solicitud fallida' });
       return null;
     } finally {
       this.savingState.set(false);

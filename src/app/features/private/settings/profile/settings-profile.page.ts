@@ -1,14 +1,15 @@
-import { DatePipe, JsonPipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { StateCardComponent } from '../../../../shared/components/state-card/state-card.component';
+import { UserAvatarComponent } from '../../../users/user-avatar.component';
 import { UserStoreService } from '../../../users/user-store.service';
 
 @Component({
   selector: 'app-settings-profile-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, JsonPipe, ReactiveFormsModule, StateCardComponent],
+  imports: [DatePipe, ReactiveFormsModule, StateCardComponent, UserAvatarComponent],
   templateUrl: './settings-profile.page.html',
   styleUrl: './settings-profile.page.scss',
 })
@@ -19,33 +20,38 @@ export class SettingsProfilePage {
   readonly form = this.formBuilder.group({
     fullName: ['', [Validators.required]],
     email: ['', [Validators.required, Validators.email]],
-    isActive: [true],
+    biography: [''],
   });
   readonly successMessage = signal<string | null>(null);
+  readonly avatarMessage = signal<string | null>(null);
+  readonly pendingAvatarFile = signal<File | null>(null);
+  readonly pendingAvatarPreviewUrl = signal<string | null>(null);
   readonly currentUser = this.userStore.currentUser;
   readonly loading = this.userStore.loading;
   readonly error = this.userStore.error;
-  readonly rolesLabel = computed(() => this.currentUser()?.roles?.join(', ') || 'User');
+  readonly rolesLabel = computed(() => this.currentUser()?.roles?.join(', ') || 'Usuario');
+  readonly biographyPreview = computed(() => this.currentUser()?.biography?.trim() || 'Aún no se agregó una biografía.');
+  readonly canSave = computed(() => !this.loading() && (!this.form.pristine || !!this.pendingAvatarFile()));
   readonly statusLabel = computed(() => {
     const user = this.currentUser();
 
     if (!user) {
-      return 'Unknown';
+      return 'Desconocido';
     }
 
     if (user.deletedAt) {
-      return 'Deleted';
+      return 'Eliminado';
     }
 
     if (user.isSuspended) {
-      return 'Suspended';
+      return 'Suspendido';
     }
 
     if (user.isActive === false) {
-      return 'Inactive';
+      return 'Inactivo';
     }
 
-    return user.isVerified ? 'Verified' : 'Active';
+    return user.isVerified ? 'Verificado' : 'Activo';
   });
 
   constructor() {
@@ -61,7 +67,7 @@ export class SettingsProfilePage {
       this.form.reset({
         fullName: user.fullName ?? '',
         email: user.email ?? '',
-        isActive: user.isActive ?? true,
+        biography: user.biography ?? '',
       });
     });
   }
@@ -73,10 +79,52 @@ export class SettingsProfilePage {
     }
 
     this.successMessage.set(null);
-    const updated = await this.userStore.updateCurrentUser(this.form.getRawValue());
+    this.avatarMessage.set(null);
+    const updatedProfile = await this.userStore.updateCurrentUser(this.form.getRawValue());
 
-    if (updated) {
-      this.successMessage.set('Profile updated successfully.');
+    if (!updatedProfile) {
+      return;
+    }
+
+    const pendingAvatar = this.pendingAvatarFile();
+
+    if (pendingAvatar) {
+      const updatedAvatarUser = await this.userStore.uploadCurrentUserAvatar(pendingAvatar);
+
+      if (!updatedAvatarUser) {
+        this.successMessage.set('Perfil actualizado correctamente.');
+        this.avatarMessage.set('Los cambios se guardaron, pero la subida de la foto falló.');
+        
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+        return;
+      }
+
+      this.avatarMessage.set('Foto de perfil actualizada correctamente.');
+    }
+
+    this.successMessage.set('Perfil actualizado correctamente.');
+    this.clearPendingAvatar();
+    
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
+  }
+
+  protected stageAvatar(event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    const file = input?.files?.[0] ?? null;
+
+    if (!file) {
+      return;
+    }
+
+    this.avatarMessage.set('Avatar listo. Guarda los cambios para subirlo.');
+    this.setPendingAvatar(file);
+
+    if (input) {
+      input.value = '';
     }
   }
 
@@ -95,8 +143,32 @@ export class SettingsProfilePage {
     this.form.reset({
       fullName: user.fullName ?? '',
       email: user.email ?? '',
-      isActive: user.isActive ?? true,
+      biography: user.biography ?? '',
     });
     this.successMessage.set(null);
+    this.avatarMessage.set(null);
+    this.clearPendingAvatar();
+  }
+
+  protected removePendingAvatar(): void {
+    this.clearPendingAvatar();
+    this.avatarMessage.set(null);
+  }
+
+  private setPendingAvatar(file: File): void {
+    this.clearPendingAvatar();
+    this.pendingAvatarFile.set(file);
+    this.pendingAvatarPreviewUrl.set(URL.createObjectURL(file));
+  }
+
+  private clearPendingAvatar(): void {
+    const previewUrl = this.pendingAvatarPreviewUrl();
+
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+
+    this.pendingAvatarFile.set(null);
+    this.pendingAvatarPreviewUrl.set(null);
   }
 }

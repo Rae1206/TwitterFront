@@ -14,7 +14,7 @@
 }
 
 .summary-card span {
-  color: #94a3b8;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 0.75rem;
@@ -22,4 +22,5 @@
 
 .summary-card strong {
   font-size: 1.6rem;
+  color: var(--text-primary);
 }

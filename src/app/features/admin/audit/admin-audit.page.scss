@@ -12,8 +12,9 @@
 .audit-item {
   padding: 1rem;
   border-radius: 1.1rem;
-  border: 1px solid rgb(148 163 184 / 0.12);
-  background: rgb(2 6 23 / 0.26);
+  border: 1px solid var(--border-color);
+  background: var(--bg-card-inner);
+  color: var(--text-primary);
 }
 
 .audit-head {
@@ -30,9 +31,14 @@
   margin: 0;
 }
 
+.audit-head strong,
+.audit-item dd {
+  color: var(--text-primary);
+}
+
 .audit-head p,
 .audit-item dt {
-  color: rgb(148 163 184 / 0.82);
+  color: var(--text-secondary);
 }
 
 .audit-item dl {

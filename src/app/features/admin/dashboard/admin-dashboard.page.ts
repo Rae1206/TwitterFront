@@ -35,7 +35,7 @@ export class AdminDashboardPage {
       this.error.set(null);
       this.stats.set(await firstValueFrom(this.adminApi.getDashboardStats()));
     } catch (error) {
-      this.error.set(getErrorMessage(error, 'We could not load dashboard stats.'));
+      this.error.set(getErrorMessage(error, 'No pudimos cargar las estadísticas del panel.'));
     } finally {
       this.loading.set(false);
     }
@@ -46,12 +46,12 @@ export class AdminDashboardPage {
       this.recalculating.set(true);
       this.error.set(null);
       this.actionResult.set(await firstValueFrom(this.adminApi.recalculateDashboard()));
-      this.feedback.success('Dashboard stats were recalculated.', { title: 'Admin action complete' });
+      this.feedback.success('Las estadísticas del panel se recalcularon.', { title: 'Acción de administración completada' });
       await this.load();
     } catch (error) {
-      const message = getErrorMessage(error, 'Dashboard recalculation failed.');
+      const message = getErrorMessage(error, 'El recálculo del panel falló.');
       this.error.set(message);
-      this.feedback.error(message, { title: 'Admin action failed' });
+      this.feedback.error(message, { title: 'Error en la acción de administración' });
     } finally {
       this.recalculating.set(false);
     }

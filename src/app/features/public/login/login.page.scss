@@ -5,7 +5,7 @@
 
 .eyebrow {
   margin: 0;
-  color: #536471;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 0.75rem;
@@ -17,7 +17,7 @@ p {
 }
 
 p {
-  color: #536471;
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 
@@ -34,30 +34,23 @@ p {
 .field span {
   font-size: 0.9rem;
   font-weight: 600;
-  color: #0f1419;
+  color: var(--text-primary);
 }
 
 input {
   width: 100%;
   padding: 0.85rem 1rem;
   border-radius: 0.85rem;
-  border: 1px solid rgb(15 20 25 / 0.14);
-  background: #fff;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
   font: inherit;
-  color: #0f1419;
+  color: var(--text-primary);
   min-height: 44px;
-}
-
-@media (width <= 480px) {
-  input {
-    padding: 0.75rem 0.85rem;
-    font-size: 16px;
-  }
 }
 
 input:focus {
   outline: 2px solid rgb(29 155 240 / 0.2);
-  border-color: #1d9bf0;
+  border-color: var(--brand-color);
 }
 
 .field-error,
@@ -68,7 +61,7 @@ input:focus {
 
 .field-error,
 .feedback.error {
-  color: #c62828;
+  color: var(--danger-color);
 }
 
 button,
@@ -76,20 +69,33 @@ a {
   width: 100%;
   padding: 0.95rem 1rem;
   border-radius: 999px;
-  border: 1px solid rgb(15 20 25 / 0.12);
-  background: #fff;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-primary);
   text-align: center;
   text-decoration: none;
   font: inherit;
 }
 
 button {
-  background: #1d9bf0;
-  border-color: #1d9bf0;
+  background: var(--brand-color);
+  border-color: var(--brand-color);
   color: #fff;
 }
 
 button:disabled {
   cursor: wait;
   opacity: 0.7;
+}
+
+@media (width <= 480px) {
+  input {
+    padding: 0.75rem 0.85rem;
+    font-size: 16px;
+  }
+  button,
+  a {
+    padding: 0.85rem 1rem;
+    font-size: 0.95rem;
+  }
 }

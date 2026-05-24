@@ -37,8 +37,8 @@ export class AdminReportsPage {
   readonly resolveForm = this.formBuilder.group({ reportId: ['', Validators.required], resolutionNote: [''] });
   readonly queueFocus = computed(() => this.selected() ?? this.pendingReports()[0] ?? this.allReports()[0] ?? null);
   readonly pendingCount = computed(() => this.pendingReports().length);
-  readonly resolvedCount = computed(() => this.allReports().filter((report) => this.reportStatus(report) === 'Resolved').length);
-  readonly dismissedCount = computed(() => this.allReports().filter((report) => this.reportStatus(report) === 'Dismissed').length);
+  readonly resolvedCount = computed(() => this.allReports().filter((report) => this.reportStatus(report) === 'Resuelto').length);
+  readonly dismissedCount = computed(() => this.allReports().filter((report) => this.reportStatus(report) === 'Descartado').length);
   readonly unassignedPendingCount = computed(
     () => this.pendingReports().filter((report) => !(report.assignedToUserId ?? '').trim()).length,
   );
@@ -79,7 +79,7 @@ export class AdminReportsPage {
       this.allReports.set(all);
       this.syncSelection(pending, all);
     } catch (error) {
-      this.error.set(getErrorMessage(error, 'We could not load reports.'));
+      this.error.set(getErrorMessage(error, 'No pudimos cargar los reportes.'));
     } finally {
       this.loading.set(false);
     }
@@ -97,13 +97,13 @@ export class AdminReportsPage {
 
   protected async create(): Promise<void> {
     if (this.createForm.invalid) { this.createForm.markAllAsTouched(); return; }
-    await this.run(null, async () => { await firstValueFrom(this.adminApi.createReport(this.createForm.getRawValue())); this.feedback.success('The report was created successfully.', { title: 'Report created' }); this.createForm.reset({ postId: '', reason: '', description: '' }); await this.load(); }, 'Report creation failed.');
+    await this.run(null, async () => { await firstValueFrom(this.adminApi.createReport(this.createForm.getRawValue())); this.feedback.success('El reporte se creó correctamente.', { title: 'Reporte creado' }); this.createForm.reset({ postId: '', reason: '', description: '' }); await this.load(); }, 'Falló la creación del reporte.');
   }
 
   protected async assign(): Promise<void> {
     if (this.assignForm.invalid) { this.assignForm.markAllAsTouched(); return; }
     const { reportId, assignedToUserId } = this.assignForm.getRawValue();
-    await this.run(reportId, async () => { await firstValueFrom(this.adminApi.assignReport(reportId, { assignedToUserId })); this.feedback.success('The report was assigned.', { title: 'Report assigned' }); await this.load(); }, 'Assigning the report failed.');
+    await this.run(reportId, async () => { await firstValueFrom(this.adminApi.assignReport(reportId, { assignedToUserId })); this.feedback.success('El reporte fue asignado.', { title: 'Reporte asignado' }); await this.load(); }, 'Falló la asignación del reporte.');
   }
 
   protected async resolve(): Promise<void> {
@@ -112,17 +112,17 @@ export class AdminReportsPage {
 
     const report = this.findReport(reportId);
     const confirmed = await this.confirm.confirm({
-      title: 'Resolve this report?',
-      message: 'This marks the moderation case as resolved from the reports workspace.',
+      title: '¿Resolver este reporte?',
+      message: 'Marca el caso de moderación como resuelto desde el espacio de trabajo de reportes.',
       details: report ? this.reportTitle(report) : undefined,
-      confirmLabel: 'Resolve report',
+      confirmLabel: 'Resolver reporte',
     });
 
     if (!confirmed) {
       return;
     }
 
-    await this.run(reportId, async () => { await firstValueFrom(this.adminApi.resolveReport(reportId, { resolutionNote })); this.feedback.success('The report was resolved.', { title: 'Report resolved' }); await this.load(); }, 'Resolving the report failed.');
+    await this.run(reportId, async () => { await firstValueFrom(this.adminApi.resolveReport(reportId, { resolutionNote })); this.feedback.success('El reporte se resolvió.', { title: 'Reporte resuelto' }); await this.load(); }, 'Falló la resolución del reporte.');
   }
 
   protected async dismiss(report: AdminReportDto): Promise<void> {
@@ -131,10 +131,10 @@ export class AdminReportsPage {
     if (!reportId) { return; }
 
     const confirmed = await this.confirm.confirm({
-      title: 'Dismiss this report?',
-      message: 'Dismissing removes the case from the pending moderation flow without resolving it.',
+      title: '¿Descartar este reporte?',
+      message: 'Descartarlo lo quita del flujo de moderación pendiente sin resolverlo.',
       details: this.reportTitle(report),
-      confirmLabel: 'Dismiss report',
+      confirmLabel: 'Descartar reporte',
       tone: 'danger',
     });
 
@@ -142,33 +142,33 @@ export class AdminReportsPage {
       return;
     }
 
-    await this.run(reportId, async () => { await firstValueFrom(this.adminApi.dismissReport(reportId, {})); this.feedback.info('The report was dismissed.', { title: 'Report dismissed' }); await this.load(); }, 'Dismissing the report failed.');
+    await this.run(reportId, async () => { await firstValueFrom(this.adminApi.dismissReport(reportId, {})); this.feedback.info('El reporte se descartó.', { title: 'Reporte descartado' }); await this.load(); }, 'Falló el descarte del reporte.');
   }
 
   protected reportTitle(report: AdminReportDto): string {
-    return report.reason?.trim() || report.reportId || 'Report';
+    return report.reason?.trim() || report.reportId || 'Reporte';
   }
 
   protected reportStatus(report: AdminReportDto): string {
     const status = (report.status ?? '').trim().toLowerCase();
 
     if (!status || status === 'open' || status === 'assigned' || status === 'in_review' || status === 'in-review') {
-      return 'Pending';
+      return 'Pendiente';
     }
 
     if (status === 'resolved') {
-      return 'Resolved';
+      return 'Resuelto';
     }
 
     if (status === 'dismissed') {
-      return 'Dismissed';
+      return 'Descartado';
     }
 
     return status.charAt(0).toUpperCase() + status.slice(1);
   }
 
   protected reportSummary(report: AdminReportDto): string {
-    return report.description?.trim() || 'No moderator description was attached to this report.';
+    return report.description?.trim() || 'Sin descripción.';
   }
 
   protected isSelected(report: AdminReportDto): boolean {
@@ -200,6 +200,6 @@ export class AdminReportsPage {
   }
 
   private async run(reportId: string | null, task: () => Promise<void>, fallback: string): Promise<void> {
-    try { this.actingReportId.set(reportId); this.error.set(null); await task(); } catch (error) { const message = getErrorMessage(error, fallback); this.error.set(message); this.feedback.error(message, { title: 'Admin action failed' }); } finally { this.actingReportId.set(null); }
+    try { this.actingReportId.set(reportId); this.error.set(null); await task(); } catch (error) { const message = getErrorMessage(error, fallback); this.error.set(message); this.feedback.error(message, { title: 'Error en la acción de administración' }); } finally { this.actingReportId.set(null); }
   }
 }

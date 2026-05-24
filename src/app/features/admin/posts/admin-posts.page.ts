@@ -29,7 +29,7 @@ export class AdminPostsPage {
   readonly selected = signal<AdminPostRecord | null>(null);
   readonly flagForm = this.formBuilder.group({
     postId: ['', [Validators.required]],
-    reason: ['Manual moderation review', [Validators.required]],
+    reason: ['Revisión de moderación manual', [Validators.required]],
   });
 
   constructor() {
@@ -42,7 +42,7 @@ export class AdminPostsPage {
       this.error.set(null);
       this.posts.set(await firstValueFrom(this.adminApi.listPosts()));
     } catch (error) {
-      this.error.set(getErrorMessage(error, 'We could not load admin posts.'));
+      this.error.set(getErrorMessage(error, 'No pudimos cargar las publicaciones de administración.'));
     } finally {
       this.loading.set(false);
     }
@@ -50,7 +50,7 @@ export class AdminPostsPage {
 
   protected pick(post: AdminPostRecord): void {
     this.selected.set(post);
-    this.flagForm.reset({ postId: post.postId ?? '', reason: 'Manual moderation review' });
+    this.flagForm.reset({ postId: post.postId ?? '', reason: 'Revisión de moderación manual' });
   }
 
   protected async flagSelected(): Promise<void> {
@@ -62,9 +62,9 @@ export class AdminPostsPage {
     const { postId, reason } = this.flagForm.getRawValue();
     await this.run(async () => {
       await firstValueFrom(this.adminApi.flagPost(postId, { reason }));
-      this.feedback.success('The post was flagged for moderation review.', { title: 'Post flagged' });
+      this.feedback.success('La publicación fue marcada para revisión.', { title: 'Publicación marcada' });
       await this.load();
-    }, 'Post flagging failed.');
+    }, 'Falló el marcado de la publicación.');
   }
 
   protected async deletePost(postId: string | undefined): Promise<void> {
@@ -73,9 +73,9 @@ export class AdminPostsPage {
     }
 
     const confirmed = await this.confirm.confirm({
-      title: 'Delete this post?',
-      message: 'This soft-deletes the post in moderation and should only happen after a clear review decision.',
-      confirmLabel: 'Delete post',
+      title: '¿Eliminar esta publicación?',
+      message: 'Esto elimina la publicación (soft delete) en moderación. Solo debería suceder después de una decisión clara.',
+      confirmLabel: 'Eliminar publicación',
       tone: 'danger',
     });
 
@@ -85,9 +85,9 @@ export class AdminPostsPage {
 
     await this.run(async () => {
       await firstValueFrom(this.adminApi.deleteAdminPost(postId));
-      this.feedback.success('The post was deleted by moderation.', { title: 'Post deleted' });
+      this.feedback.success('La publicación fue eliminada por moderación.', { title: 'Publicación eliminada' });
       await this.load();
-    }, 'Post delete failed.');
+    }, 'Falló la eliminación de la publicación.');
   }
 
   protected async restorePost(postId: string | undefined): Promise<void> {
@@ -96,9 +96,9 @@ export class AdminPostsPage {
     }
 
     const confirmed = await this.confirm.confirm({
-      title: 'Restore this post?',
-      message: 'This returns the post to the moderation list and makes it available again in the current backend workflow.',
-      confirmLabel: 'Restore post',
+      title: '¿Restaurar esta publicación?',
+      message: 'Devuelve la publicación a la lista de moderación y la deja disponible nuevamente en el flujo del backend.',
+      confirmLabel: 'Restaurar publicación',
     });
 
     if (!confirmed) {
@@ -107,9 +107,9 @@ export class AdminPostsPage {
 
     await this.run(async () => {
       await firstValueFrom(this.adminApi.restoreAdminPost(postId));
-      this.feedback.success('The post was restored.', { title: 'Post restored' });
+      this.feedback.success('La publicación fue restaurada.', { title: 'Publicación restaurada' });
       await this.load();
-    }, 'Post restore failed.');
+    }, 'Falló la restauración de la publicación.');
   }
 
   private async run(task: () => Promise<void>, fallback: string): Promise<void> {
@@ -119,7 +119,7 @@ export class AdminPostsPage {
     } catch (error) {
       const message = getErrorMessage(error, fallback);
       this.error.set(message);
-      this.feedback.error(message, { title: 'Admin action failed' });
+      this.feedback.error(message, { title: 'Error en la acción de administración' });
     }
   }
 }

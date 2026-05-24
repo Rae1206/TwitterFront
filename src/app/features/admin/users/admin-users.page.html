@@ -1,9 +1,9 @@
 <section class="page-shell">
   <header class="page-header">
     <div>
-      <p class="eyebrow">Admin users</p>
-      <h1>User operations</h1>
-      <p>List, delete, restore, verify, unverify, and change user roles.</p>
+      <p class="eyebrow">Administración</p>
+      <h1>Usuarios</h1>
+      <p>Gestión de cuentas y roles.</p>
     </div>
   </header>
 
@@ -13,13 +13,13 @@
 
   <section class="surface-card data-grid-card">
     @if (loading() && !users().length) {
-      <app-state-card tone="loading" title="Loading admin users" message="Retrieving moderation-level user records and account states." />
+      <app-state-card tone="loading" title="Cargando usuarios" message="Un momento..." />
     } @else if (!loading() && !users().length) {
       <app-state-card
         tone="empty"
-        title="No users returned"
-        message="The admin list endpoint did not return any user records."
-        actionLabel="Reload users"
+        title="Sin usuarios"
+        message="No hay usuarios para mostrar."
+        actionLabel="Recargar"
         (action)="load()"
       />
     } @else {
@@ -27,28 +27,32 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Email</th>
+              <th>Nombre</th>
+              <th>Correo</th>
               <th>Roles</th>
-              <th>State</th>
-              <th>Actions</th>
+              <th>Estado</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             @for (user of users(); track user.userId ?? user.email ?? $index) {
               <tr>
-                <td>{{ user.fullName || 'Unknown' }}</td>
+                <td>{{ user.fullName || 'Desconocido' }}</td>
                 <td>{{ user.email || '—' }}</td>
-                <td>{{ (user.roles ?? []).join(', ') || 'User' }}</td>
-                <td>{{ user.deletedAt ? 'Deleted' : user.isVerified ? 'Verified' : 'Active' }}</td>
+                <td>{{ (user.roles ?? []).join(', ') || 'Usuario' }}</td>
+                <td>{{ user.deletedAt ? 'Eliminado' : user.isVerified ? 'Verificado' : 'Activo' }}</td>
                 <td>
                   <div class="table-actions">
-                    <button type="button" class="secondary-action small-action" (click)="pick(user)">Select</button>
+                    <button type="button" class="secondary-action small-action" (click)="pick(user)">Seleccionar</button>
                     <button type="button" class="secondary-action small-action" (click)="verifyUser(user.userId, !!user.isVerified)">
-                      {{ user.isVerified ? 'Unverify' : 'Verify' }}
+                      {{ user.isVerified ? 'Quitar verificación' : 'Verificar' }}
                     </button>
-                    <button type="button" class="danger-action small-action" (click)="deleteUser(user.userId)">Delete</button>
-                    <button type="button" class="secondary-action small-action" (click)="restoreUser(user.userId)">Restore</button>
+                    @if (isSelf(user.userId)) {
+                      <span class="chip warn" title="No podés eliminar tu propia cuenta">Tu cuenta</span>
+                    } @else {
+                      <button type="button" class="danger-action small-action" (click)="deleteUser(user.userId)">Eliminar</button>
+                    }
+                    <button type="button" class="secondary-action small-action" (click)="restoreUser(user.userId)">Restaurar</button>
                   </div>
                 </td>
               </tr>
@@ -62,30 +66,27 @@
   <section class="surface-card compact-shell">
     <header class="section-head">
       <div>
-        <h2>Change role</h2>
+        <h2>Cambiar rol</h2>
       </div>
     </header>
 
     <form class="stack" [formGroup]="roleForm" (ngSubmit)="submitRoleChange()">
       <label class="field">
-        <span>User id</span>
+        <span>ID de usuario</span>
         <input type="text" formControlName="userId" />
       </label>
 
       <label class="field">
-        <span>Role</span>
+        <span>Rol</span>
         <input type="text" formControlName="role" />
       </label>
 
       <div class="button-row">
-        <button type="submit" class="primary-action" [disabled]="!!actingId()">Update role</button>
+        <button type="submit" class="primary-action" [disabled]="!!actingId()">Actualizar rol</button>
       </div>
     </form>
   </section>
 
   @if (selected(); as user) {
-    <section class="surface-card">
-      <pre class="json-view">{{ user | json }}</pre>
-    </section>
   }
 </section>

@@ -34,9 +34,9 @@ export class AdminAuditPage {
       this.error.set(null);
       this.logs.set(await firstValueFrom(this.adminApi.getAuditLogs()));
     } catch (error) {
-      const message = getErrorMessage(error, 'Loading audit logs failed.');
+      const message = getErrorMessage(error, 'Falló la carga de los registros de auditoría.');
       this.error.set(message);
-      this.feedback.error(message, { title: 'Audit load failed' });
+      this.feedback.error(message, { title: 'Error al cargar auditoría' });
     } finally {
       this.loading.set(false);
     }

@@ -25,10 +25,10 @@ export class AdminSuspensionsPage {
 
   readonly suspendForm = this.formBuilder.group({
     userId: ['', Validators.required],
-    reason: ['Policy review required', Validators.required],
+    reason: ['Revisión de política requerida', Validators.required],
     until: [''],
   });
-  readonly liftForm = this.formBuilder.group({ userId: ['', Validators.required], reason: ['Moderation review completed'] });
+  readonly liftForm = this.formBuilder.group({ userId: ['', Validators.required], reason: ['Revisión de moderación completada'] });
   readonly lookupForm = this.formBuilder.group({ userId: ['', Validators.required] });
   readonly history = signal<SuspensionDto[]>([]);
   readonly error = signal<string | null>(null);
@@ -44,10 +44,10 @@ export class AdminSuspensionsPage {
 
     const payload = this.suspendForm.getRawValue();
     const confirmed = await this.confirm.confirm({
-      title: 'Suspend this user?',
-      message: 'Suspension is a high-sensitivity moderation action and should only happen with a clear reason recorded.',
+      title: '¿Suspender este usuario?',
+      message: 'La suspensión es una acción de moderación de alta sensibilidad y solo debe hacerse con un motivo claro registrado.',
       details: payload.reason,
-      confirmLabel: 'Suspend user',
+      confirmLabel: 'Suspender usuario',
       tone: 'danger',
     });
 
@@ -56,15 +56,15 @@ export class AdminSuspensionsPage {
     }
 
     await this.run(
-      'Suspending user',
+      'Suspendiendo usuario',
       async () => {
         await firstValueFrom(this.adminApi.suspendUser(payload));
-        this.feedback.success('The user suspension was recorded.', { title: 'User suspended' });
+        this.feedback.success('La suspensión del usuario quedó registrada.', { title: 'Usuario suspendido' });
         this.lookupForm.patchValue({ userId: payload.userId });
         this.loadingHistory.set(true);
         this.history.set(await firstValueFrom(this.adminApi.getSuspensionHistory(payload.userId)));
       },
-      'Suspending the user failed.',
+      'Falló la suspensión del usuario.',
     );
   }
 
@@ -76,10 +76,10 @@ export class AdminSuspensionsPage {
 
     const payload = this.liftForm.getRawValue();
     const confirmed = await this.confirm.confirm({
-      title: 'Lift this suspension?',
-      message: 'Use this only after the moderation review is complete and the account can safely return to normal state.',
-      details: payload.reason || 'No lift reason provided.',
-      confirmLabel: 'Lift suspension',
+      title: '¿Levantar esta suspensión?',
+      message: 'Úsalo solo después de que la revisión de moderación esté completa y la cuenta pueda volver al estado normal con seguridad.',
+      details: payload.reason || 'No se proporcionó motivo del levantamiento.',
+      confirmLabel: 'Levantar suspensión',
     });
 
     if (!confirmed) {
@@ -87,15 +87,15 @@ export class AdminSuspensionsPage {
     }
 
     await this.run(
-      'Lifting suspension',
+      'Levantando suspensión',
       async () => {
         await firstValueFrom(this.adminApi.liftSuspension(payload));
-        this.feedback.success('The suspension was lifted.', { title: 'Suspension lifted' });
+        this.feedback.success('La suspensión fue levantada.', { title: 'Suspensión levantada' });
         this.lookupForm.patchValue({ userId: payload.userId });
         this.loadingHistory.set(true);
         this.history.set(await firstValueFrom(this.adminApi.getSuspensionHistory(payload.userId)));
       },
-      'Lifting the suspension failed.',
+      'Falló el levantamiento de la suspensión.',
     );
   }
 
@@ -115,13 +115,13 @@ export class AdminSuspensionsPage {
 
   private async loadHistoryFor(userId: string): Promise<void> {
     await this.run(
-      'Loading history',
+      'Cargando historial',
       async () => {
         this.lookupForm.patchValue({ userId });
         this.loadingHistory.set(true);
         this.history.set(await firstValueFrom(this.adminApi.getSuspensionHistory(userId)));
       },
-      'Suspension history lookup failed.',
+      'Falló la búsqueda del historial de suspensiones.',
     );
   }
 
@@ -133,7 +133,7 @@ export class AdminSuspensionsPage {
     } catch (error) {
       const message = getErrorMessage(error, fallback);
       this.error.set(message);
-      this.feedback.error(message, { title: 'Suspension action failed' });
+      this.feedback.error(message, { title: 'Error en la acción de suspensión' });
     } finally {
       this.loadingHistory.set(false);
       this.acting.set(null);

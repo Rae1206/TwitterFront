@@ -40,7 +40,7 @@ export class AdminConfigPage {
     await this.run(
       'load',
       async () => this.loadEntries(),
-      'Loading config entries failed.',
+      'Falló la carga de las entradas de configuración.',
     );
   }
 
@@ -54,7 +54,7 @@ export class AdminConfigPage {
     await this.run(
       'load',
       async () => this.lookupKey(key),
-      'Config lookup failed.',
+      'Falló la búsqueda de configuración.',
     );
   }
 
@@ -66,10 +66,10 @@ export class AdminConfigPage {
 
     const { key, value } = this.updateForm.getRawValue();
     const confirmed = await this.confirm.confirm({
-      title: 'Save this config change?',
-      message: 'Runtime configuration changes can affect the whole application behavior. Confirm before sending the update.',
+      title: '¿Guardar este cambio de configuración?',
+      message: 'Los cambios de configuración en tiempo de ejecución pueden afectar el comportamiento de toda la aplicación. Confirma antes de enviar la actualización.',
       details: `${key} → ${value}`,
-      confirmLabel: 'Save config',
+      confirmLabel: 'Guardar configuración',
     });
 
     if (!confirmed) {
@@ -80,11 +80,11 @@ export class AdminConfigPage {
       'save',
       async () => {
         await firstValueFrom(this.adminApi.updateConfig(key, { value }));
-        this.feedback.success('The config value was updated.', { title: 'Config saved' });
+        this.feedback.success('El valor de configuración se actualizó.', { title: 'Configuración guardada' });
         await this.lookupKey(key);
         await this.loadEntries();
       },
-      'Config update failed.',
+      'Falló la actualización de la configuración.',
     );
   }
 
@@ -121,7 +121,7 @@ export class AdminConfigPage {
     } catch (error) {
       const message = getErrorMessage(error, fallback);
       this.error.set(message);
-      this.feedback.error(message, { title: 'Config action failed' });
+      this.feedback.error(message, { title: 'Error en la acción de configuración' });
     } finally {
       this.loading.set(false);
       this.saving.set(false);

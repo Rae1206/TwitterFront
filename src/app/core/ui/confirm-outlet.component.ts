@@ -17,7 +17,7 @@ import { ConfirmService } from './confirm.service';
           <div class="confirm-badge" aria-hidden="true">{{ dialog.tone === 'danger' ? '!' : '?' }}</div>
 
           <div class="confirm-copy">
-            <p class="confirm-eyebrow">Confirm action</p>
+            <p class="confirm-eyebrow">Confirmar acción</p>
             <h2 id="confirm-title">{{ dialog.title }}</h2>
             <p id="confirm-message">{{ dialog.message }}</p>
 
@@ -75,14 +75,16 @@ import { ConfirmService } from './confirm.service';
       gap: 1rem;
       padding: 1.35rem;
       border-radius: 1.6rem;
-      border: 1px solid rgb(148 163 184 / 0.18);
-      background: linear-gradient(180deg, rgb(15 23 42 / 0.98), rgb(15 23 42 / 0.9));
-      box-shadow: 0 30px 80px rgb(2 6 23 / 0.45);
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      box-shadow: var(--card-shadow);
+      backdrop-filter: blur(18px);
     }
 
     .confirm-card.tone-danger {
-      border-color: rgb(251 113 133 / 0.28);
-      background: linear-gradient(180deg, rgb(69 10 27 / 0.96), rgb(15 23 42 / 0.94));
+      border-color: var(--danger-border);
+      background: linear-gradient(180deg, var(--danger-bg), var(--bg-card));
     }
 
     .confirm-badge {
@@ -91,9 +93,10 @@ import { ConfirmService } from './confirm.service';
       display: grid;
       place-items: center;
       border-radius: 999px;
-      background: rgb(255 255 255 / 0.08);
+      background: var(--bg-secondary);
       font-size: 1.2rem;
       font-weight: 800;
+      color: var(--text-primary);
     }
 
     .confirm-copy {
@@ -108,7 +111,7 @@ import { ConfirmService } from './confirm.service';
     }
 
     .confirm-eyebrow {
-      color: rgb(148 163 184 / 0.78);
+      color: var(--text-secondary);
       text-transform: uppercase;
       letter-spacing: 0.08em;
       font-size: 0.75rem;
@@ -116,18 +119,19 @@ import { ConfirmService } from './confirm.service';
 
     .confirm-copy h2 {
       font-size: 1.3rem;
+      color: var(--text-primary);
     }
 
     .confirm-copy p,
     .confirm-details {
-      color: rgb(226 232 240 / 0.84);
+      color: var(--text-muted);
       line-height: 1.6;
     }
 
     .confirm-details {
       padding: 0.85rem 1rem;
       border-radius: 1rem;
-      background: rgb(2 6 23 / 0.34);
+      background: var(--bg-secondary);
     }
 
     .confirm-actions {
@@ -138,13 +142,19 @@ import { ConfirmService } from './confirm.service';
     }
 
     .danger-primary {
-      background: rgb(225 29 72);
-      border-color: rgb(225 29 72);
+      background: var(--danger-color);
+      border-color: var(--danger-border);
+      color: #fff;
     }
 
     @media (width <= 720px) {
       .confirm-actions {
         flex-direction: column-reverse;
+      }
+
+      .confirm-card {
+        padding: 1.1rem;
+        border-radius: 1.25rem;
       }
     }
   `,

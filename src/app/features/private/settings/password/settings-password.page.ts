@@ -41,13 +41,13 @@ export class SettingsPasswordPage {
       this.errorMessage.set(null);
       this.successMessage.set(null);
       await firstValueFrom(this.usersApi.changePassword({ currentPassword, newPassword }));
-      this.successMessage.set('Password changed successfully.');
-      this.feedback.success('Your password was changed successfully.', { title: 'Password updated' });
+      this.successMessage.set('Contraseña cambiada correctamente.');
+      this.feedback.success('Tu contraseña se cambió correctamente.', { title: 'Contraseña actualizada' });
       this.form.reset({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (error) {
-      const message = getErrorMessage(error, 'The password change endpoint rejected this request.');
+      const message = getErrorMessage(error, 'El endpoint de cambio de contraseña rechazó la solicitud.');
       this.errorMessage.set(message);
-      this.feedback.error(message, { title: 'Password change failed' });
+      this.feedback.error(message, { title: 'Error al cambiar la contraseña' });
     } finally {
       this.loading.set(false);
     }

@@ -1,13 +1,17 @@
+import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs';
 
 import { ApiClientService } from '../../core/api/api-client.service';
-import { JsonRecord } from '../../core/api/api.models';
+import { GenericResponse, JsonRecord } from '../../core/api/api.models';
+import { environment } from '../../../environments/environment';
 import { ChangePasswordRequest, RegisterUserRequest, TestEmailRequest, UpdateUserRequest, UserDto, UserListQuery } from './users.models';
 
 @Injectable({ providedIn: 'root' })
 export class UsersApiService {
   private readonly api = inject(ApiClientService);
+  private readonly http = inject(HttpClient);
 
   register(payload: RegisterUserRequest): Observable<UserDto> {
     return this.api.post<UserDto, RegisterUserRequest>('/api/user/create', payload);
@@ -21,8 +25,17 @@ export class UsersApiService {
     return this.api.get<UserDto>(`/api/user/${id}`);
   }
 
-  updateUser(id: string, payload: UpdateUserRequest): Observable<UserDto> {
-    return this.api.put<UserDto, UpdateUserRequest>(`/api/user/${id}/update`, payload);
+  updateUser(payload: UpdateUserRequest): Observable<UserDto> {
+    return this.api.put<UserDto, UpdateUserRequest>('/api/user/me', payload);
+  }
+
+  uploadAvatar(file: File): Observable<UserDto> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return this.http
+      .post<GenericResponse<UserDto>>(`${environment.apiBaseUrl}/api/user/me/avatar`, formData)
+      .pipe(map((response) => response.data));
   }
 
   changePassword(payload: ChangePasswordRequest): Observable<JsonRecord> {

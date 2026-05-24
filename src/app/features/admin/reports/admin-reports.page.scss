@@ -23,8 +23,9 @@
 .report-card,
 .history-row,
 .moderation-card {
-  border: 1px solid rgb(148 163 184 / 0.12);
-  background: rgb(2 6 23 / 0.26);
+  border: 1px solid var(--border-color);
+  background: var(--bg-card-inner);
+  color: var(--text-primary);
 }
 
 .hero-spotlight,
@@ -59,7 +60,7 @@
 .history-row p,
 .selection-summary p,
 .fact-grid dt {
-  color: rgb(226 232 240 / 0.72);
+  color: var(--text-muted);
 }
 
 .detail-grid,
@@ -75,6 +76,7 @@
 .selection-summary h3,
 .history-row strong {
   margin: 0;
+  color: var(--text-primary);
 }
 
 .report-card.selected,
@@ -90,7 +92,7 @@
   gap: 1rem;
   align-items: start;
   text-align: left;
-  color: inherit;
+  color: var(--text-primary);
   cursor: pointer;
 }
 
@@ -110,16 +112,16 @@
   min-height: 2.4rem;
   padding: 0.45rem 0.9rem;
   border-radius: 999px;
-  border: 1px solid rgb(148 163 184 / 0.16);
-  background: rgb(15 23 42 / 0.5);
-  color: inherit;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
   cursor: pointer;
 }
 
 .filter-pill.active {
   border-color: rgb(29 155 240 / 0.42);
-  background: rgb(29 155 240 / 0.16);
-  color: #bae6fd;
+  background: var(--brand-light);
+  color: var(--brand-color);
 }
 
 .fact-grid {
@@ -134,8 +136,8 @@
   gap: 0.3rem;
   padding: 0.9rem;
   border-radius: 1rem;
-  background: rgb(2 6 23 / 0.3);
-  border: 1px solid rgb(148 163 184 / 0.12);
+  background: var(--bg-card-inner);
+  border: 1px solid var(--border-color);
 }
 
 .fact-grid dt {
@@ -146,6 +148,7 @@
 
 .fact-grid dd {
   font-weight: 600;
+  color: var(--text-primary);
 }
 
 .top-gap {

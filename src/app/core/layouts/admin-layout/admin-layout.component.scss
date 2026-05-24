@@ -1,10 +1,28 @@
 :host {
   display: block;
   min-height: 100dvh;
-  background:
-    radial-gradient(circle at top right, rgb(139 92 246 / 0.18), transparent 30%),
-    linear-gradient(180deg, #020617, #0f172a 50%, #111827 100%);
-  color: #e2e8f0;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  position: relative;
+  z-index: 1;
+}
+
+:host::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at top right, rgb(139 92 246 / 0.18), transparent 30%);
+  pointer-events: none;
+  z-index: -1;
+  transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 1;
+}
+
+:host-context(body.light-theme)::before {
+  opacity: 0.4;
 }
 
 .admin-shell {
@@ -15,14 +33,40 @@
 
 .admin-sidebar {
   padding: 2rem;
-  border-right: 1px solid rgb(226 232 240 / 0.1);
-  background: rgb(2 6 23 / 0.55);
+  border-right: 1px solid var(--border-color);
+  background: var(--bg-card);
   backdrop-filter: blur(14px);
+  color: var(--text-primary);
+  position: relative;
+  z-index: 10;
+}
+
+.brand-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.brand {
+  width: 2.6rem;
+  height: 2.6rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--brand-color);
+  color: #fff;
+  text-decoration: none;
+  font-size: 1.25rem;
+  font-weight: 800;
+  box-shadow: 0 12px 30px rgb(29 155 240 / 0.3);
+  flex-shrink: 0;
 }
 
 .eyebrow {
   margin: 0 0 0.5rem;
-  color: #94a3b8;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 0.75rem;
@@ -30,11 +74,12 @@
 
 .admin-sidebar h1 {
   margin: 0 0 2rem;
+  color: var(--text-primary);
 }
 
 .intro-copy {
   margin: 0 0 1.5rem;
-  color: rgb(226 232 240 / 0.7);
+  color: var(--text-muted);
   line-height: 1.55;
 }
 
@@ -44,7 +89,7 @@
 }
 
 .admin-sidebar a {
-  color: inherit;
+  color: var(--text-primary);
   text-decoration: none;
   padding: 0.85rem 1rem;
   border-radius: 1rem;
@@ -53,8 +98,9 @@
 
 .admin-sidebar a.active,
 .admin-sidebar a:hover {
-  background: rgb(29 155 240 / 0.18);
+  background: var(--brand-light);
   border-color: rgb(29 155 240 / 0.25);
+  color: var(--brand-color);
 }
 
 .logout-button {
@@ -62,8 +108,51 @@
   margin-top: 1.25rem;
 }
 
+.back-to-app-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  padding: 0.85rem 1.25rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--brand-color);
+  background: var(--brand-light);
+  color: var(--brand-color);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgb(29 155 240 / 0.12);
+  width: 100%;
+
+  .back-icon {
+    width: 1.15rem;
+    height: 1.15rem;
+    stroke: currentColor;
+    stroke-width: 2.5;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  &:hover {
+    background: var(--brand-color);
+    color: #ffffff;
+    box-shadow: 0 6px 18px rgb(29 155 240 / 0.35);
+
+    .back-icon {
+      transform: translateX(-4px);
+    }
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
+}
+
 .admin-content {
   padding: 2rem;
+  color: var(--text-primary);
 }
 
 @media (width <= 1024px) {
@@ -97,12 +186,12 @@
 
   .admin-sidebar {
     border-right: 0;
-    border-bottom: 1px solid rgb(226 232 240 / 0.1);
+    border-bottom: 1px solid var(--border-color);
     padding: 1rem;
     position: sticky;
     top: 0;
     z-index: 100;
-    background: rgba(2, 6, 23, 0.9);
+    background: var(--bg-card);
     backdrop-filter: blur(12px);
   }
 
@@ -127,6 +216,10 @@
     display: none;
   }
 
+  .brand-row {
+    margin-bottom: 0.75rem;
+  }
+
   .admin-sidebar h1 {
     font-size: 1rem;
     margin-bottom: 0.75rem;
@@ -134,5 +227,19 @@
 
   .admin-content {
     padding: 1rem;
+  }
+
+  .back-to-app-btn {
+    margin-top: 0.75rem;
+    margin-bottom: 0;
+    padding: 0.55rem 1rem;
+    font-size: 0.8rem;
+    width: 100%;
+
+    .back-icon {
+      width: 1rem;
+      height: 1rem;
+      stroke-width: 2.25;
+    }
   }
 }

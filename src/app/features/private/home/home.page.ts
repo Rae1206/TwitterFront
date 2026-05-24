@@ -1,14 +1,21 @@
 import { DatePipe, JsonPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, effect, HostListener, inject, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, effect, inject, signal, viewChildren } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 
 import { getErrorMessage } from '../../../core/api/api.utils';
+import { SessionService } from '../../../core/auth/session.service';
 import { ConfirmService } from '../../../core/ui/confirm.service';
 import { StateCardComponent } from '../../../shared/components/state-card/state-card.component';
+import { AudioPlayerComponent } from '../../posts/audio-player.component';
+import { AudioRecorderModalComponent } from '../../posts/audio-recorder-modal.component';
 import { PostsApiService } from '../../posts/posts-api.service';
 import { PostStoreService } from '../../posts/post-store.service';
 import { PostDto } from '../../posts/posts.models';
+import { UserAvatarComponent } from '../../users/user-avatar.component';
+import { UserDto } from '../../users/users.models';
 import { environment } from '../../../../environments/environment';
 
 export interface MediaAttachment {
@@ -18,10 +25,12 @@ export interface MediaAttachment {
   type: 'image' | 'audio' | 'video' | 'unknown';
 }
 
+type MediaType = MediaAttachment['type'];
+
 @Component({
   selector: 'app-home-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, JsonPipe, ReactiveFormsModule, StateCardComponent],
+  imports: [DatePipe, JsonPipe, ReactiveFormsModule, StateCardComponent, UserAvatarComponent, AudioRecorderModalComponent, AudioPlayerComponent],
   templateUrl: './home.page.html',
   styleUrl: './home.page.scss',
 })
@@ -30,10 +39,13 @@ export class HomePage {
   private readonly postStore = inject(PostStoreService);
   private readonly postsApi = inject(PostsApiService);
   private readonly confirm = inject(ConfirmService);
-
+  private readonly sessionService = inject(SessionService);
+  private readonly http = inject(HttpClient);
+  private readonly feedVideos = viewChildren<ElementRef<HTMLVideoElement>>('feedVideo');
   readonly attachments = signal<MediaAttachment[]>([]);
   readonly uploadingFile = signal(false);
-  readonly mediaTypes = signal<Record<string, 'image' | 'video' | 'audio' | 'unknown'>>({});
+  readonly mediaTypes = signal<Record<string, MediaType>>({});
+  readonly loadedFeedVideoUrls = signal<Record<string, true>>({});
 
   readonly posts = this.postStore.posts;
   readonly loading = this.postStore.loading;
@@ -54,18 +66,69 @@ export class HomePage {
   readonly isComposeModalOpen = signal(false);
   readonly isDetailModalOpen = signal(false);
   readonly postInDetail = signal<PostDto | null>(null);
+  readonly isRecorderOpen = signal(false);
 
   readonly form = this.formBuilder.group({
-    content: ['', [Validators.required, Validators.minLength(2)]],
+    content: [''],
     isPublished: [true],
   });
 
   readonly quoteForm = this.formBuilder.group({
     content: ['', [Validators.required, Validators.maxLength(280)]],
   });
+  readonly searchQuery = signal('');
+  private readonly contentValue = toSignal(this.form.controls.content.valueChanges, { initialValue: '' });
+  readonly canPost = computed(() => {
+    const text = (this.contentValue() ?? '').trim();
+    const hasText = text.length >= 2;
+    const hasAttachments = this.attachments().length > 0;
+    return hasText || hasAttachments;
+  });
   readonly publishedCount = computed(() => this.posts().filter((post) => Boolean(post.isPublished)).length);
   readonly draftCount = computed(() => this.posts().filter((post) => !post.isPublished).length);
   readonly highlightedPost = computed(() => this.posts()[0] ?? null);
+  readonly hasActiveSearch = computed(() => this.searchQuery().trim().length > 0);
+  readonly filteredPosts = computed(() => {
+    const query = this.searchQuery().trim().toLowerCase();
+    const currentUserId = this.sessionService.userId();
+    const list = this.posts().filter(
+      (post) => Boolean(post.isPublished) || post.userId === currentUserId,
+    );
+
+    if (!query) {
+      return list;
+    }
+
+    return list.filter((post) => this.matchesPostQuery(post, query));
+  });
+  readonly hasNoMatches = computed(() => this.hasActiveSearch() && !this.filteredPosts().length && !!this.posts().length);
+
+  readonly activeCarouselIndex = signal<Record<string, number>>({});
+
+  protected getCarouselIndex(postId: string | undefined): number {
+    if (!postId) return 0;
+    return this.activeCarouselIndex()[postId] || 0;
+  }
+
+  protected prevCarousel(postId: string | undefined, total: number, event: MouseEvent): void {
+    event.stopPropagation();
+    if (!postId || total <= 1) return;
+    this.activeCarouselIndex.update((prev) => {
+      const current = prev[postId] || 0;
+      const next = (current - 1 + total) % total;
+      return { ...prev, [postId]: next };
+    });
+  }
+
+  protected nextCarousel(postId: string | undefined, total: number, event: MouseEvent): void {
+    event.stopPropagation();
+    if (!postId || total <= 1) return;
+    this.activeCarouselIndex.update((prev) => {
+      const current = prev[postId] || 0;
+      const next = (current + 1) % total;
+      return { ...prev, [postId]: next };
+    });
+  }
 
   constructor() {
     void this.postStore.loadPosts();
@@ -79,31 +142,82 @@ export class HomePage {
             return;
           }
 
-          const controller = new AbortController();
-          fetch(absUrl, { method: 'GET', signal: controller.signal })
-            .then((res) => {
-              const contentType = res.headers.get('Content-Type') || '';
-              let type: 'image' | 'audio' | 'video' | 'unknown' = 'image';
-              if (contentType.toLowerCase().startsWith('video/')) {
-                type = 'video';
-              } else if (contentType.toLowerCase().startsWith('audio/')) {
-                type = 'audio';
-              } else if (contentType.toLowerCase().startsWith('image/')) {
-                type = 'image';
-              }
-              this.mediaTypes.update((types) => ({ ...types, [absUrl]: type }));
-              
-              // Immediately abort the fetch to avoid downloading the body
-              controller.abort();
-            })
-            .catch((err: unknown) => {
-              const isAbort = err instanceof Error && err.name === 'AbortError';
-              if (!isAbort) {
-                this.mediaTypes.update((types) => ({ ...types, [absUrl]: 'image' }));
+          this.http.get(absUrl, { observe: 'response', responseType: 'blob' })
+            .subscribe({
+              next: (res) => {
+                const contentType = res.headers.get('Content-Type') || '';
+                let type: MediaType = 'image';
+                if (contentType.toLowerCase().startsWith('video/')) {
+                  const isWebm = contentType.toLowerCase().includes('webm');
+                  type = (isWebm || this.isPostAudioUrl(absUrl)) ? 'audio' : 'video';
+                } else if (contentType.toLowerCase().startsWith('audio/')) {
+                  type = 'audio';
+                } else if (contentType.toLowerCase().startsWith('image/')) {
+                  type = 'image';
+                }
+                this.mediaTypes.update((types) => ({ ...types, [absUrl]: type }));
+              },
+              error: () => {
+                let fallback: MediaType = 'image';
+                if (this.isPostAudioUrl(absUrl)) {
+                  fallback = 'audio';
+                } else if (this.isPostVideoUrl(absUrl)) {
+                  fallback = 'video';
+                }
+                this.mediaTypes.update((types) => ({ ...types, [absUrl]: fallback }));
               }
             });
         });
       });
+    });
+
+    effect((onCleanup) => {
+      const videos = this.feedVideos();
+
+      if (!videos.length) {
+        return;
+      }
+
+      if (typeof IntersectionObserver === 'undefined') {
+        videos.forEach(({ nativeElement }) => {
+          const mediaUrl = nativeElement.dataset['mediaUrl'];
+          if (mediaUrl) {
+            this.markFeedVideoAsLoaded(mediaUrl);
+          }
+        });
+        return;
+      }
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) {
+              return;
+            }
+
+            const mediaUrl = (entry.target as HTMLVideoElement).dataset['mediaUrl'];
+            if (mediaUrl) {
+              this.markFeedVideoAsLoaded(mediaUrl);
+            }
+            observer.unobserve(entry.target);
+          });
+        },
+        {
+          rootMargin: '240px 0px',
+          threshold: 0.15,
+        },
+      );
+
+      videos.forEach(({ nativeElement }) => {
+        const mediaUrl = nativeElement.dataset['mediaUrl'];
+        if (!mediaUrl || this.isFeedVideoLoaded(mediaUrl)) {
+          return;
+        }
+
+        observer.observe(nativeElement);
+      });
+
+      onCleanup(() => observer.disconnect());
     });
   }
 
@@ -113,8 +227,7 @@ export class HomePage {
   }
 
   protected async submit(): Promise<void> {
-    if (this.form.invalid || this.saving()) {
-      this.form.markAllAsTouched();
+    if (!this.canPost() || this.saving()) {
       return;
     }
 
@@ -125,7 +238,15 @@ export class HomePage {
       // 1. Upload any local files that haven't been uploaded yet
       for (const att of this.attachments()) {
         if (att.file) {
-          const result = await this.postStore.uploadMedia(att.file);
+          let prefix = 'unk';
+          if (att.type === 'image') prefix = 'img';
+          else if (att.type === 'audio') prefix = 'audi';
+          else if (att.type === 'video') prefix = 'vid';
+
+          // Renombrar el archivo agregando el prefijo de tipo de medio para que se identifique fácilmente en la URL
+          const renamedFile = new File([att.file], `${prefix}-${att.file.name}`, { type: att.file.type });
+
+          const result = await this.postStore.uploadMedia(renamedFile);
           if (result && result.mediaId) {
             mediaIds.push(result.mediaId);
           }
@@ -199,17 +320,17 @@ export class HomePage {
       this.selectedPost.set(await firstValueFrom(this.postsApi.getPostById(targetId)));
     } catch (error) {
       this.selectedPost.set(null);
-      this.selectedPostError.set(getErrorMessage(error, 'We could not fetch the post details.'));
+      this.selectedPostError.set(getErrorMessage(error, 'No pudimos obtener los detalles de la publicación.'));
     }
   }
 
   protected async toggleStatus(post: PostDto): Promise<void> {
     const confirmed = await this.confirm.confirm({
-      title: post.isPublished ? 'Move post back to draft?' : 'Publish this post now?',
+      title: post.isPublished ? '¿Pasar la publicación a borrador?' : '¿Publicar ahora?',
       message: post.isPublished
-        ? 'This removes the post from the live timeline until you publish it again.'
-        : 'This makes the post visible in the live timeline right away.',
-      confirmLabel: post.isPublished ? 'Move to draft' : 'Publish post',
+        ? 'La publicación se quitará de la línea de tiempo hasta que la vuelvas a publicar.'
+        : 'La publicación pasará a estar visible en la línea de tiempo de inmediato.',
+      confirmLabel: post.isPublished ? 'Pasar a borrador' : 'Publicar',
     });
 
     if (!confirmed) {
@@ -225,9 +346,9 @@ export class HomePage {
     }
 
     const confirmed = await this.confirm.confirm({
-      title: 'Delete this post?',
-      message: 'Deleting a post removes it from your current feed and cannot be undone from this screen.',
-      confirmLabel: 'Delete post',
+      title: '¿Eliminar esta publicación?',
+      message: 'Eliminarla la quita de tu feed actual y no se puede deshacer desde esta pantalla.',
+      confirmLabel: 'Eliminar publicación',
       tone: 'danger',
     });
 
@@ -242,12 +363,28 @@ export class HomePage {
     return post.postId ?? post.createdAt ?? String(index);
   }
 
+  protected updateSearch(value: string): void {
+    this.searchQuery.set(value);
+  }
+
+  protected clearSearch(): void {
+    this.searchQuery.set('');
+  }
+
+  private matchesPostQuery(post: PostDto, query: string): boolean {
+    const haystack = [post.content, post.userFullName, post.username, post.userId]
+      .filter((value): value is string => typeof value === 'string' && value.length > 0)
+      .map((value) => value.toLowerCase());
+
+    return haystack.some((value) => value.includes(query));
+  }
+
   protected async reloadFeed(): Promise<void> {
     await this.postStore.loadPosts();
   }
 
   protected authorName(post: PostDto): string {
-    return post.userFullName || post.username || post.userId || 'Unknown author';
+    return post.userFullName || post.username || post.userId || 'Autor desconocido';
   }
 
   protected authorHandle(post: PostDto): string {
@@ -259,18 +396,43 @@ export class HomePage {
       return `@${post.userFullName.replace(/\s+/g, '').toLowerCase()}`;
     }
 
-    return '@unknown';
+    return '@desconocido';
   }
 
-  protected authorInitials(post: PostDto): string {
-    const source = this.authorName(post)
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase() ?? '')
-      .join('');
+  private readonly postAuthorCache = new WeakMap<PostDto, UserDto>();
 
-    return source || '??';
+  /**
+   * Adapts the embedded post author fields to a UserDto so the shared
+   * <app-user-avatar> component can render the photo. The result is
+   * cached per PostDto reference to avoid re-creating signals every
+   * change detection pass.
+   */
+  protected postAuthor(post: PostDto): UserDto {
+    const cached = this.postAuthorCache.get(post);
+
+    if (cached) {
+      return cached;
+    }
+
+    const author: UserDto = {
+      userId: post.userId,
+      fullName: post.userFullName ?? post.username ?? undefined,
+      email: post.username ?? undefined,
+      profilePhotoUrl: post.userAvatar ?? null,
+    };
+
+    this.postAuthorCache.set(post, author);
+    return author;
+  }
+
+  /**
+   * True when the current authenticated session owns the post — gates
+   * destructive actions (edit, toggle status, delete) so the feed never
+   * surfaces them on someone else's post.
+   */
+  protected isOwnPost(post: PostDto): boolean {
+    const sessionUserId = this.sessionService.userId();
+    return Boolean(sessionUserId && post.userId && sessionUserId === post.userId);
   }
 
   protected isLiked(postId: string | undefined): boolean {
@@ -344,7 +506,43 @@ export class HomePage {
     this.resetForm();
   }
 
+  protected openRecorder(): void {
+    this.isRecorderOpen.set(true);
+  }
+
+  protected closeRecorder(): void {
+    this.isRecorderOpen.set(false);
+  }
+
+  protected onAudioReady(file: File): void {
+    const url = URL.createObjectURL(file);
+    this.attachments.update((list) => [...list, { file, url, type: 'audio' }]);
+    this.isRecorderOpen.set(false);
+  }
+
   protected async openDetailModal(post: PostDto): Promise<void> {
+    // Pure retweet (no own content): open the original post, not the retweet wrapper.
+    if (post.retweetOfPostId && !post.content) {
+      const orig = this.getOriginalPost(post.retweetOfPostId);
+      if (orig) {
+        this.postInDetail.set(orig);
+        this.isDetailModalOpen.set(true);
+      } else {
+        try {
+          const fetched = await firstValueFrom(this.postsApi.getPostById(post.retweetOfPostId));
+          if (fetched) {
+            this.originalPostsCache.update(cache => ({ ...cache, [post.retweetOfPostId!]: fetched }));
+            this.postInDetail.set(fetched);
+            this.isDetailModalOpen.set(true);
+          }
+        } catch {
+          this.postInDetail.set(post);
+          this.isDetailModalOpen.set(true);
+        }
+      }
+      return;
+    }
+
     const repliedId = post.repliedToPostId;
     if (repliedId) {
       const parent = this.getOriginalPost(repliedId);
@@ -368,6 +566,17 @@ export class HomePage {
       this.postInDetail.set(post);
       this.isDetailModalOpen.set(true);
     }
+  }
+
+  /**
+   * Opens the detail modal for a specific post (e.g. the embedded original inside a
+   * quote-tweet card). Stops propagation so the outer article click handler does not
+   * fire a second time and override the selection.
+   */
+  protected openOriginalPostModal(origPost: PostDto, event: MouseEvent): void {
+    event.stopPropagation();
+    this.postInDetail.set(origPost);
+    this.isDetailModalOpen.set(true);
   }
 
   protected closeDetailModal(): void {
@@ -404,6 +613,13 @@ export class HomePage {
     await this.postStore.addComment(postId, text.trim());
   }
 
+  protected interactionTarget(post: PostDto): PostDto {
+    if (post.retweetOfPostId && !post.content) {
+      return this.getOriginalPost(post.retweetOfPostId) ?? post;
+    }
+    return post;
+  }
+
   protected getOriginalPost(retweetOfPostId: string | undefined): PostDto | null {
     if (!retweetOfPostId) return null;
 
@@ -418,9 +634,9 @@ export class HomePage {
         ...cache,
         [retweetOfPostId]: {
           postId: retweetOfPostId,
-          userFullName: 'Original Author',
+          userFullName: 'Autor original',
           username: 'original',
-          content: 'Loading shared publication details...',
+          content: 'Cargando detalles de la publicación compartida...',
           createdAt: new Date().toISOString(),
           isPublished: true,
           likesCount: 0,
@@ -440,9 +656,9 @@ export class HomePage {
             ...cache,
             [retweetOfPostId]: {
               postId: retweetOfPostId,
-              userFullName: 'Unavailable',
-              username: 'unavailable',
-              content: 'This shared post could not be loaded (it might be private or deleted).',
+              userFullName: 'No disponible',
+              username: 'no-disponible',
+              content: 'Esta publicación compartida no se pudo cargar (puede ser privada o estar eliminada).',
               createdAt: new Date().toISOString(),
               isPublished: true,
               likesCount: 0,
@@ -457,9 +673,9 @@ export class HomePage {
   }
 
   protected getParentAuthorHandle(repliedToPostId: string | null | undefined): string {
-    if (!repliedToPostId) return '@author';
+    if (!repliedToPostId) return '@autor';
     const parent = this.getOriginalPost(repliedToPostId);
-    return parent ? this.authorHandle(parent) : '@author';
+    return parent ? this.authorHandle(parent) : '@autor';
   }
 
   protected getViewCount(post: PostDto): number {
@@ -517,16 +733,63 @@ export class HomePage {
   }
 
   protected isPostAudioUrl(url: string): boolean {
-    return /\.(mp3|wav|ogg|aac|m4a)/i.test(url) || url.toLowerCase().includes('type=audio') || url.toLowerCase().includes('.mp3') || url.toLowerCase().includes('.wav');
+    const lowerUrl = url.toLowerCase();
+    // Es audio si tiene prefijo "audi-", extensiones típicas de audio,
+    // o si es un webm pero contiene "grabacion", "audio" o "voice" en su nombre/URL.
+    return lowerUrl.includes('audi-') ||
+           /\.(mp3|wav|ogg|aac|m4a)/i.test(url) || 
+           lowerUrl.includes('type=audio') || 
+           lowerUrl.includes('.mp3') || 
+           lowerUrl.includes('.wav') || 
+           lowerUrl.includes('grabacion') || 
+           lowerUrl.includes('audio') || 
+           lowerUrl.includes('voice');
   }
 
   protected isPostVideoUrl(url: string): boolean {
-    return /\.(mp4|webm|ogv|mov|avi)/i.test(url) || url.toLowerCase().includes('type=video') || url.toLowerCase().includes('.mp4') || url.toLowerCase().includes('.webm');
+    const lowerUrl = url.toLowerCase();
+    // Es video si tiene prefijo "vid-", extensiones típicas, o contiene "video"
+    return lowerUrl.includes('vid-') ||
+           ((/\.(mp4|webm|ogv|mov|avi)/i.test(url) || 
+           lowerUrl.includes('type=video') || 
+           lowerUrl.includes('.mp4') || 
+           lowerUrl.includes('.webm')) && !this.isPostAudioUrl(url));
   }
 
-  protected getMediaType(url: string): 'image' | 'video' | 'audio' | 'unknown' {
+  protected getMediaType(url: string): MediaType {
     const absUrl = this.getAbsoluteMediaUrl(url);
-    return this.mediaTypes()[absUrl] || 'image';
+
+    const cached = this.mediaTypes()[absUrl];
+    if (cached) {
+      return cached;
+    }
+
+    if (this.isPostAudioUrl(absUrl)) {
+      return 'audio';
+    }
+
+    if (this.isPostVideoUrl(absUrl)) {
+      return 'video';
+    }
+
+    return 'image';
+  }
+
+  protected isFeedVideoLoaded(url: string): boolean {
+    return Boolean(this.loadedFeedVideoUrls()[url]);
+  }
+
+  private markFeedVideoAsLoaded(url: string): void {
+    this.loadedFeedVideoUrls.update((loaded) => {
+      if (loaded[url]) {
+        return loaded;
+      }
+
+      return {
+        ...loaded,
+        [url]: true,
+      };
+    });
   }
 
   protected getAbsoluteMediaUrl(url: string): string {

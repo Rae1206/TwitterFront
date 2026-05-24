@@ -51,26 +51,26 @@ import { FeedbackService } from './feedback.service';
       gap: 0.75rem;
       padding: 0.95rem 1rem;
       border-radius: 1rem;
-      border: 1px solid var(--toast-border);
-      background: var(--toast-background);
-      color: #f8fafc;
-      box-shadow: 0 22px 45px rgb(2 6 23 / 0.35);
+      border: 1px solid var(--toast-border, var(--border-color));
+      background: var(--toast-background, var(--bg-card));
+      color: var(--text-primary);
+      box-shadow: var(--card-shadow);
       backdrop-filter: blur(16px);
     }
 
     .tone-success {
-      --toast-background: rgb(8 47 73 / 0.94);
-      --toast-border: rgb(34 211 238 / 0.35);
+      --toast-background: var(--success-bg);
+      --toast-border: var(--success-border);
     }
 
     .tone-error {
-      --toast-background: rgb(76 5 25 / 0.95);
-      --toast-border: rgb(251 113 133 / 0.35);
+      --toast-background: var(--danger-bg);
+      --toast-border: var(--danger-border);
     }
 
     .tone-info {
-      --toast-background: rgb(15 23 42 / 0.96);
-      --toast-border: rgb(59 130 246 / 0.35);
+      --toast-background: var(--bg-card);
+      --toast-border: var(--border-color);
     }
 
     .toast-copy {
@@ -83,8 +83,12 @@ import { FeedbackService } from './feedback.service';
       margin: 0;
     }
 
+    .toast-copy strong {
+      color: var(--text-primary);
+    }
+
     .toast-copy p {
-      color: rgb(226 232 240 / 0.92);
+      color: var(--text-muted);
       line-height: 1.45;
     }
 
@@ -93,9 +97,19 @@ import { FeedbackService } from './feedback.service';
       height: 2rem;
       border: 0;
       border-radius: 999px;
-      background: rgb(255 255 255 / 0.08);
-      color: inherit;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
       cursor: pointer;
+    }
+
+    @media (width <= 480px) {
+      :host {
+        inset: auto 0.5rem 0.5rem 0.5rem;
+      }
+
+      .feedback-stack {
+        width: calc(100vw - 1rem);
+      }
     }
   `,
 })

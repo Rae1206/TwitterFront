@@ -1,27 +1,28 @@
 <section class="page-shell compact-shell">
   <header class="page-header page-hero">
     <div class="hero-copy">
-      <p class="eyebrow">Settings</p>
-      <h1>Edit profile</h1>
-      <p>Keep profile editing consistent with the newer state-card shell: clear feedback, stronger hierarchy, and a visible account snapshot beside the form.</p>
+      <p class="eyebrow">Configuración</p>
+      <h1>Editar perfil</h1>
+      <p>Actualiza tu información personal cuando lo necesites.</p>
 
       <div class="summary-grid">
         <article class="metric-card">
           <strong>{{ statusLabel() }}</strong>
-          <p>Current account state derived from the live profile payload.</p>
+          <p>Estado de la cuenta</p>
         </article>
         <article class="metric-card">
           <strong>{{ currentUser()?.email || '—' }}</strong>
-          <p>Email currently attached to the authenticated account.</p>
+          <p>Correo</p>
         </article>
       </div>
     </div>
 
     <aside class="hero-spotlight">
-      <p class="eyebrow">Account snapshot</p>
-      <strong>{{ currentUser()?.fullName || 'Loading current user' }}</strong>
-      <p>{{ rolesLabel() }}</p>
-      <span class="chip" [class.warn]="statusLabel() !== 'Verified' && statusLabel() !== 'Active'">{{ statusLabel() }}</span>
+      <p class="eyebrow">Tu perfil</p>
+      <app-user-avatar class="spotlight-avatar" [user]="currentUser()" />
+      <strong>{{ currentUser()?.fullName || 'Cargando...' }}</strong>
+      <p>{{ biographyPreview() }}</p>
+      <span class="chip" [class.warn]="statusLabel() !== 'Verificado' && statusLabel() !== 'Activo'">{{ statusLabel() }}</span>
     </aside>
   </header>
 
@@ -33,39 +34,65 @@
     <p class="feedback success">{{ message }}</p>
   }
 
+  @if (avatarMessage(); as message) {
+    <p class="feedback success">{{ message }}</p>
+  }
+
   @if (loading() && !currentUser()) {
-    <app-state-card tone="loading" title="Loading your profile" message="Waiting for the authenticated user payload before opening the form." />
+    <app-state-card tone="loading" title="Cargando tu perfil" message="Un momento..." />
   } @else if (!loading() && !currentUser()) {
-    <app-state-card tone="empty" title="No profile returned" message="The current user endpoint did not return a profile payload." actionLabel="Retry" (action)="reload()" />
+    <app-state-card tone="empty" title="Sin perfil" message="No pudimos cargar tu perfil." actionLabel="Reintentar" (action)="reload()" />
   } @else {
     <section class="detail-grid">
       <section class="surface-card">
         <header class="section-head">
           <div>
-            <h2>Profile form</h2>
-            <p>Edit only the fields already supported by the backend update endpoint.</p>
+            <h2>Tus datos</h2>
           </div>
         </header>
 
         <form class="stack" [formGroup]="form" (ngSubmit)="save()">
+          <div class="avatar-editor">
+            <div class="avatar-editor-frame">
+              <app-user-avatar class="avatar-editor-photo" [user]="currentUser()" [previewUrl]="pendingAvatarPreviewUrl()" />
+
+              <label class="avatar-editor-edit" [class.disabled]="loading()" title="Cambiar foto de perfil">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                </svg>
+                <span class="visually-hidden">Cambiar foto de perfil</span>
+                <input type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" [disabled]="loading()" (change)="stageAvatar($event)" />
+              </label>
+            </div>
+
+            <p class="avatar-editor-hint">JPG, JPEG, PNG o WEBP. La nueva foto se sube solo cuando guardas.</p>
+
+            @if (pendingAvatarFile(); as pendingAvatar) {
+              <div class="avatar-editor-meta">
+                <span>{{ pendingAvatar.name }}</span>
+                <button type="button" class="inline-link" (click)="removePendingAvatar()">Quitar selección</button>
+              </div>
+            }
+          </div>
+
           <label class="field">
-            <span>Full name</span>
+            <span>Nombre completo</span>
             <input type="text" formControlName="fullName" autocomplete="name" />
           </label>
 
           <label class="field">
-            <span>Email</span>
+            <span>Correo electrónico</span>
             <input type="email" formControlName="email" autocomplete="email" />
           </label>
 
-          <label class="checkbox-field">
-            <input type="checkbox" formControlName="isActive" />
-            <span>Active profile</span>
+          <label class="field">
+            <span>Biografía</span>
+            <textarea rows="4" formControlName="biography" autocomplete="off" placeholder="Cuéntale a la gente sobre esta cuenta"></textarea>
           </label>
 
           <div class="button-row">
-            <button type="submit" class="primary-action" [disabled]="loading() || form.pristine">{{ loading() ? 'Saving...' : 'Save changes' }}</button>
-            <button type="button" class="secondary-action" [disabled]="loading()" (click)="resetToCurrentValues()">Reset form</button>
+            <button type="submit" class="primary-action" [disabled]="!canSave()">{{ loading() ? 'Guardando...' : 'Guardar cambios' }}</button>
+            <button type="button" class="secondary-action" [disabled]="loading()" (click)="resetToCurrentValues()">Restablecer formulario</button>
           </div>
         </form>
       </section>
@@ -74,14 +101,13 @@
         <section class="surface-card">
           <header class="section-head">
             <div>
-              <h2>Live account details</h2>
-              <p>Use the payload preview as a defensive fallback while backend DTOs are still settling.</p>
+              <h2>Información pública</h2>
             </div>
           </header>
 
           <div class="fact-grid">
             <article class="fact-card">
-              <span>Status</span>
+              <span>Estado</span>
               <strong>{{ statusLabel() }}</strong>
             </article>
             <article class="fact-card">
@@ -89,16 +115,14 @@
               <strong>{{ rolesLabel() }}</strong>
             </article>
             <article class="fact-card">
-              <span>Joined</span>
-              <strong>{{ (user.createdAt | date: 'mediumDate') || 'Unknown' }}</strong>
+              <span>Se unió</span>
+              <strong>{{ (user.createdAt | date: 'mediumDate') || '—' }}</strong>
             </article>
-            <article class="fact-card">
-              <span>User id</span>
-              <strong>{{ user.userId || 'No id returned' }}</strong>
+            <article class="fact-card fact-card-wide">
+              <span>Biografía</span>
+              <strong>{{ biographyPreview() }}</strong>
             </article>
           </div>
-
-          <pre class="json-view">{{ user | json }}</pre>
         </section>
       }
     </section>

@@ -1,50 +1,76 @@
+<header class="mobile-top-bar">
+  <div class="mobile-brand-row">
+    <a routerLink="/home" class="mobile-brand" aria-label="Ir al inicio">T</a>
+    <div class="mobile-actions">
+      <app-theme-toggle />
+      <app-accent-picker />
+      <div class="mobile-user-menu">
+        <button type="button" class="avatar-menu-btn" (click)="toggleMobileMenu()" aria-label="Menú de usuario" [attr.aria-expanded]="mobileMenuOpen()">
+          <app-user-avatar [user]="currentUser()" class="mobile-avatar" />
+        </button>
+        @if (mobileMenuOpen()) {
+          <div class="mobile-dropdown" (click)="closeMobileMenu()">
+            <div class="mobile-user-info">
+              <strong>{{ accountName() }}</strong>
+              <span>{{ accountMeta() }}</span>
+            </div>
+            <hr class="mobile-dropdown-divider" />
+            <button type="button" class="logout-item" (click)="logout()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="logout-icon"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              <span>Cerrar sesión</span>
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</header>
+
 <div class="private-shell">
-  <aside class="rail left-rail" aria-label="Primary navigation">
-    <a routerLink="/home" class="brand" aria-label="Go to home feed">T</a>
+  <aside class="rail left-rail" aria-label="Navegación principal">
+    <div class="brand-row">
+      <a routerLink="/home" class="brand" aria-label="Ir al inicio">T</a>
+      <app-theme-toggle />
+      <app-accent-picker />
+    </div>
 
     <section class="account-card">
-      <p class="eyebrow">Signed in</p>
-      <strong>{{ currentRole() || 'Member' }}</strong>
-      <p>Clean, fast access to your main timeline and account controls.</p>
+      <p class="eyebrow account-details">Sesión iniciada</p>
+      <app-user-avatar class="account-avatar" [user]="currentUser()" />
+      <strong class="account-details">{{ accountName() }}</strong>
+      <p class="account-biography account-details">{{ accountBiography() }}</p>
+      <p class="account-details">{{ accountMeta() }}</p>
+      <span class="account-role-chip account-details">{{ currentRole() || 'Miembro' }}</span>
     </section>
 
     <nav class="nav-list">
-      <a routerLink="/home" routerLinkActive="active">Home feed</a>
-      <a [routerLink]="profileLink()" routerLinkActive="active">My profile</a>
-      <a routerLink="/people" routerLinkActive="active">People</a>
-      <a routerLink="/settings/profile" routerLinkActive="active">Profile settings</a>
-      <a routerLink="/settings/password" routerLinkActive="active">Password</a>
+      <a routerLink="/home" routerLinkActive="active">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2-2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span class="nav-label">Inicio</span>
+      </a>
+      <a [routerLink]="profileLink()" routerLinkActive="active">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span class="nav-label">Mi perfil</span>
+      </a>
+      <a routerLink="/people" routerLinkActive="active">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span class="nav-label">Personas</span>
+      </a>
 
       @if (isAdmin()) {
-        <span class="nav-group-label">Moderation</span>
-        <a routerLink="/admin/dashboard" routerLinkActive="active" class="admin-link">Admin console</a>
+        <span class="nav-group-label">Moderación</span>
+        <a routerLink="/admin/dashboard" routerLinkActive="active" class="admin-link">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
+          <span class="nav-label">Consola de administración</span>
+        </a>
       }
     </nav>
 
     <div class="sidebar-footer">
-      <button type="button" class="theme-toggle-btn" (click)="themeService.toggleTheme()" [title]="themeService.isDark() ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
-        @if (themeService.isDark()) {
-          <svg class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="5"></circle>
-            <line x1="12" y1="1" x2="12" y2="3"></line>
-            <line x1="12" y1="21" x2="12" y2="23"></line>
-            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-            <line x1="1" y1="12" x2="3" y2="12"></line>
-            <line x1="21" y1="12" x2="23" y2="12"></line>
-            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-          </svg>
-          <span class="theme-label">Light Mode</span>
-        } @else {
-          <svg class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-          </svg>
-          <span class="theme-label">Dark Mode</span>
-        }
+      <button type="button" class="secondary-action logout-button" (click)="logout()">
+        <svg class="logout-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <span class="logout-label">Cerrar sesión</span>
       </button>
-
-      <button type="button" class="secondary-action logout-button" (click)="logout()">Log out</button>
     </div>
   </aside>
 
@@ -52,14 +78,14 @@
     <router-outlet />
   </main>
 
-  <aside class="rail right-rail" aria-label="Sidebar placeholder">
+  <aside class="rail right-rail" aria-label="Panel lateral">
     <section class="panel">
-      <h2>What&apos;s happening</h2>
-      <p class="panel-copy">Keep the interface focused: publish, review, and manage the account without hunting through menus.</p>
+      <h2>Qué está pasando</h2>
+      <p class="panel-copy">Mantén la interfaz enfocada: publica, revisa y administra tu cuenta sin perderte entre menús.</p>
 
       @for (trend of trends; track trend) {
         <div class="trend-item">
-          <span>Trending</span>
+          <span>Tendencia</span>
           <strong>{{ trend }}</strong>
         </div>
       }

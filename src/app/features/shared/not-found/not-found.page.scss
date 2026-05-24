@@ -7,18 +7,20 @@
 
 .card {
   width: min(420px, 100%);
-  background: rgb(255 255 255 / 0.94);
-  border: 1px solid rgb(15 20 25 / 0.08);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 1.5rem;
   padding: 1.5rem;
   display: grid;
   gap: 0.75rem;
   text-align: center;
+  box-shadow: var(--card-shadow);
+  color: var(--text-primary);
 }
 
 .eyebrow {
   margin: 0;
-  color: #536471;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 0.75rem;
@@ -29,13 +31,33 @@ p {
   margin: 0;
 }
 
+p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
 a {
   margin-top: 0.5rem;
   display: inline-flex;
   justify-content: center;
   padding: 0.9rem 1rem;
   border-radius: 999px;
-  background: #1d9bf0;
+  background: var(--brand-color);
   color: #fff;
   text-decoration: none;
+  font-weight: 600;
+}
+
+a:hover {
+  background: var(--brand-hover);
+}
+
+@media (width <= 480px) {
+  :host {
+    padding: 1rem;
+  }
+
+  .card {
+    padding: 1.25rem;
+  }
 }

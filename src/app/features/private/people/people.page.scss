@@ -22,8 +22,9 @@
 .hero-spotlight,
 .person-card,
 .fact-card {
-  border: 1px solid rgb(148 163 184 / 0.12);
-  background: rgb(2 6 23 / 0.26);
+  border: 1px solid var(--border-color);
+  background: var(--bg-card-inner);
+  color: var(--text-primary);
 }
 
 .hero-spotlight,
@@ -31,6 +32,12 @@
 .fact-card {
   border-radius: 1.25rem;
   padding: 1rem;
+}
+
+.hero-spotlight strong,
+.person-head h3,
+.fact-card strong {
+  color: var(--text-primary);
 }
 
 .spotlight-meta,
@@ -54,7 +61,11 @@
 .person-head p,
 .person-meta,
 .fact-card span {
-  color: rgb(226 232 240 / 0.72);
+  color: var(--text-secondary);
+}
+
+.person-biography {
+  color: var(--text-muted);
 }
 
 .people-grid {
@@ -82,14 +93,25 @@
   font-weight: 800;
 }
 
+.person-avatar-image {
+  object-fit: cover;
+  border: 2px solid var(--border-strong);
+  background: var(--bg-secondary);
+}
+
+.person-biography {
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
 .role-pill {
   display: inline-flex;
   align-items: center;
   padding: 0.3rem 0.7rem;
   border-radius: 999px;
-  background: rgb(15 23 42 / 0.7);
-  border: 1px solid rgb(148 163 184 / 0.14);
-  color: #cbd5e1;
+  background: var(--pill-bg);
+  border: 1px solid var(--border-color);
+  color: var(--pill-text);
   font-size: 0.82rem;
 }
 
@@ -100,6 +122,10 @@
 
 .fact-card {
   gap: 0.35rem;
+}
+
+.fact-card-wide {
+  grid-column: 1 / -1;
 }
 
 @media (width <= 960px) {

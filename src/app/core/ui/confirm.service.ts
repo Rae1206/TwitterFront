@@ -34,8 +34,8 @@ export class ConfirmService {
       title: options.title,
       message: options.message,
       details: options.details,
-      confirmLabel: options.confirmLabel ?? 'Confirm',
-      cancelLabel: options.cancelLabel ?? 'Cancel',
+      confirmLabel: options.confirmLabel ?? 'Confirmar',
+      cancelLabel: options.cancelLabel ?? 'Cancelar',
       tone: options.tone ?? 'default',
     });
 

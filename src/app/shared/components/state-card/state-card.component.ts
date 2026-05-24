@@ -39,8 +39,9 @@ type StateCardTone = 'loading' | 'error' | 'empty' | 'info';
       justify-items: start;
       padding: 1.35rem;
       border-radius: 1.5rem;
-      border: 1px solid rgb(148 163 184 / 0.18);
-      background: linear-gradient(180deg, rgb(15 23 42 / 0.9), rgb(15 23 42 / 0.72));
+      border: 1px solid var(--border-color);
+      background: var(--bg-card-inner);
+      color: var(--text-primary);
     }
 
     .state-icon {
@@ -49,7 +50,8 @@ type StateCardTone = 'loading' | 'error' | 'empty' | 'info';
       display: grid;
       place-items: center;
       border-radius: 999px;
-      background: rgb(255 255 255 / 0.06);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
       font-size: 1.2rem;
     }
 
@@ -65,16 +67,22 @@ type StateCardTone = 'loading' | 'error' | 'empty' | 'info';
 
     .state-copy h2 {
       font-size: 1.05rem;
+      color: var(--text-primary);
     }
 
     .state-copy p {
-      color: rgb(226 232 240 / 0.72);
+      color: var(--text-muted);
       line-height: 1.55;
     }
 
     .tone-error {
-      border-color: rgb(244 63 94 / 0.25);
-      background: linear-gradient(180deg, rgb(69 10 27 / 0.94), rgb(30 41 59 / 0.78));
+      border-color: var(--danger-border);
+      background: var(--danger-bg);
+    }
+
+    .tone-error .state-icon {
+      background: var(--danger-bg);
+      color: var(--danger-color);
     }
 
     .tone-empty {
