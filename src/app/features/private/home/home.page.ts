@@ -468,6 +468,10 @@ export class HomePage {
     this.resetForm();
   }
 
+  protected scrollToTop(): void {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   protected openRecorder(): void {
     this.isRecorderOpen.set(true);
   }
