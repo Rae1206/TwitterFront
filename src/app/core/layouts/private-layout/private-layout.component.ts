@@ -52,15 +52,18 @@ export class PrivateLayoutComponent {
 
   constructor() {
     effect(() => {
-      if (!this.sessionService.authenticated() || this.currentUser()) {
-        return;
-      }
+      const userId = this.sessionService.userId();
+      const loadedUserId = this.currentUser()?.userId;
 
-      void this.userStore.loadCurrentUser();
+      // Load (or reload) whenever authenticated userId changes
+      if (userId && userId !== loadedUserId) {
+        void this.userStore.loadCurrentUser(true);
+      }
     });
   }
 
   protected async logout(): Promise<void> {
+    this.userStore.clearCurrentUser();
     this.sessionService.clearSession();
     this.feedback.info('Tu sesión se cerró. ¡Hasta pronto!', { title: 'Sesión cerrada' });
     await this.router.navigate(['/login']);

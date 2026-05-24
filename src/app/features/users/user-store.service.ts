@@ -36,6 +36,10 @@ export class UserStoreService {
     }, 'No pudimos cargar el usuario actual.');
   }
 
+  clearCurrentUser(): void {
+    this.currentUserState.set(null);
+  }
+
   async loadUsers(): Promise<void> {
     await this.run(async () => {
       this.usersState.set(await firstValueFrom(this.usersApi.listUsers()));
