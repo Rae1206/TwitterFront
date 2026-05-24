@@ -7,6 +7,8 @@
     "start:dev": "ng serve",
     "build": "ng build",
     "build:prod": "ng build --configuration production",
+    "build:static": "ng build --configuration production",
+    "build:static:root": "ng build --configuration production --base-href /",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
