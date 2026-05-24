@@ -181,10 +181,19 @@
                                   #feedVideo
                                   [attr.src]="isFeedVideoLoaded(url | mediaUrl) ? (url | mediaUrl) : null"
                                   [attr.data-media-url]="url | mediaUrl"
+                                  autoplay
                                   controls
-                                  preload="none"
+                                  loop
+                                  muted
+                                  (volumechange)="syncFeedVideoSoundPreference(feedVideo)"
+                                  preload="metadata"
                                   playsinline
                                   class="post-video"></video>
+                                @if (!feedVideoSoundEnabled()) {
+                                  <button type="button" class="video-sound-toggle" (click)="enableFeedVideoSound($event, feedVideo)">
+                                    Activar sonido
+                                  </button>
+                                }
                               } @else if (getMediaType(url) === 'audio') {
                                 <div class="audio-container" (click)="$event.stopPropagation()">
                                   <app-audio-player [src]="url | mediaUrl" />
@@ -262,10 +271,19 @@
                                         #feedVideo
                                         [attr.src]="isFeedVideoLoaded(url | mediaUrl) ? (url | mediaUrl) : null"
                                         [attr.data-media-url]="url | mediaUrl"
+                                        autoplay
                                         controls
-                                        preload="none"
+                                        loop
+                                        muted
+                                        (volumechange)="syncFeedVideoSoundPreference(feedVideo)"
+                                        preload="metadata"
                                         playsinline
                                         class="post-video"></video>
+                                      @if (!feedVideoSoundEnabled()) {
+                                        <button type="button" class="video-sound-toggle" (click)="enableFeedVideoSound($event, feedVideo)">
+                                          Activar sonido
+                                        </button>
+                                      }
                                     } @else if (getMediaType(url) === 'audio') {
                                       <div class="audio-container" (click)="$event.stopPropagation()">
                                         <app-audio-player [src]="url | mediaUrl" />
@@ -311,10 +329,19 @@
                                 #feedVideo
                                 [attr.src]="isFeedVideoLoaded(url | mediaUrl) ? (url | mediaUrl) : null"
                                 [attr.data-media-url]="url | mediaUrl"
+                                autoplay
                                 controls
-                                preload="none"
+                                loop
+                                muted
+                                (volumechange)="syncFeedVideoSoundPreference(feedVideo)"
+                                preload="metadata"
                                 playsinline
                                 class="post-video"></video>
+                              @if (!feedVideoSoundEnabled()) {
+                                <button type="button" class="video-sound-toggle" (click)="enableFeedVideoSound($event, feedVideo)">
+                                  Activar sonido
+                                </button>
+                              }
                             } @else if (getMediaType(url) === 'audio') {
                               <div class="audio-container" (click)="$event.stopPropagation()">
                                 <app-audio-player [src]="url | mediaUrl" />

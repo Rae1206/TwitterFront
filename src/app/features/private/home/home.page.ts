@@ -44,6 +44,7 @@ export class HomePage {
   readonly attachments = signal<MediaAttachment[]>([]);
   readonly uploadingFile = signal(false);
   readonly loadedFeedVideoUrls = signal<Record<string, true>>({});
+  readonly feedVideoSoundEnabled = signal(false);
 
   readonly posts = this.postStore.posts;
   readonly loading = this.postStore.loading;
@@ -143,6 +144,7 @@ export class HomePage {
           const mediaUrl = nativeElement.dataset['mediaUrl'];
           if (mediaUrl) {
             this.markFeedVideoAsLoaded(mediaUrl);
+            this.updateFeedVideoPlayback(nativeElement, true);
           }
         });
         return;
@@ -151,15 +153,15 @@ export class HomePage {
       const observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
-            if (!entry.isIntersecting) {
-              return;
-            }
+            const video = entry.target as HTMLVideoElement;
+            const isVisible = entry.isIntersecting && entry.intersectionRatio >= 0.15;
 
-            const mediaUrl = (entry.target as HTMLVideoElement).dataset['mediaUrl'];
-            if (mediaUrl) {
+            const mediaUrl = video.dataset['mediaUrl'];
+            if (mediaUrl && isVisible) {
               this.markFeedVideoAsLoaded(mediaUrl);
             }
-            observer.unobserve(entry.target);
+
+            this.updateFeedVideoPlayback(video, isVisible);
           });
         },
         {
@@ -170,7 +172,7 @@ export class HomePage {
 
       videos.forEach(({ nativeElement }) => {
         const mediaUrl = nativeElement.dataset['mediaUrl'];
-        if (!mediaUrl || this.isFeedVideoLoaded(mediaUrl)) {
+        if (!mediaUrl) {
           return;
         }
 
@@ -734,6 +736,19 @@ export class HomePage {
     return Boolean(this.loadedFeedVideoUrls()[url]);
   }
 
+  protected enableFeedVideoSound(event: MouseEvent, video: HTMLVideoElement): void {
+    event.stopPropagation();
+    this.feedVideoSoundEnabled.set(true);
+    this.applyFeedVideoSoundPreference(video, true);
+    void video.play().catch(() => {
+      // Ignore playback errors triggered by browser policy changes.
+    });
+  }
+
+  protected syncFeedVideoSoundPreference(video: HTMLVideoElement): void {
+    this.feedVideoSoundEnabled.set(!video.muted);
+  }
+
   private markFeedVideoAsLoaded(url: string): void {
     this.loadedFeedVideoUrls.update((loaded) => {
       if (loaded[url]) {
@@ -745,6 +760,49 @@ export class HomePage {
         [url]: true,
       };
     });
+  }
+
+  private updateFeedVideoPlayback(video: HTMLVideoElement, shouldPlay: boolean): void {
+    if (!shouldPlay) {
+      video.pause();
+      return;
+    }
+
+    this.playFeedVideo(video);
+  }
+
+  private playFeedVideo(video: HTMLVideoElement, attempt = 0): void {
+    if (!video.isConnected) {
+      return;
+    }
+
+    const hasSource = Boolean(video.currentSrc || video.getAttribute('src'));
+    if (!hasSource) {
+      if (attempt >= 4) {
+        return;
+      }
+
+      requestAnimationFrame(() => this.playFeedVideo(video, attempt + 1));
+      return;
+    }
+
+    const shouldEnableSound = this.feedVideoSoundEnabled();
+    this.applyFeedVideoSoundPreference(video, shouldEnableSound);
+
+    void video.play().catch(() => {
+      if (shouldEnableSound) {
+        this.feedVideoSoundEnabled.set(false);
+        this.applyFeedVideoSoundPreference(video, false);
+        void video.play().catch(() => {
+          // Ignore autoplay rejections; the controls remain available for manual playback.
+        });
+      }
+    });
+  }
+
+  private applyFeedVideoSoundPreference(video: HTMLVideoElement, enableSound: boolean): void {
+    video.muted = !enableSound;
+    video.defaultMuted = !enableSound;
   }
 
   protected getAbsoluteMediaUrl(url: string): string {
