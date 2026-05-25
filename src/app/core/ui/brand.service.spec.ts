@@ -38,6 +38,7 @@ describe('BrandService', () => {
     });
   });
 
+  // Test que valida el estado inicial del acento y la conversión hexadecimal a RGBA.
   it('exposes a default empty accent and normalizes hex via toRgba', () => {
     const service = TestBed.inject(BrandService);
 
@@ -48,12 +49,14 @@ describe('BrandService', () => {
     expect(service.toRgba('#1d9bf0', 0.32)).toBe('rgba(29, 155, 240, 0.32)');
   });
 
+  // Test que valida que un color inválido se devuelva sin transformaciones.
   it('returns the original value when hex cannot be parsed', () => {
     const service = TestBed.inject(BrandService);
 
     expect(service.toRgba('not-a-color', 0.4)).toBe('not-a-color');
   });
 
+  // Test que valida la aplicación y persistencia de variables CSS al definir un acento.
   it('applies CSS custom properties and persists when an accent is set', () => {
     const service = TestBed.inject(BrandService);
 
@@ -68,6 +71,7 @@ describe('BrandService', () => {
     expect(storage.getItem(STORAGE_KEY)).toBe('#ef4444');
   });
 
+  // Test que valida el rechazo de hexadecimales malformados sin cambiar el estado.
   it('rejects malformed hex values without changing state', () => {
     const service = TestBed.inject(BrandService);
 
@@ -79,6 +83,7 @@ describe('BrandService', () => {
     expect(storage.getItem(STORAGE_KEY)).toBeNull();
   });
 
+  // Test que valida la limpieza de estilos y almacenamiento al resetear el acento.
   it('clears the overrides and storage on reset', () => {
     const service = TestBed.inject(BrandService);
 
@@ -95,6 +100,7 @@ describe('BrandService', () => {
     expect(storage.getItem(STORAGE_KEY)).toBeNull();
   });
 
+  // Test que valida la hidratación del acento desde localStorage al construir el servicio.
   it('hydrates the accent from storage on construction', () => {
     storage.setItem(STORAGE_KEY, '#3b82f6');
 

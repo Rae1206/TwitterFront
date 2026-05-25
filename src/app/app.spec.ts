@@ -11,12 +11,14 @@ describe('App', () => {
     }).compileComponents();
   });
 
+  // Test que valida que el componente raíz se cree correctamente.
   it('should create the app', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
     expect(app).toBeTruthy();
   });
 
+  // Test que valida que el shell raíz renderice el router outlet.
   it('should render the router outlet shell', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();

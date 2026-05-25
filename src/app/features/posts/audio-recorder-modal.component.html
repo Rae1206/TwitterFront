@@ -1,0 +1,88 @@
+<div class="modal-backdrop" (click)="cancel()">
+  <section
+    class="modal-container surface-card audio-recorder-modal"
+    (click)="$event.stopPropagation()"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="audio-recorder-title"
+  >
+    <header class="modal-header">
+      <div>
+        <p class="eyebrow">Audio</p>
+        <h3 id="audio-recorder-title">Grabar audio</h3>
+      </div>
+      <button type="button" class="close-modal-btn" (click)="cancel()" aria-label="Cerrar">&times;</button>
+    </header>
+
+    <div class="recorder-body">
+      @switch (recorder.state()) {
+        @case ('idle') {
+          <div class="recorder-stage idle-stage">
+            <p class="recorder-hint">Toca el micrófono para empezar a grabar.</p>
+            <button type="button" class="record-btn" (click)="start()" aria-label="Empezar a grabar">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z" />
+              </svg>
+            </button>
+            <span class="recorder-meta">Hasta {{ maxLabel }}</span>
+          </div>
+        }
+
+        @case ('requesting') {
+          <div class="recorder-stage">
+            <p class="recorder-status">Esperando permiso del micrófono...</p>
+          </div>
+        }
+
+        @case ('recording') {
+          <div class="recorder-stage recording-stage">
+            <span class="recorder-pulse" aria-hidden="true"></span>
+            <p class="recorder-elapsed">{{ recorder.elapsedLabel() }}</p>
+            <p class="recorder-meta">Quedan {{ recorder.remainingLabel() }}</p>
+            <button type="button" class="stop-btn" (click)="stop()" aria-label="Detener grabación">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" />
+              </svg>
+            </button>
+          </div>
+        }
+
+        @case ('recorded') {
+          <div class="recorder-stage recorded-stage">
+            @if (recorder.recordedUrl(); as url) {
+              <app-audio-player [src]="url" />
+            }
+            <p class="recorder-meta">Duración: {{ recorder.elapsedLabel() }}</p>
+          </div>
+        }
+
+        @case ('denied') {
+          <div class="recorder-stage error-stage">
+            <p class="recorder-status">{{ recorder.errorMessage() || 'Permiso de micrófono denegado.' }}</p>
+            <p class="recorder-meta">Habilita el micrófono en la configuración del navegador y vuelve a intentar.</p>
+          </div>
+        }
+
+        @case ('error') {
+          <div class="recorder-stage error-stage">
+            <p class="recorder-status">{{ recorder.errorMessage() || 'No pudimos acceder al micrófono.' }}</p>
+          </div>
+        }
+      }
+    </div>
+
+    <div class="button-row recorder-actions">
+      @if (recorder.state() === 'recorded') {
+        <button type="button" class="primary-action" (click)="confirm()">Usar grabación</button>
+        <button type="button" class="secondary-action" (click)="reset()">Volver a grabar</button>
+      } @else if (recorder.state() === 'denied' || recorder.state() === 'error') {
+        <button type="button" class="primary-action" (click)="reset()">Reintentar</button>
+        <button type="button" class="secondary-action" (click)="cancel()">Cancelar</button>
+      } @else if (recorder.state() === 'recording') {
+        <button type="button" class="secondary-action" (click)="cancel()">Cancelar</button>
+      } @else {
+        <button type="button" class="secondary-action" (click)="cancel()">Cancelar</button>
+      }
+    </div>
+  </section>
+</div>

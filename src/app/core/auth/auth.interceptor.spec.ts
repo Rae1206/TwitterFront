@@ -40,6 +40,7 @@ describe('authInterceptor', () => {
     });
   });
 
+  // Test que valida la renovación de sesión y el reintento de la request fallida.
   it('renews the session and retries the failed request once', async () => {
     const renewedSession = createAuthResponse('renewed-token', 'refresh-token-2');
     const request = new HttpRequest('GET', '/api/post/list');
@@ -69,6 +70,7 @@ describe('authInterceptor', () => {
     expect(next).toHaveBeenCalledTimes(2);
   });
 
+  // Test que valida el cierre de sesión cuando no hay refresh token ante un 401.
   it('clears the session when a 401 happens without a refresh token', async () => {
     const request = new HttpRequest('GET', '/api/post/list');
     sessionService.getRefreshToken.mockReturnValue(null);
@@ -84,6 +86,7 @@ describe('authInterceptor', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/login']);
   });
 
+  // Test que valida que las requests a DigitalOcean Spaces no usen bearer ni refresh.
   it('skips bearer auth and refresh for DigitalOcean Spaces requests', async () => {
     const request = new HttpRequest(
       'GET',

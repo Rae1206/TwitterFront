@@ -1,0 +1,51 @@
+<div class="accent-picker" [class.is-open]="open()">
+  <button
+    type="button"
+    class="accent-trigger"
+    [style.background]="triggerBackground()"
+    [attr.aria-label]="'Personalizar color de bordes'"
+    [attr.aria-expanded]="open()"
+    [attr.aria-haspopup]="'dialog'"
+    title="Personalizar color de bordes"
+    (click)="toggle()"
+  >
+    <span class="visually-hidden">Personalizar color</span>
+  </button>
+
+  @if (open()) {
+    <div class="accent-popover" role="dialog" aria-label="Selector de color de bordes">
+      <div class="accent-popover-head">
+        <strong>Color de bordes</strong>
+        <p>Aplica el color a todos los bordes de la app sin tocar el fondo.</p>
+      </div>
+
+      <div class="accent-swatches" role="group" aria-label="Colores predefinidos">
+        @for (entry of palette; track entry.id) {
+          <button
+            type="button"
+            class="accent-swatch"
+            [class.selected]="currentColor() === entry.value"
+            [style.background-color]="entry.value"
+            [attr.aria-label]="entry.label"
+            [attr.aria-pressed]="currentColor() === entry.value"
+            [title]="entry.label"
+            (click)="apply(entry.value)"
+          ></button>
+        }
+      </div>
+
+      <label class="accent-custom">
+        <span>Personalizado</span>
+        <input
+          type="color"
+          [value]="currentColor() || '#1d9bf0'"
+          (input)="apply($any($event.target).value)"
+        />
+      </label>
+
+      <button type="button" class="accent-reset" (click)="reset()">
+        Restablecer al tema
+      </button>
+    </div>
+  }
+</div>

@@ -193,11 +193,6 @@ export class ProfilePage {
     this.profileSaveMessage.set('Perfil actualizado correctamente.');
     this.clearPendingAvatar();
     this.editProfileOpen.set(false);
-    
-    // Recarga automática de la página tras 1 segundo para refrescar todo el layout
-    setTimeout(() => {
-      window.location.reload();
-    }, 1000);
   }
 
   protected stageAvatar(event: Event): void {

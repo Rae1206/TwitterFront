@@ -94,10 +94,6 @@ export class SettingsProfilePage {
       if (!updatedAvatarUser) {
         this.successMessage.set('Perfil actualizado correctamente.');
         this.avatarMessage.set('Los cambios se guardaron, pero la subida de la foto falló.');
-        
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
         return;
       }
 
@@ -106,10 +102,6 @@ export class SettingsProfilePage {
 
     this.successMessage.set('Perfil actualizado correctamente.');
     this.clearPendingAvatar();
-    
-    setTimeout(() => {
-      window.location.reload();
-    }, 1000);
   }
 
   protected stageAvatar(event: Event): void {

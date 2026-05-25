@@ -30,6 +30,7 @@ describe('SessionService', () => {
     });
   });
 
+  // Test que valida la hidratación de una sesión existente desde localStorage.
   it('hydrates an existing session from storage', () => {
     const response = createAuthResponse({ role: 'Admin', userId: '42' });
 
@@ -44,6 +45,7 @@ describe('SessionService', () => {
     expect(service.getRefreshToken()).toBe('refresh-token');
   });
 
+  // Test que valida que startSession guarde tokens y claims derivados del JWT.
   it('startSession stores tokens and derived claims', () => {
     const service = TestBed.inject(SessionService);
     const response = createAuthResponse({ role: 'User', userId: '7' }, 'refresh-7');
@@ -58,6 +60,7 @@ describe('SessionService', () => {
     expect(storage.getItem('twitter.refresh_token')).toBe('refresh-7');
   });
 
+  // Test que valida que clearSession elimine el estado de sesión y el almacenamiento.
   it('clearSession removes session state and storage', () => {
     const service = TestBed.inject(SessionService);
 

@@ -1,0 +1,180 @@
+:host {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: block;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgba(15, 23, 42, 0.66);
+  backdrop-filter: blur(12px);
+  z-index: 1200;
+}
+
+.modal-container {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 1.5rem;
+  padding: 1.25rem;
+  box-shadow: var(--card-shadow);
+  backdrop-filter: blur(16px);
+  max-height: min(92dvh, 800px);
+  overflow: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.modal-header h3 {
+  margin: 0.25rem 0 0;
+  color: var(--text-primary);
+}
+
+.modal-header .eyebrow {
+  margin: 0;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+}
+
+.close-modal-btn {
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.audio-recorder-modal {
+  width: min(440px, 100%);
+  display: grid;
+  gap: 1rem;
+}
+
+.recorder-body {
+  display: grid;
+  place-items: center;
+  min-height: 14rem;
+  padding: 1rem 0;
+}
+
+.recorder-stage {
+  display: grid;
+  gap: 0.75rem;
+  place-items: center;
+  text-align: center;
+}
+
+.recorder-hint,
+.recorder-status,
+.recorder-meta,
+.recorder-elapsed {
+  margin: 0;
+}
+
+.recorder-hint,
+.recorder-meta {
+  color: var(--text-secondary);
+}
+
+.recorder-status {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.recorder-elapsed {
+  font-size: 2.5rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.05em;
+}
+
+.record-btn,
+.stop-btn {
+  width: 5rem;
+  height: 5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 0;
+  cursor: pointer;
+  color: #fff;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.record-btn {
+  background: #ef4444;
+  box-shadow: 0 6px 24px rgb(239 68 68 / 0.32);
+}
+
+.record-btn:hover {
+  transform: scale(1.04);
+}
+
+.stop-btn {
+  background: #1d9bf0;
+  box-shadow: 0 6px 24px rgb(29 155 240 / 0.32);
+}
+
+.stop-btn:hover {
+  transform: scale(1.04);
+}
+
+.record-btn svg,
+.stop-btn svg {
+  width: 2rem;
+  height: 2rem;
+}
+
+.recorder-pulse {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  background: #ef4444;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(1.4);
+  }
+}
+
+.recorder-audio {
+  width: 100%;
+  max-width: 100%;
+}
+
+.recording-stage,
+.recorded-stage {
+  gap: 1rem;
+}
+
+.error-stage .recorder-status {
+  color: #ef4444;
+}
+
+.recorder-actions {
+  justify-content: flex-end;
+}

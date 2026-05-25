@@ -10,6 +10,7 @@ describe('ConfirmService', () => {
     service = TestBed.inject(ConfirmService);
   });
 
+  // Test que valida que la confirmación aprobada resuelva true y cierre el diálogo.
   it('should resolve true when approved', async () => {
     const pending = service.confirm({
       title: 'Delete post',
@@ -25,6 +26,7 @@ describe('ConfirmService', () => {
     expect(service.dialog()).toBeNull();
   });
 
+  // Test que valida que un nuevo diálogo cancele el anterior y mantenga el actual.
   it('should resolve the previous dialog as false when replaced', async () => {
     const first = service.confirm({ title: 'First', message: 'First message' });
     const second = service.confirm({ title: 'Second', message: 'Second message' });

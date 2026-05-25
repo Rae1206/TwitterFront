@@ -1,0 +1,44 @@
+<button
+  type="button"
+  class="play-btn"
+  (click)="toggle($event)"
+  [attr.aria-label]="isPlaying() ? 'Pausar' : 'Reproducir'"
+>
+  @if (isPlaying()) {
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M8 5h3v14H8zM13 5h3v14h-3z" />
+    </svg>
+  } @else {
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M8 5v14l11-7z" />
+    </svg>
+  }
+</button>
+
+<div
+  class="track"
+  role="slider"
+  tabindex="0"
+  [attr.aria-valuemin]="0"
+  [attr.aria-valuemax]="duration() || 0"
+  [attr.aria-valuenow]="currentTime()"
+  (click)="seek($event)"
+  (keydown)="onKeydown($event)"
+>
+  <div class="track-fill" [style.width.%]="progressPercent()"></div>
+  <span class="track-thumb" [style.left.%]="progressPercent()" aria-hidden="true"></span>
+</div>
+
+<span class="time">{{ timeLabel() }}</span>
+
+<audio
+  #audio
+  [src]="src()"
+  preload="metadata"
+  (timeupdate)="onTimeUpdate()"
+  (loadedmetadata)="onLoadedMetadata()"
+  (durationchange)="onLoadedMetadata()"
+  (ended)="onEnded()"
+  (play)="isPlaying.set(true)"
+  (pause)="isPlaying.set(false)"
+></audio>

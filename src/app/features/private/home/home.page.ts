@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, effect, inject, signal, viewChild, viewChildren } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, signal, viewChild, viewChildren } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
@@ -31,6 +31,9 @@ type MediaType = MediaAttachment['type'];
   selector: 'app-home-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DatePipe, ReactiveFormsModule, StateCardComponent, UserAvatarComponent, AudioRecorderModalComponent, AudioPlayerComponent, MediaUrlPipe],
+  host: {
+    '(document:click)': 'closeAllMenus()',
+  },
   templateUrl: './home.page.html',
   styleUrl: './home.page.scss',
 })
@@ -185,7 +188,6 @@ export class HomePage {
     });
   }
 
-  @HostListener('document:click')
   protected closeAllMenus(): void {
     this.activeRetweetMenu.set(null);
     this.activePostMenu.set(null);

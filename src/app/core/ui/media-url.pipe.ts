@@ -7,7 +7,7 @@ import { environment } from '../../../environments/environment';
  * Being a pure pipe, Angular memoizes the result per unique input,
  * eliminating repeated HTTP requests caused by template method calls.
  */
-@Pipe({ name: 'mediaUrl', pure: true, standalone: true })
+@Pipe({ name: 'mediaUrl', pure: true })
 export class MediaUrlPipe implements PipeTransform {
   transform(url: string | null | undefined): string {
     if (!url) return '';

@@ -101,7 +101,6 @@ export class PostStoreService {
       this.feedback.info(updated.isPublished ? 'La publicación ahora está publicada.' : 'La publicación volvió a borradores.', {
         title: updated.isPublished ? 'Publicada' : 'Guardada como borrador',
       });
-      setTimeout(() => window.location.reload(), 800);
       return updated;
     }, 'No pudimos cambiar el estado de publicación.');
   }
@@ -113,7 +112,6 @@ export class PostStoreService {
       await firstValueFrom(this.postsApi.deletePost(id));
       this.postsState.update((posts) => posts.filter((post) => post.postId !== id));
       this.feedback.success('La publicación se quitó del feed.', { title: 'Publicación eliminada' });
-      setTimeout(() => window.location.reload(), 800);
       return true;
     } catch (error) {
       const message = getErrorMessage(error, 'No pudimos eliminar la publicación.');

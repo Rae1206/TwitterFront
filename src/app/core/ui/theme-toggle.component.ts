@@ -4,7 +4,6 @@ import { ThemeService } from './theme.service';
 
 @Component({
   selector: 'app-theme-toggle',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <button

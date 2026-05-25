@@ -27,6 +27,7 @@ describe('SettingsPasswordPage', () => {
     }).compileComponents();
   });
 
+  // Test que valida que el formulario sea inválido cuando las contraseñas no coinciden.
   it('marks the form invalid when passwords do not match', () => {
     const fixture = TestBed.createComponent(SettingsPasswordPage);
     const component = fixture.componentInstance;
