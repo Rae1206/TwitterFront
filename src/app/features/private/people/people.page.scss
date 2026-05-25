@@ -22,7 +22,7 @@
 .hero-spotlight,
 .person-card,
 .fact-card {
-  border: 1px solid var(--border-color);
+  border: 2px solid var(--border-color);
   background: var(--bg-card-inner);
   color: var(--text-primary);
 }
@@ -89,7 +89,6 @@
   place-items: center;
   border-radius: 999px;
   background: linear-gradient(180deg, rgb(29 155 240), rgb(14 116 144));
-  color: white;
   font-weight: 800;
 }
 
@@ -110,7 +109,7 @@
   padding: 0.3rem 0.7rem;
   border-radius: 999px;
   background: var(--pill-bg);
-  border: 1px solid var(--border-color);
+  border: 1.5px solid var(--border-color);
   color: var(--pill-text);
   font-size: 0.82rem;
 }

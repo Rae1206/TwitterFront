@@ -48,8 +48,10 @@ export class PostsApiService {
     return this.api.post<PostDto, { content: string }>(`/api/post/${id}/comment`, payload);
   }
 
-  createRetweet(id: string, payload: { content: string | null }): Observable<PostDto> {
-    return this.api.post<PostDto, { content: string | null }>(`/api/post/${id}/retweet`, payload);
+  createRetweet(id: string, payload: { content?: string }): Observable<PostDto> {
+    // Omit 'content' entirely for plain retweets to avoid backend validation errors
+    const body = payload.content ? { content: payload.content } : {};
+    return this.api.post<PostDto, { content?: string }>(`/api/post/${id}/retweet`, body);
   }
 
   deletePost(id: string): Observable<JsonRecord> {

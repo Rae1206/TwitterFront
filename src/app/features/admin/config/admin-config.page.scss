@@ -25,7 +25,7 @@
 .entry-card {
   padding: 1rem;
   border-radius: 1.1rem;
-  border: 1px solid var(--border-color);
+  border: 2px solid var(--border-color);
   background: var(--bg-card-inner);
   color: var(--text-primary);
 }
@@ -50,7 +50,7 @@
   padding: 0.85rem;
   border-radius: 0.9rem;
   background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  border: 1.5px solid var(--border-color);
   font-size: 0.82rem;
   color: var(--text-primary);
 }

@@ -28,7 +28,9 @@
         <strong>{{ user.fullName || 'Usuario' }}</strong>
         <p>{{ user.biography || 'Sin biografía.' }}</p>
         <div class="spotlight-meta">
-          <span class="chip" [class.warn]="statusLabel(user) !== 'Verificado' && statusLabel(user) !== 'Activo'">{{ statusLabel(user) }}</span>
+          @if (statusLabel(user) !== 'Activo') {
+            <span class="chip" [class.warn]="statusLabel(user) !== 'Verificado'">{{ statusLabel(user) }}</span>
+          }
         </div>
       } @else {
         <strong>Aún no hay perfiles</strong>
@@ -74,7 +76,7 @@
         <button type="button" class="search-bar-clear" (click)="clearSearch()" aria-label="Limpiar búsqueda">×</button>
       }
     </div>
-
+    <br>
     @if (loading() && !users().length) {
       <app-state-card
         tone="loading"
@@ -110,7 +112,9 @@
                 <p class="person-biography">{{ user.biography || 'Sin biografía.' }}</p>
               </div>
 
-              <span class="chip" [class.warn]="statusLabel(user) !== 'Verificado' && statusLabel(user) !== 'Activo'">{{ statusLabel(user) }}</span>
+              @if (statusLabel(user) !== 'Activo') {
+                <span class="chip" [class.warn]="statusLabel(user) !== 'Verificado'">{{ statusLabel(user) }}</span>
+              }
             </div>
 
             <div class="role-row">
@@ -150,10 +154,6 @@
       </header>
 
       <div class="fact-grid">
-        <article class="fact-card">
-          <span>Estado</span>
-          <strong>{{ statusLabel(user) }}</strong>
-        </article>
         <article class="fact-card">
           <span>Correo</span>
           <strong>{{ user.email || 'Sin correo' }}</strong>

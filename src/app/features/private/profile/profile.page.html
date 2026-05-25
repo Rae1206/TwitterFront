@@ -15,9 +15,6 @@
           <p class="identity-biography">{{ biographyPreview() }}</p>
         </div>
 
-        <div class="identity-state">
-          <span class="chip" [class.warn]="statusLabel() !== 'Verificado' && statusLabel() !== 'Activo'">{{ statusLabel() }}</span>
-        </div>
       </div>
 
       <div class="summary-grid">
@@ -68,10 +65,6 @@
             <span>Se unió</span>
             <strong>{{ (joinedLabel() | date: 'mediumDate') || '—' }}</strong>
           </article>
-          <article class="fact-card">
-            <span>Estado</span>
-            <strong>{{ statusLabel() }}</strong>
-          </article>
           <article class="fact-card biography-card">
             <span>Biografía</span>
             <strong>{{ biographyPreview() }}</strong>
@@ -101,7 +94,9 @@
         @for (post of posts(); track trackPost($index, post)) {
           <article class="inline-post clickable-post" (click)="openDetailModal(post)">
             <div class="inline-post-head">
-              <span class="chip" [class.warn]="!post.isPublished">{{ post.isPublished ? 'Publicado' : 'Borrador' }}</span>
+              @if (isOwnPost(post)) {
+                <span class="chip" [class.warn]="!post.isPublished">{{ post.isPublished ? 'Publicado' : 'Borrador' }}</span>
+              }
               <span>{{ (postDateLabel(post) | date: 'medium') || 'Sin fecha' }}</span>
             </div>
             @if (post.content) {

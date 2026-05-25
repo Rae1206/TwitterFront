@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, effect, inject, signal, viewChildren } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, effect, inject, signal, viewChild, viewChildren } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
@@ -41,6 +41,7 @@ export class HomePage {
   private readonly confirm = inject(ConfirmService);
   private readonly sessionService = inject(SessionService);
   private readonly feedVideos = viewChildren<ElementRef<HTMLVideoElement>>('feedVideo');
+  private readonly composerSection = viewChild<ElementRef<HTMLElement>>('composerSection');
   readonly attachments = signal<MediaAttachment[]>([]);
   readonly uploadingFile = signal(false);
   readonly loadedFeedVideoUrls = signal<Record<string, true>>({});
@@ -58,7 +59,8 @@ export class HomePage {
   readonly openComments = signal<Record<string, boolean>>({});
   readonly originalPostsCache = signal<Record<string, PostDto>>({});
   readonly activeRetweetMenu = signal<string | null>(null);
-  
+  readonly activePostMenu = signal<string | null>(null);
+
   readonly isQuoteModalOpen = signal(false);
   readonly postToQuote = signal<PostDto | null>(null);
   
@@ -186,6 +188,17 @@ export class HomePage {
   @HostListener('document:click')
   protected closeAllMenus(): void {
     this.activeRetweetMenu.set(null);
+    this.activePostMenu.set(null);
+  }
+
+  protected togglePostMenu(postId: string | undefined, event: Event): void {
+    if (!postId) return;
+    event.stopPropagation();
+    if (this.activePostMenu() === postId) {
+      this.activePostMenu.set(null);
+    } else {
+      this.activePostMenu.set(postId);
+    }
   }
 
   protected async submit(): Promise<void> {
@@ -263,6 +276,17 @@ export class HomePage {
       });
     }
     this.attachments.set(list);
+
+    // Close any open detail modal so the user sees the composer
+    this.closeDetailModal();
+
+    // Scroll to the composer area after the DOM updates
+    requestAnimationFrame(() => {
+      const el = this.composerSection()?.nativeElement;
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
   }
 
   protected cancelEdit(): void {
@@ -427,7 +451,12 @@ export class HomePage {
     const postId = post.postId;
     if (!postId) return;
     this.activeRetweetMenu.set(null);
-    await this.postStore.retweet(postId, null);
+    
+    if (this.isRetweeted(postId)) {
+      await this.postStore.unretweet(postId);
+    } else {
+      await this.postStore.retweet(postId, null);
+    }
   }
 
   protected openQuoteModal(post: PostDto): void {

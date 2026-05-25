@@ -7,10 +7,6 @@
 
       <div class="summary-grid">
         <article class="metric-card">
-          <strong>{{ statusLabel() }}</strong>
-          <p>Estado de la cuenta</p>
-        </article>
-        <article class="metric-card">
           <strong>{{ currentUser()?.email || '—' }}</strong>
           <p>Correo</p>
         </article>
@@ -22,7 +18,6 @@
       <app-user-avatar class="spotlight-avatar" [user]="currentUser()" />
       <strong>{{ currentUser()?.fullName || 'Cargando...' }}</strong>
       <p>{{ biographyPreview() }}</p>
-      <span class="chip" [class.warn]="statusLabel() !== 'Verificado' && statusLabel() !== 'Activo'">{{ statusLabel() }}</span>
     </aside>
   </header>
 
@@ -106,10 +101,6 @@
           </header>
 
           <div class="fact-grid">
-            <article class="fact-card">
-              <span>Estado</span>
-              <strong>{{ statusLabel() }}</strong>
-            </article>
             <article class="fact-card">
               <span>Roles</span>
               <strong>{{ rolesLabel() }}</strong>

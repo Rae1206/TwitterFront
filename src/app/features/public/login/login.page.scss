@@ -41,7 +41,7 @@ input {
   width: 100%;
   padding: 0.85rem 1rem;
   border-radius: 0.85rem;
-  border: 1px solid var(--border-color);
+  border: 2px solid var(--border-color);
   background: var(--bg-secondary);
   font: inherit;
   color: var(--text-primary);
@@ -69,7 +69,7 @@ a {
   width: 100%;
   padding: 0.95rem 1rem;
   border-radius: 999px;
-  border: 1px solid var(--border-color);
+  border: 1.5px solid var(--border-color);
   background: var(--bg-card);
   color: var(--text-primary);
   text-align: center;

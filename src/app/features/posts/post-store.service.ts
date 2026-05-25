@@ -19,6 +19,7 @@ export class PostStoreService {
   private readonly errorState = signal<string | null>(null);
   private readonly likedPostsState = signal<Record<string, boolean>>({});
   private readonly retweetedPostsState = signal<Record<string, boolean>>({});
+  private readonly retweetIdsState = signal<Record<string, string>>({});
 
   readonly posts = this.postsState.asReadonly();
   readonly loading = this.loadingState.asReadonly();
@@ -190,10 +191,13 @@ export class PostStoreService {
 
   async retweet(postId: string, content: string | null): Promise<PostDto | null> {
     return this.save(async () => {
-      const response = await firstValueFrom(this.postsApi.createRetweet(postId, { content }));
+      const response = await firstValueFrom(this.postsApi.createRetweet(postId, { content: content ?? undefined }));
       if (response) {
         this.postsState.update(posts => [response, ...posts]);
         this.retweetedPostsState.update(prev => ({ ...prev, [postId]: true }));
+        if (response.postId) {
+          this.retweetIdsState.update(prev => ({ ...prev, [postId]: response.postId! }));
+        }
         this.persistInteractions();
 
         // Increment original post retweets count locally
@@ -213,6 +217,66 @@ export class PostStoreService {
       }
       return response;
     }, 'No pudimos compartir la publicación.');
+  }
+
+  async unretweet(postId: string): Promise<boolean> {
+    const retweetId = this.retweetIdsState()[postId];
+    if (!retweetId) {
+      // Fallback: try to find the retweet in current posts
+      const userId = this.sessionService.userId();
+      const found = this.postsState().find(p => 
+        p.retweetOfPostId === postId && p.userId === userId && !p.content
+      );
+      if (!found?.postId) {
+        this.feedback.error('No se encontró la publicación compartida para eliminar.', { title: 'Error' });
+        return false;
+      }
+    }
+
+    const idToDelete = retweetId || this.postsState().find(p => 
+      p.retweetOfPostId === postId && p.userId === this.sessionService.userId() && !p.content
+    )?.postId;
+
+    if (!idToDelete) return false;
+
+    try {
+      this.savingState.set(true);
+      this.errorState.set(null);
+      await firstValueFrom(this.postsApi.deletePost(idToDelete));
+      
+      this.postsState.update(posts => posts.filter(p => p.postId !== idToDelete));
+      this.retweetedPostsState.update(prev => {
+        const next = { ...prev };
+        delete next[postId];
+        return next;
+      });
+      this.retweetIdsState.update(prev => {
+        const next = { ...prev };
+        delete next[postId];
+        return next;
+      });
+      this.persistInteractions();
+
+      // Decrement original post retweets count locally
+      this.postsState.update(posts =>
+        posts.map(p => {
+          if (p.postId === postId) {
+            return { ...p, retweetsCount: Math.max(0, (p.retweetsCount ?? 0) - 1) };
+          }
+          return p;
+        })
+      );
+
+      this.feedback.success('Se quitó la publicación compartida.', { title: 'Compartida eliminada' });
+      return true;
+    } catch (error) {
+      const message = getErrorMessage(error, 'No pudimos quitar la publicación compartida.');
+      this.errorState.set(message);
+      this.feedback.error(message, { title: 'Error al quitar' });
+      return false;
+    } finally {
+      this.savingState.set(false);
+    }
   }
 
   private patchPost(post: PostDto): void {
@@ -250,6 +314,10 @@ export class PostStoreService {
       if (retweeted) {
         this.retweetedPostsState.set(JSON.parse(retweeted));
       }
+      const retweetIds = localStorage.getItem(`retweet_ids_${userId}`);
+      if (retweetIds) {
+        this.retweetIdsState.set(JSON.parse(retweetIds));
+      }
     } catch {
       // Storage unavailable fallback
     }
@@ -262,6 +330,7 @@ export class PostStoreService {
     try {
       localStorage.setItem(`liked_posts_${userId}`, JSON.stringify(this.likedPostsState()));
       localStorage.setItem(`retweeted_posts_${userId}`, JSON.stringify(this.retweetedPostsState()));
+      localStorage.setItem(`retweet_ids_${userId}`, JSON.stringify(this.retweetIdsState()));
     } catch {
       // Storage unavailable fallback
     }

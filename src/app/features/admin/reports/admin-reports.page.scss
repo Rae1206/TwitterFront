@@ -23,7 +23,7 @@
 .report-card,
 .history-row,
 .moderation-card {
-  border: 1px solid var(--border-color);
+  border: 2px solid var(--border-color);
   background: var(--bg-card-inner);
   color: var(--text-primary);
 }
@@ -112,7 +112,7 @@
   min-height: 2.4rem;
   padding: 0.45rem 0.9rem;
   border-radius: 999px;
-  border: 1px solid var(--border-color);
+  border: 1.5px solid var(--border-color);
   background: var(--bg-secondary);
   color: var(--text-primary);
   cursor: pointer;
@@ -137,7 +137,7 @@
   padding: 0.9rem;
   border-radius: 1rem;
   background: var(--bg-card-inner);
-  border: 1px solid var(--border-color);
+  border: 1.5px solid var(--border-color);
 }
 
 .fact-grid dt {

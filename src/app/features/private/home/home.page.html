@@ -9,7 +9,7 @@
     <p class="feedback error" role="alert">{{ message }}</p>
   }
 
-  <section class="surface-card composer-card">
+  <section class="surface-card composer-card" #composerSection>
     <header class="section-head">
       <div>
         <h2>{{ editingPostId() ? 'Editar publicación' : 'Crear publicación' }}</h2>
@@ -163,7 +163,47 @@
                       <strong>{{ authorName(origPost) }}</strong>
                       <p>{{ authorHandle(origPost) }} · {{ (origPost.createdAt | date: 'medium') || 'Sin fecha' }}</p>
                     </div>
-                    <span class="chip" [class.warn]="!origPost.isPublished">{{ origPost.isPublished ? 'Publicado' : 'Borrador' }}</span>
+                    <div class="post-meta-right" (click)="$event.stopPropagation()">
+                      @if (isOwnPost(post)) {
+                        <span class="chip" [class.warn]="!post.isPublished">{{ post.isPublished ? 'Publicado' : 'Borrador' }}</span>
+                        <div class="post-actions-wrapper">
+                          <button type="button" class="post-menu-toggle" (click)="togglePostMenu(post.postId, $event)" title="Más opciones">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                              <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+                            </svg>
+                          </button>
+                          @if (activePostMenu() === post.postId) {
+                            <div class="post-dropdown-menu">
+                              <button type="button" class="dropdown-item" (click)="startEdit(post); activePostMenu.set(null)">
+                                <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                                <span>Editar</span>
+                              </button>
+                              <button type="button" class="dropdown-item" (click)="toggleStatus(post); activePostMenu.set(null)">
+                                @if (post.isPublished) {
+                                  <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="13" y2="13"/>
+                                  </svg>
+                                  <span>Pasar a borrador</span>
+                                } @else {
+                                  <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"/>
+                                  </svg>
+                                  <span>Publicar</span>
+                                }
+                              </button>
+                              <button type="button" class="dropdown-item danger-item" (click)="remove(post.postId); activePostMenu.set(null)">
+                                <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                                </svg>
+                                <span>Eliminar</span>
+                              </button>
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
                   </div>
 
                   @if (origPost.content) {
@@ -232,7 +272,47 @@
                     <strong>{{ authorName(post) }}</strong>
                     <p>{{ authorHandle(post) }} · {{ (post.createdAt | date: 'medium') || 'Sin fecha' }}</p>
                   </div>
-                  <span class="chip" [class.warn]="!post.isPublished">{{ post.isPublished ? 'Publicado' : 'Borrador' }}</span>
+                  <div class="post-meta-right" (click)="$event.stopPropagation()">
+                    @if (isOwnPost(post)) {
+                      <span class="chip" [class.warn]="!post.isPublished">{{ post.isPublished ? 'Publicado' : 'Borrador' }}</span>
+                      <div class="post-actions-wrapper">
+                        <button type="button" class="post-menu-toggle" (click)="togglePostMenu(post.postId, $event)" title="Más opciones">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+                          </svg>
+                        </button>
+                        @if (activePostMenu() === post.postId) {
+                          <div class="post-dropdown-menu">
+                            <button type="button" class="dropdown-item" (click)="startEdit(post); activePostMenu.set(null)">
+                              <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                              </svg>
+                              <span>Editar</span>
+                            </button>
+                            <button type="button" class="dropdown-item" (click)="toggleStatus(post); activePostMenu.set(null)">
+                              @if (post.isPublished) {
+                                <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="13" y2="13"/>
+                                </svg>
+                                <span>Pasar a borrador</span>
+                              } @else {
+                                <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                  <polyline points="20 6 9 17 4 12"/>
+                                </svg>
+                                <span>Publicar</span>
+                              }
+                            </button>
+                            <button type="button" class="dropdown-item danger-item" (click)="remove(post.postId); activePostMenu.set(null)">
+                              <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                              </svg>
+                              <span>Eliminar</span>
+                            </button>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
                 </div>
 
                 @if (post.repliedToPostId) {
@@ -402,12 +482,21 @@
 
                   @if (activeRetweetMenu() === interactionTarget(post).postId) {
                     <div class="retweet-dropdown-menu" (click)="$event.stopPropagation()">
-                      <button type="button" class="dropdown-item" (click)="directRetweet(interactionTarget(post))">
-                        <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
-                        </svg>
-                        <span>Compartir</span>
-                      </button>
+                      @if (isRetweeted(interactionTarget(post).postId)) {
+                        <button type="button" class="dropdown-item danger-item" (click)="directRetweet(interactionTarget(post))">
+                          <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+                          </svg>
+                          <span>Quitar</span>
+                        </button>
+                      } @else {
+                        <button type="button" class="dropdown-item" (click)="directRetweet(interactionTarget(post))">
+                          <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+                          </svg>
+                          <span>Compartir</span>
+                        </button>
+                      }
                       <button type="button" class="dropdown-item" (click)="openQuoteModal(interactionTarget(post))">
                         <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -482,44 +571,10 @@
                 </div>
               }
 
-              <!-- 6. FOOTER/ACTIONS ROW (Always rendered) -->
+              <!-- 6. FOOTER ROW -->
               <div class="post-footer">
                 <div class="post-health">
                   <span>{{ post.reportCount ?? 0 }} reportes</span>
-                </div>
-
-                <div class="table-actions" (click)="$event.stopPropagation()">
-                  @if (isOwnPost(post)) {
-                    <!-- Edit -->
-                    <button type="button" class="icon-action edit-action" (click)="startEdit(post)" title="Editar">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                      </svg>
-                    </button>
-                    <!-- Draft / Publish toggle -->
-                    <button type="button" class="icon-action toggle-action" (click)="toggleStatus(post)" [title]="post.isPublished ? 'Pasar a borrador' : 'Publicar'">
-                      @if (post.isPublished) {
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                          <line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="13" y2="13"/>
-                        </svg>
-                      } @else {
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                      }
-                    </button>
-                    <!-- Delete -->
-                    <button type="button" class="icon-action delete-action" (click)="remove(post.postId)" title="Eliminar">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="3 6 5 6 21 6"/>
-                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                        <path d="M10 11v6"/><path d="M14 11v6"/>
-                        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                      </svg>
-                    </button>
-                  }
                 </div>
               </div>
 
@@ -715,7 +770,47 @@
                   <strong>{{ authorName(detailPost) }}</strong>
                   <p>{{ authorHandle(detailPost) }}</p>
                 </div>
-                <button type="button" class="close-modal-btn-inline" (click)="closeDetailModal()" aria-label="Cerrar modal">&times;</button>
+                <div class="detail-header-actions" (click)="$event.stopPropagation()">
+                  @if (isOwnPost(detailPost)) {
+                    <div class="post-actions-wrapper">
+                      <button type="button" class="post-menu-toggle" (click)="togglePostMenu(detailPost.postId, $event)" title="Más opciones">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+                        </svg>
+                      </button>
+                      @if (activePostMenu() === detailPost.postId) {
+                        <div class="post-dropdown-menu detail-dropdown">
+                          <button type="button" class="dropdown-item" (click)="startEdit(detailPost); activePostMenu.set(null)">
+                            <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                            <span>Editar</span>
+                          </button>
+                          <button type="button" class="dropdown-item" (click)="toggleStatus(detailPost); activePostMenu.set(null)">
+                            @if (detailPost.isPublished) {
+                              <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="13" y2="13"/>
+                              </svg>
+                              <span>Pasar a borrador</span>
+                            } @else {
+                              <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"/>
+                              </svg>
+                              <span>Publicar</span>
+                            }
+                          </button>
+                          <button type="button" class="dropdown-item danger-item" (click)="remove(detailPost.postId); activePostMenu.set(null); closeDetailModal()">
+                            <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                            </svg>
+                            <span>Eliminar</span>
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  }
+                  <button type="button" class="close-modal-btn-inline" (click)="closeDetailModal()" aria-label="Cerrar modal">&times;</button>
+                </div>
               </header>
 
               <div class="detail-info-body">
@@ -761,12 +856,21 @@
 
                     @if (activeRetweetMenu() === detailPost.postId) {
                       <div class="retweet-dropdown-menu" (click)="$event.stopPropagation()">
-                        <button type="button" class="dropdown-item" (click)="directRetweet(detailPost)">
-                          <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
-                          </svg>
-                          <span>Compartir</span>
-                        </button>
+                        @if (isRetweeted(detailPost.postId)) {
+                          <button type="button" class="dropdown-item danger-item" (click)="directRetweet(detailPost)">
+                            <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+                            </svg>
+                            <span>Quitar</span>
+                          </button>
+                        } @else {
+                          <button type="button" class="dropdown-item" (click)="directRetweet(detailPost)">
+                            <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+                            </svg>
+                            <span>Compartir</span>
+                          </button>
+                        }
                         <button type="button" class="dropdown-item" (click)="openQuoteModal(detailPost)">
                           <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -837,6 +941,46 @@
                   <strong>{{ authorName(detailPost) }}</strong>
                   <p>{{ authorHandle(detailPost) }}</p>
                 </div>
+                <div class="detail-header-actions" (click)="$event.stopPropagation()">
+                  @if (isOwnPost(detailPost)) {
+                    <div class="post-actions-wrapper">
+                      <button type="button" class="post-menu-toggle" (click)="togglePostMenu(detailPost.postId, $event)" title="Más opciones">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+                        </svg>
+                      </button>
+                      @if (activePostMenu() === detailPost.postId) {
+                        <div class="post-dropdown-menu detail-dropdown">
+                          <button type="button" class="dropdown-item" (click)="startEdit(detailPost); activePostMenu.set(null)">
+                            <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                            <span>Editar</span>
+                          </button>
+                          <button type="button" class="dropdown-item" (click)="toggleStatus(detailPost); activePostMenu.set(null)">
+                            @if (detailPost.isPublished) {
+                              <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="13" y2="13"/>
+                              </svg>
+                              <span>Pasar a borrador</span>
+                            } @else {
+                              <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"/>
+                              </svg>
+                              <span>Publicar</span>
+                            }
+                          </button>
+                          <button type="button" class="dropdown-item danger-item" (click)="remove(detailPost.postId); activePostMenu.set(null); closeDetailModal()">
+                            <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                            </svg>
+                            <span>Eliminar</span>
+                          </button>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
               </header>
 
               @if (detailPost.content) {
@@ -881,12 +1025,21 @@
 
                   @if (activeRetweetMenu() === detailPost.postId) {
                     <div class="retweet-dropdown-menu" (click)="$event.stopPropagation()">
-                      <button type="button" class="dropdown-item" (click)="directRetweet(detailPost)">
-                        <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
-                        </svg>
-                        <span>Compartir</span>
-                      </button>
+                      @if (isRetweeted(detailPost.postId)) {
+                        <button type="button" class="dropdown-item danger-item" (click)="directRetweet(detailPost)">
+                          <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+                          </svg>
+                          <span>Quitar</span>
+                        </button>
+                      } @else {
+                        <button type="button" class="dropdown-item" (click)="directRetweet(detailPost)">
+                          <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+                          </svg>
+                          <span>Compartir</span>
+                        </button>
+                      }
                       <button type="button" class="dropdown-item" (click)="openQuoteModal(detailPost)">
                         <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
