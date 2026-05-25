@@ -1,0 +1,60 @@
+<div class="media-carousel" [class.audio-only]="isAudioOnly()" [class.detail-carousel]="detail()" (click)="$event.stopPropagation()">
+  <div class="carousel-track">
+    @for (url of mediaUrls(); track url; let idx = $index) {
+      @if (detail() || isActive(idx)) {
+        <div
+          class="carousel-item"
+          [class.audio-item]="mediaType(url) === 'audio'"
+          [class.is-active]="isActive(idx)"
+          [attr.aria-hidden]="isActive(idx) ? 'false' : 'true'"
+        >
+          @if (mediaType(url) === 'video') {
+            @if (lazyVideo()) {
+              <video
+                #feedVideo
+                [attr.src]="isVideoLoaded(url | mediaUrl) ? (url | mediaUrl) : null"
+                [attr.data-media-url]="url | mediaUrl"
+                autoplay
+                controls
+                loop
+                muted
+                (volumechange)="syncVideoSoundPreference(feedVideo)"
+                preload="metadata"
+                playsinline
+                class="post-video"
+              ></video>
+              @if (!soundEnabled()) {
+                <button type="button" class="video-sound-toggle" (click)="enableVideoSound($event, feedVideo)">
+                  Activar sonido
+                </button>
+              }
+            } @else {
+              <video [src]="url | mediaUrl" controls class="detail-video"></video>
+            }
+          } @else if (mediaType(url) === 'audio') {
+            <div class="audio-container" (click)="$event.stopPropagation()">
+              <app-audio-player [src]="url | mediaUrl" />
+            </div>
+          } @else {
+            <img [src]="url | mediaUrl" [alt]="imageAlt()" [class.post-image]="!detail()" [class.detail-image]="detail()" />
+          }
+        </div>
+      }
+    }
+  </div>
+
+  @if (mediaUrls().length > 1) {
+    <button type="button" class="carousel-nav-btn prev-btn" (click)="previous($event)" aria-label="Anterior">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6" /></svg>
+    </button>
+    <button type="button" class="carousel-nav-btn next-btn" (click)="next($event)" aria-label="Siguiente">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6" /></svg>
+    </button>
+
+    <div class="carousel-dots" (click)="$event.stopPropagation()">
+      @for (url of mediaUrls(); track url; let idx = $index) {
+        <span class="dot" [class.active]="isActive(idx)"></span>
+      }
+    </div>
+  }
+</div>

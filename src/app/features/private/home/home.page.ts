@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, signal, viewChild, viewChildren } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
@@ -16,8 +16,9 @@ import { PostStoreService } from '../../posts/post-store.service';
 import { PostDto } from '../../posts/posts.models';
 import { UserAvatarComponent } from '../../users/user-avatar.component';
 import { UserDto } from '../../users/users.models';
-import { environment } from '../../../../environments/environment';
 import { HomeComposerComponent } from './components/home-composer/home-composer.component';
+import { PostActionsComponent } from './components/post-actions/post-actions.component';
+import { PostMediaCarouselComponent } from './components/post-media-carousel/post-media-carousel.component';
 
 export interface MediaAttachment {
   file?: File;
@@ -26,12 +27,10 @@ export interface MediaAttachment {
   type: 'image' | 'audio' | 'video' | 'unknown';
 }
 
-type MediaType = MediaAttachment['type'];
-
 @Component({
   selector: 'app-home-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, ReactiveFormsModule, StateCardComponent, UserAvatarComponent, AudioRecorderModalComponent, AudioPlayerComponent, MediaUrlPipe, HomeComposerComponent],
+  imports: [DatePipe, ReactiveFormsModule, StateCardComponent, UserAvatarComponent, AudioRecorderModalComponent, AudioPlayerComponent, MediaUrlPipe, HomeComposerComponent, PostActionsComponent, PostMediaCarouselComponent],
   host: {
     '(document:click)': 'closeAllMenus()',
   },
@@ -44,11 +43,9 @@ export class HomePage {
   private readonly postsApi = inject(PostsApiService);
   private readonly confirm = inject(ConfirmService);
   private readonly sessionService = inject(SessionService);
-  private readonly feedVideos = viewChildren<ElementRef<HTMLVideoElement>>('feedVideo');
   private readonly composerSection = viewChild<ElementRef<HTMLElement>>('composerSection');
   readonly attachments = signal<MediaAttachment[]>([]);
   readonly uploadingFile = signal(false);
-  readonly loadedFeedVideoUrls = signal<Record<string, true>>({});
   readonly feedVideoSoundEnabled = signal(false);
 
   readonly posts = this.postStore.posts;
@@ -115,8 +112,7 @@ export class HomePage {
     return this.activeCarouselIndex()[postId] || 0;
   }
 
-  protected prevCarousel(postId: string | undefined, total: number, event: MouseEvent): void {
-    event.stopPropagation();
+  protected prevCarousel(postId: string | undefined, total: number): void {
     if (!postId || total <= 1) return;
     this.activeCarouselIndex.update((prev) => {
       const current = prev[postId] || 0;
@@ -125,8 +121,7 @@ export class HomePage {
     });
   }
 
-  protected nextCarousel(postId: string | undefined, total: number, event: MouseEvent): void {
-    event.stopPropagation();
+  protected nextCarousel(postId: string | undefined, total: number): void {
     if (!postId || total <= 1) return;
     this.activeCarouselIndex.update((prev) => {
       const current = prev[postId] || 0;
@@ -137,56 +132,6 @@ export class HomePage {
 
   constructor() {
     void this.postStore.loadPosts();
-
-    effect((onCleanup) => {
-      const videos = this.feedVideos();
-
-      if (!videos.length) {
-        return;
-      }
-
-      if (typeof IntersectionObserver === 'undefined') {
-        videos.forEach(({ nativeElement }) => {
-          const mediaUrl = nativeElement.dataset['mediaUrl'];
-          if (mediaUrl) {
-            this.markFeedVideoAsLoaded(mediaUrl);
-            this.updateFeedVideoPlayback(nativeElement, true);
-          }
-        });
-        return;
-      }
-
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            const video = entry.target as HTMLVideoElement;
-            const isVisible = entry.isIntersecting && entry.intersectionRatio >= 0.15;
-
-            const mediaUrl = video.dataset['mediaUrl'];
-            if (mediaUrl && isVisible) {
-              this.markFeedVideoAsLoaded(mediaUrl);
-            }
-
-            this.updateFeedVideoPlayback(video, isVisible);
-          });
-        },
-        {
-          rootMargin: '240px 0px',
-          threshold: 0.15,
-        },
-      );
-
-      videos.forEach(({ nativeElement }) => {
-        const mediaUrl = nativeElement.dataset['mediaUrl'];
-        if (!mediaUrl) {
-          return;
-        }
-
-        observer.observe(nativeElement);
-      });
-
-      onCleanup(() => observer.disconnect());
-    });
   }
 
   protected closeAllMenus(): void {
@@ -752,104 +697,6 @@ export class HomePage {
            lowerUrl.includes('type=video') || 
            lowerUrl.includes('.mp4') || 
            lowerUrl.includes('.webm')) && !this.isPostAudioUrl(url));
-  }
-
-  protected getMediaType(url: string): MediaType {
-    const absUrl = this.getAbsoluteMediaUrl(url);
-
-    if (this.isPostAudioUrl(absUrl)) {
-      return 'audio';
-    }
-
-    if (this.isPostVideoUrl(absUrl)) {
-      return 'video';
-    }
-
-    return 'image';
-  }
-
-  protected isFeedVideoLoaded(url: string): boolean {
-    return Boolean(this.loadedFeedVideoUrls()[url]);
-  }
-
-  protected enableFeedVideoSound(event: MouseEvent, video: HTMLVideoElement): void {
-    event.stopPropagation();
-    this.feedVideoSoundEnabled.set(true);
-    this.applyFeedVideoSoundPreference(video, true);
-    void video.play().catch(() => {
-      // Ignore playback errors triggered by browser policy changes.
-    });
-  }
-
-  protected syncFeedVideoSoundPreference(video: HTMLVideoElement): void {
-    this.feedVideoSoundEnabled.set(!video.muted);
-  }
-
-  private markFeedVideoAsLoaded(url: string): void {
-    this.loadedFeedVideoUrls.update((loaded) => {
-      if (loaded[url]) {
-        return loaded;
-      }
-
-      return {
-        ...loaded,
-        [url]: true,
-      };
-    });
-  }
-
-  private updateFeedVideoPlayback(video: HTMLVideoElement, shouldPlay: boolean): void {
-    if (!shouldPlay) {
-      video.pause();
-      return;
-    }
-
-    this.playFeedVideo(video);
-  }
-
-  private playFeedVideo(video: HTMLVideoElement, attempt = 0): void {
-    if (!video.isConnected) {
-      return;
-    }
-
-    const hasSource = Boolean(video.currentSrc || video.getAttribute('src'));
-    if (!hasSource) {
-      if (attempt >= 4) {
-        return;
-      }
-
-      requestAnimationFrame(() => this.playFeedVideo(video, attempt + 1));
-      return;
-    }
-
-    const shouldEnableSound = this.feedVideoSoundEnabled();
-    this.applyFeedVideoSoundPreference(video, shouldEnableSound);
-
-    void video.play().catch(() => {
-      if (shouldEnableSound) {
-        this.feedVideoSoundEnabled.set(false);
-        this.applyFeedVideoSoundPreference(video, false);
-        void video.play().catch(() => {
-          // Ignore autoplay rejections; the controls remain available for manual playback.
-        });
-      }
-    });
-  }
-
-  private applyFeedVideoSoundPreference(video: HTMLVideoElement, enableSound: boolean): void {
-    video.muted = !enableSound;
-    video.defaultMuted = !enableSound;
-  }
-
-  protected getAbsoluteMediaUrl(url: string): string {
-    if (!url) {
-      return '';
-    }
-    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('blob:')) {
-      return url;
-    }
-    const path = url.startsWith('/') ? url : `/${url}`;
-    return `${environment.apiBaseUrl}${path}`;
   }
 
   private resetForm(): void {

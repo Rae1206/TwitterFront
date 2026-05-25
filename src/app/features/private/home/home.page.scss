@@ -483,88 +483,6 @@
   to { transform: scale(1); opacity: 1; }
 }
 
-/* Premium Social Buttons and Drawer */
-.post-social-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  max-width: 420px;
-  margin-top: 0.5rem;
-  padding-top: 0.5rem;
-  border-top: 1.5px solid var(--border-color);
-}
-
-.social-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  padding: 0.5rem;
-  border-radius: 9999px;
-  cursor: pointer;
-  font-size: 0.88rem;
-  font-weight: 500;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-
-  .social-icon {
-    width: 1.15rem;
-    height: 1.15rem;
-    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  }
-
-  &:hover {
-    transform: translateY(-0.5px);
-  }
-
-  &:active .social-icon {
-    transform: scale(0.85);
-  }
-}
-
-.comment-btn {
-  &:hover {
-    color: rgb(29 155 240);
-    background: rgb(29 155 240 / 0.1);
-  }
-  &.active {
-    color: rgb(29 155 240);
-  }
-}
-
-.retweet-btn {
-  &:hover {
-    color: rgb(0 186 124);
-    background: rgb(0 186 124 / 0.1);
-  }
-  &.active {
-    color: rgb(0 186 124);
-    .social-icon {
-      transform: rotate(180deg);
-    }
-  }
-}
-
-.like-btn {
-  &:hover {
-    color: rgb(249 24 128);
-    background: rgb(249 24 128 / 0.1);
-  }
-  &.active {
-    color: rgb(249 24 128);
-    animation: heartPop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  }
-}
-
-.view-btn {
-  cursor: default;
-  &:hover {
-    color: rgb(29 155 240 / 0.8);
-    background: rgb(29 155 240 / 0.05);
-  }
-}
-
 /* Comments Drawer CSS */
 .comments-drawer {
   display: flex;
@@ -706,15 +624,6 @@
   font-style: italic;
 }
 
-/* New Social Animations */
-@keyframes heartPop {
-  0% { transform: scale(1); }
-  25% { transform: scale(1.35); }
-  50% { transform: scale(0.9); }
-  75% { transform: scale(1.15); }
-  100% { transform: scale(1); }
-}
-
 @keyframes slideDown {
   from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: translateY(0); }
@@ -741,72 +650,6 @@
     height: 0.95rem;
     color: rgb(0 186 124);
   }
-}
-
-.retweet-btn-wrapper {
-  position: relative;
-  display: inline-block;
-}
-
-.retweet-dropdown-menu {
-  position: absolute;
-  bottom: 110%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--bg-card);
-  backdrop-filter: blur(12px) saturate(180%);
-  border: 1.5px solid var(--border-color);
-  box-shadow: var(--card-shadow);
-  border-radius: 0.75rem;
-  padding: 0.4rem;
-  z-index: 50;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  min-width: 140px;
-  animation: slideUpSpring 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
-
-  .dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    background: none;
-    border: none;
-    color: var(--text-primary);
-    padding: 0.5rem 0.75rem;
-    border-radius: 0.5rem;
-    cursor: pointer;
-    font-size: 0.85rem;
-    font-weight: 500;
-    width: 100%;
-    text-align: left;
-    transition: all 0.15s ease;
-
-    .dropdown-icon {
-      width: 0.95rem;
-      height: 0.95rem;
-      color: var(--text-secondary);
-      transition: color 0.15s ease;
-    }
-
-    &:hover {
-      background: rgb(29 155 240 / 0.12);
-      color: rgb(29 155 240);
-
-      .dropdown-icon {
-        color: rgb(29 155 240);
-      }
-    }
-
-    &:active {
-      transform: scale(0.97);
-    }
-  }
-}
-
-@keyframes slideUpSpring {
-  from { opacity: 0; transform: translate(-50%, 8px) scale(0.95); }
-  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
 }
 
 /* Nested Quote Card */
@@ -1307,6 +1150,11 @@
   }
 }
 
+@keyframes slideUpSpring {
+  from { opacity: 0; transform: translateY(8px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 /* Detail modal header actions */
 .detail-header-actions {
   display: flex;
@@ -1797,15 +1645,6 @@
       font-weight: 700;
     }
   }
-}
-
-.detail-actions {
-  max-width: 100% !important;
-  border-top: none !important;
-  border-bottom: 1.5px solid var(--border-color);
-  padding-bottom: 0.75rem !important;
-  margin-top: -0.25rem !important;
-  justify-content: space-around !important;
 }
 
 .detail-comments-drawer {

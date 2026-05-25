@@ -162,56 +162,16 @@
                   }
 
                   @if (origPost.mediaUrls && origPost.mediaUrls.length) {
-                    <div class="media-carousel" [class.audio-only]="origPost.mediaUrls.length === 1 && getMediaType(origPost.mediaUrls[0]) === 'audio'">
-                      <div class="carousel-track">
-                        @for (url of origPost.mediaUrls; track url; let idx = $index) {
-                          @if (idx === getCarouselIndex(origPost.postId)) {
-                            <div class="carousel-item" [class.audio-item]="getMediaType(url) === 'audio'">
-                              @if (getMediaType(url) === 'video') {
-                                <video
-                                  #feedVideo
-                                  [attr.src]="isFeedVideoLoaded(url | mediaUrl) ? (url | mediaUrl) : null"
-                                  [attr.data-media-url]="url | mediaUrl"
-                                  autoplay
-                                  controls
-                                  loop
-                                  muted
-                                  (volumechange)="syncFeedVideoSoundPreference(feedVideo)"
-                                  preload="metadata"
-                                  playsinline
-                                  class="post-video"></video>
-                                @if (!feedVideoSoundEnabled()) {
-                                  <button type="button" class="video-sound-toggle" (click)="enableFeedVideoSound($event, feedVideo)">
-                                    Activar sonido
-                                  </button>
-                                }
-                              } @else if (getMediaType(url) === 'audio') {
-                                <div class="audio-container" (click)="$event.stopPropagation()">
-                                  <app-audio-player [src]="url | mediaUrl" />
-                                </div>
-                              } @else {
-                                <img [src]="url | mediaUrl" alt="Adjunto de la publicación compartida" class="post-image" />
-                              }
-                            </div>
-                          }
-                        }
-                      </div>
-
-                      @if (origPost.mediaUrls.length > 1) {
-                        <button type="button" class="carousel-nav-btn prev-btn" (click)="prevCarousel(origPost.postId, origPost.mediaUrls.length, $event)" aria-label="Anterior">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-                        </button>
-                        <button type="button" class="carousel-nav-btn next-btn" (click)="nextCarousel(origPost.postId, origPost.mediaUrls.length, $event)" aria-label="Siguiente">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-                        </button>
-
-                        <div class="carousel-dots" (click)="$event.stopPropagation()">
-                          @for (url of origPost.mediaUrls; track url; let idx = $index) {
-                            <span class="dot" [class.active]="idx === getCarouselIndex(origPost.postId)"></span>
-                          }
-                        </div>
-                      }
-                    </div>
+                    <app-post-media-carousel
+                      [mediaUrls]="origPost.mediaUrls"
+                      [postId]="origPost.postId"
+                      [currentIndex]="getCarouselIndex(origPost.postId)"
+                      [soundEnabled]="feedVideoSoundEnabled()"
+                      imageAlt="Adjunto de la publicación compartida"
+                      (previousRequested)="prevCarousel($event.postId, $event.total)"
+                      (nextRequested)="nextCarousel($event.postId, $event.total)"
+                      (soundEnabledChange)="feedVideoSoundEnabled.set($event)"
+                    />
                   }
                 } @else {
                   <p class="post-content">Cargando publicación compartida...</p>
@@ -292,56 +252,16 @@
 
                       @if (origPost.mediaUrls && origPost.mediaUrls.length) {
                         <div class="nested-quote-media">
-                          <div class="media-carousel" [class.audio-only]="origPost.mediaUrls.length === 1 && getMediaType(origPost.mediaUrls[0]) === 'audio'">
-                            <div class="carousel-track">
-                              @for (url of origPost.mediaUrls; track url; let idx = $index) {
-                                @if (idx === getCarouselIndex(origPost.postId)) {
-                                  <div class="carousel-item" [class.audio-item]="getMediaType(url) === 'audio'">
-                                    @if (getMediaType(url) === 'video') {
-                                      <video
-                                        #feedVideo
-                                        [attr.src]="isFeedVideoLoaded(url | mediaUrl) ? (url | mediaUrl) : null"
-                                        [attr.data-media-url]="url | mediaUrl"
-                                        autoplay
-                                        controls
-                                        loop
-                                        muted
-                                        (volumechange)="syncFeedVideoSoundPreference(feedVideo)"
-                                        preload="metadata"
-                                        playsinline
-                                        class="post-video"></video>
-                                      @if (!feedVideoSoundEnabled()) {
-                                        <button type="button" class="video-sound-toggle" (click)="enableFeedVideoSound($event, feedVideo)">
-                                          Activar sonido
-                                        </button>
-                                      }
-                                    } @else if (getMediaType(url) === 'audio') {
-                                      <div class="audio-container" (click)="$event.stopPropagation()">
-                                        <app-audio-player [src]="url | mediaUrl" />
-                                      </div>
-                                    } @else {
-                                      <img [src]="url | mediaUrl" alt="Adjunto de la publicación compartida" class="post-image" />
-                                    }
-                                  </div>
-                                }
-                              }
-                            </div>
-
-                            @if (origPost.mediaUrls.length > 1) {
-                              <button type="button" class="carousel-nav-btn prev-btn" (click)="prevCarousel(origPost.postId, origPost.mediaUrls.length, $event)" aria-label="Anterior">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-                              </button>
-                              <button type="button" class="carousel-nav-btn next-btn" (click)="nextCarousel(origPost.postId, origPost.mediaUrls.length, $event)" aria-label="Siguiente">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-                              </button>
-
-                              <div class="carousel-dots" (click)="$event.stopPropagation()">
-                                @for (url of origPost.mediaUrls; track url; let idx = $index) {
-                                  <span class="dot" [class.active]="idx === getCarouselIndex(origPost.postId)"></span>
-                                }
-                              </div>
-                            }
-                          </div>
+                          <app-post-media-carousel
+                            [mediaUrls]="origPost.mediaUrls"
+                            [postId]="origPost.postId"
+                            [currentIndex]="getCarouselIndex(origPost.postId)"
+                            [soundEnabled]="feedVideoSoundEnabled()"
+                            imageAlt="Adjunto de la publicación compartida"
+                            (previousRequested)="prevCarousel($event.postId, $event.total)"
+                            (nextRequested)="nextCarousel($event.postId, $event.total)"
+                            (soundEnabledChange)="feedVideoSoundEnabled.set($event)"
+                          />
                         </div>
                       }
                     </div>
@@ -350,133 +270,35 @@
 
 
                 @if (post.mediaUrls && post.mediaUrls.length) {
-                  <div class="media-carousel" [class.audio-only]="post.mediaUrls.length === 1 && getMediaType(post.mediaUrls[0]) === 'audio'">
-                    <div class="carousel-track">
-                      @for (url of post.mediaUrls; track url; let idx = $index) {
-                        @if (idx === getCarouselIndex(post.postId)) {
-                          <div class="carousel-item" [class.audio-item]="getMediaType(url) === 'audio'">
-                            @if (getMediaType(url) === 'video') {
-                              <video
-                                #feedVideo
-                                [attr.src]="isFeedVideoLoaded(url | mediaUrl) ? (url | mediaUrl) : null"
-                                [attr.data-media-url]="url | mediaUrl"
-                                autoplay
-                                controls
-                                loop
-                                muted
-                                (volumechange)="syncFeedVideoSoundPreference(feedVideo)"
-                                preload="metadata"
-                                playsinline
-                                class="post-video"></video>
-                              @if (!feedVideoSoundEnabled()) {
-                                <button type="button" class="video-sound-toggle" (click)="enableFeedVideoSound($event, feedVideo)">
-                                  Activar sonido
-                                </button>
-                              }
-                            } @else if (getMediaType(url) === 'audio') {
-                              <div class="audio-container" (click)="$event.stopPropagation()">
-                                <app-audio-player [src]="url | mediaUrl" />
-                              </div>
-                            } @else {
-                              <img [src]="url | mediaUrl" alt="Adjunto de la publicación" class="post-image" />
-                            }
-                          </div>
-                        }
-                      }
-                    </div>
-
-                    @if (post.mediaUrls.length > 1) {
-                      <button type="button" class="carousel-nav-btn prev-btn" (click)="prevCarousel(post.postId, post.mediaUrls.length, $event)" aria-label="Anterior">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-                      </button>
-                      <button type="button" class="carousel-nav-btn next-btn" (click)="nextCarousel(post.postId, post.mediaUrls.length, $event)" aria-label="Siguiente">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-                      </button>
-
-                      <div class="carousel-dots" (click)="$event.stopPropagation()">
-                        @for (url of post.mediaUrls; track url; let idx = $index) {
-                          <span class="dot" [class.active]="idx === getCarouselIndex(post.postId)"></span>
-                        }
-                      </div>
-                    }
-                  </div>
+                  <app-post-media-carousel
+                    [mediaUrls]="post.mediaUrls"
+                    [postId]="post.postId"
+                    [currentIndex]="getCarouselIndex(post.postId)"
+                    [soundEnabled]="feedVideoSoundEnabled()"
+                    imageAlt="Adjunto de la publicación"
+                    (previousRequested)="prevCarousel($event.postId, $event.total)"
+                    (nextRequested)="nextCarousel($event.postId, $event.total)"
+                    (soundEnabledChange)="feedVideoSoundEnabled.set($event)"
+                  />
                 }
               }
 
-              <!-- 4. SOCIAL ACTIONS ROW (Always rendered) -->
-              <div class="post-social-actions">
-                <button type="button" 
-                        class="social-btn comment-btn" 
-                        [class.active]="isCommentsOpen(interactionTarget(post).postId)"
-                        (click)="toggleComments(interactionTarget(post).postId); $event.stopPropagation()"
-                        title="Comentar">
-                  <svg class="social-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
-                  </svg>
-                  <span class="social-count">{{ getRepliesCount(interactionTarget(post)) }}</span>
-                </button>
-
-                <div class="retweet-btn-wrapper" (click)="$event.stopPropagation()">
-                  <button type="button" 
-                          class="social-btn retweet-btn" 
-                          [class.active]="isRetweeted(interactionTarget(post).postId)"
-                          (click)="toggleRetweetMenu(interactionTarget(post).postId, $event)"
-                          title="Compartir">
-                    <svg class="social-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <polyline points="17 1 21 5 17 9"/>
-                      <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
-                      <polyline points="7 23 3 19 7 15"/>
-                      <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
-                    </svg>
-                    <span class="social-count">{{ getRetweetsCount(interactionTarget(post)) }}</span>
-                  </button>
-
-                  @if (activeRetweetMenu() === interactionTarget(post).postId) {
-                    <div class="retweet-dropdown-menu" (click)="$event.stopPropagation()">
-                      @if (isRetweeted(interactionTarget(post).postId)) {
-                        <button type="button" class="dropdown-item danger-item" (click)="directRetweet(interactionTarget(post))">
-                          <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
-                          </svg>
-                          <span>Quitar</span>
-                        </button>
-                      } @else {
-                        <button type="button" class="dropdown-item" (click)="directRetweet(interactionTarget(post))">
-                          <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
-                          </svg>
-                          <span>Compartir</span>
-                        </button>
-                      }
-                      <button type="button" class="dropdown-item" (click)="openQuoteModal(interactionTarget(post))">
-                        <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                        </svg>
-                        <span>Citar</span>
-                      </button>
-                    </div>
-                  }
-                </div>
-
-                <button type="button" 
-                        class="social-btn like-btn" 
-                        [class.active]="isLiked(interactionTarget(post).postId)"
-                        (click)="toggleLike(interactionTarget(post)); $event.stopPropagation()"
-                        title="Me gusta">
-                  <svg class="social-icon" viewBox="0 0 24 24" [attr.fill]="isLiked(interactionTarget(post).postId) ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                  </svg>
-                  <span class="social-count">{{ getLikesCount(interactionTarget(post)) }}</span>
-                </button>
-
-                <div class="social-btn view-btn" title="Vistas" (click)="$event.stopPropagation()">
-                  <svg class="social-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                  </svg>
-                  <span class="social-count">{{ getViewCount(interactionTarget(post)) }}</span>
-                </div>
-              </div>
+              <app-post-actions
+                [post]="interactionTarget(post)"
+                [commentsOpen]="isCommentsOpen(interactionTarget(post).postId)"
+                [retweeted]="isRetweeted(interactionTarget(post).postId)"
+                [liked]="isLiked(interactionTarget(post).postId)"
+                [retweetMenuOpen]="activeRetweetMenu() === interactionTarget(post).postId"
+                [repliesCount]="getRepliesCount(interactionTarget(post))"
+                [retweetsCount]="getRetweetsCount(interactionTarget(post))"
+                [likesCount]="getLikesCount(interactionTarget(post))"
+                [viewCount]="getViewCount(interactionTarget(post))"
+                (commentRequested)="toggleComments(interactionTarget(post).postId)"
+                (retweetMenuRequested)="toggleRetweetMenu(interactionTarget(post).postId, $event)"
+                (directRetweetRequested)="directRetweet(interactionTarget(post))"
+                (quoteRequested)="openQuoteModal(interactionTarget(post))"
+                (likeRequested)="toggleLike(interactionTarget(post))"
+              />
 
               <!-- 5. COLLAPSIBLE COMMENTS SECTION (Always rendered) -->
               @if (isCommentsOpen(interactionTarget(post).postId)) {
@@ -679,38 +501,16 @@
               <!-- Floating Close Button for Mobile/Responsive or overlay convenience -->
               <button type="button" class="close-modal-floating" (click)="closeDetailModal()" aria-label="Cerrar modal">&times;</button>
               
-              <div class="media-carousel" [class.audio-only]="detailPost.mediaUrls.length === 1 && getMediaType(detailPost.mediaUrls[0]) === 'audio'" (click)="$event.stopPropagation()">
-                <div class="carousel-track">
-                  @for (url of detailPost.mediaUrls; track url; let idx = $index) {
-                    <div class="carousel-item" [class.audio-item]="getMediaType(url) === 'audio'" [class.is-active]="idx === getCarouselIndex(detailPost.postId)" [attr.aria-hidden]="idx === getCarouselIndex(detailPost.postId) ? 'false' : 'true'">
-                      @if (getMediaType(url) === 'video') {
-                        <video [src]="url | mediaUrl" controls class="detail-video"></video>
-                      } @else if (getMediaType(url) === 'audio') {
-                        <div class="audio-container">
-                          <app-audio-player [src]="url | mediaUrl" />
-                        </div>
-                      } @else {
-                        <img [src]="url | mediaUrl" alt="Adjunto del detalle" class="detail-image" />
-                      }
-                    </div>
-                  }
-                </div>
-
-                @if (detailPost.mediaUrls.length > 1) {
-                  <button type="button" class="carousel-nav-btn prev-btn" (click)="prevCarousel(detailPost.postId, detailPost.mediaUrls.length, $event)" aria-label="Anterior">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-                  </button>
-                  <button type="button" class="carousel-nav-btn next-btn" (click)="nextCarousel(detailPost.postId, detailPost.mediaUrls.length, $event)" aria-label="Siguiente">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-                  </button>
-
-                  <div class="carousel-dots">
-                    @for (url of detailPost.mediaUrls; track url; let idx = $index) {
-                      <span class="dot" [class.active]="idx === getCarouselIndex(detailPost.postId)"></span>
-                    }
-                  </div>
-                }
-              </div>
+              <app-post-media-carousel
+                [mediaUrls]="detailPost.mediaUrls"
+                [postId]="detailPost.postId"
+                [currentIndex]="getCarouselIndex(detailPost.postId)"
+                imageAlt="Adjunto del detalle"
+                [detail]="true"
+                [lazyVideo]="false"
+                (previousRequested)="prevCarousel($event.postId, $event.total)"
+                (nextRequested)="nextCarousel($event.postId, $event.total)"
+              />
             </div>
 
             <!-- Right Side: Info & Comments Column -->
@@ -780,68 +580,19 @@
                   <span class="stat-item"><strong>{{ getLikesCount(detailPost) }}</strong> Me gusta</span>
                 </div>
 
-                <!-- Large Action Row -->
-                <div class="post-social-actions detail-actions">
-                  <button type="button" 
-                          class="social-btn comment-btn" 
-                          title="Responder"
-                          (click)="detailCommentInputSplit.focus()">
-                    <svg class="social-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
-                    </svg>
-                  </button>
-
-                  <div class="retweet-btn-wrapper" (click)="$event.stopPropagation()">
-                    <button type="button" 
-                            class="social-btn retweet-btn" 
-                            [class.active]="isRetweeted(detailPost.postId)"
-                            (click)="toggleRetweetMenu(detailPost.postId, $event)"
-                            title="Compartir">
-                      <svg class="social-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="17 1 21 5 17 9"/>
-                        <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
-                        <polyline points="7 23 3 19 7 15"/>
-                        <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
-                      </svg>
-                    </button>
-
-                    @if (activeRetweetMenu() === detailPost.postId) {
-                      <div class="retweet-dropdown-menu" (click)="$event.stopPropagation()">
-                        @if (isRetweeted(detailPost.postId)) {
-                          <button type="button" class="dropdown-item danger-item" (click)="directRetweet(detailPost)">
-                            <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                              <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
-                            </svg>
-                            <span>Quitar</span>
-                          </button>
-                        } @else {
-                          <button type="button" class="dropdown-item" (click)="directRetweet(detailPost)">
-                            <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                              <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
-                            </svg>
-                            <span>Compartir</span>
-                          </button>
-                        }
-                        <button type="button" class="dropdown-item" (click)="openQuoteModal(detailPost)">
-                          <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                          </svg>
-                          <span>Citar</span>
-                        </button>
-                      </div>
-                    }
-                  </div>
-
-                  <button type="button" 
-                          class="social-btn like-btn" 
-                          [class.active]="isLiked(detailPost.postId)"
-                          (click)="toggleLike(detailPost)"
-                          title="Me gusta">
-                    <svg class="social-icon" viewBox="0 0 24 24" [attr.fill]="isLiked(detailPost.postId) ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
-                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                    </svg>
-                  </button>
-                </div>
+                <app-post-actions
+                  [post]="detailPost"
+                  [retweeted]="isRetweeted(detailPost.postId)"
+                  [liked]="isLiked(detailPost.postId)"
+                  [retweetMenuOpen]="activeRetweetMenu() === detailPost.postId"
+                  [showCounts]="false"
+                  [detail]="true"
+                  (commentRequested)="detailCommentInputSplit.focus()"
+                  (retweetMenuRequested)="toggleRetweetMenu(detailPost.postId, $event)"
+                  (directRetweetRequested)="directRetweet(detailPost)"
+                  (quoteRequested)="openQuoteModal(detailPost)"
+                  (likeRequested)="toggleLike(detailPost)"
+                />
 
                 <!-- Comments thread inside detail lightbox -->
                 <div class="detail-comments-drawer" (click)="$event.stopPropagation()">
@@ -949,68 +700,19 @@
                 <span class="stat-item"><strong>{{ getLikesCount(detailPost) }}</strong> Me gusta</span>
               </div>
 
-              <!-- Large Action Row -->
-              <div class="post-social-actions detail-actions">
-                <button type="button" 
-                        class="social-btn comment-btn" 
-                        title="Responder"
-                        (click)="detailCommentInput.focus()">
-                  <svg class="social-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
-                  </svg>
-                </button>
-
-                <div class="retweet-btn-wrapper" (click)="$event.stopPropagation()">
-                  <button type="button" 
-                          class="social-btn retweet-btn" 
-                          [class.active]="isRetweeted(detailPost.postId)"
-                          (click)="toggleRetweetMenu(detailPost.postId, $event)"
-                          title="Compartir">
-                    <svg class="social-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <polyline points="17 1 21 5 17 9"/>
-                      <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
-                      <polyline points="7 23 3 19 7 15"/>
-                      <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
-                    </svg>
-                  </button>
-
-                  @if (activeRetweetMenu() === detailPost.postId) {
-                    <div class="retweet-dropdown-menu" (click)="$event.stopPropagation()">
-                      @if (isRetweeted(detailPost.postId)) {
-                        <button type="button" class="dropdown-item danger-item" (click)="directRetweet(detailPost)">
-                          <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
-                          </svg>
-                          <span>Quitar</span>
-                        </button>
-                      } @else {
-                        <button type="button" class="dropdown-item" (click)="directRetweet(detailPost)">
-                          <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
-                          </svg>
-                          <span>Compartir</span>
-                        </button>
-                      }
-                      <button type="button" class="dropdown-item" (click)="openQuoteModal(detailPost)">
-                        <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                        </svg>
-                        <span>Citar</span>
-                      </button>
-                    </div>
-                  }
-                </div>
-
-                <button type="button" 
-                        class="social-btn like-btn" 
-                        [class.active]="isLiked(detailPost.postId)"
-                        (click)="toggleLike(detailPost)"
-                        title="Me gusta">
-                  <svg class="social-icon" viewBox="0 0 24 24" [attr.fill]="isLiked(detailPost.postId) ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                  </svg>
-                </button>
-              </div>
+              <app-post-actions
+                [post]="detailPost"
+                [retweeted]="isRetweeted(detailPost.postId)"
+                [liked]="isLiked(detailPost.postId)"
+                [retweetMenuOpen]="activeRetweetMenu() === detailPost.postId"
+                [showCounts]="false"
+                [detail]="true"
+                (commentRequested)="detailCommentInput.focus()"
+                (retweetMenuRequested)="toggleRetweetMenu(detailPost.postId, $event)"
+                (directRetweetRequested)="directRetweet(detailPost)"
+                (quoteRequested)="openQuoteModal(detailPost)"
+                (likeRequested)="toggleLike(detailPost)"
+              />
 
               <!-- Comments thread inside detail lightbox -->
               <div class="detail-comments-drawer" (click)="$event.stopPropagation()">
