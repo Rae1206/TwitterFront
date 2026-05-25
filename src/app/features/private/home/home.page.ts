@@ -17,6 +17,7 @@ import { PostDto } from '../../posts/posts.models';
 import { UserAvatarComponent } from '../../users/user-avatar.component';
 import { UserDto } from '../../users/users.models';
 import { environment } from '../../../../environments/environment';
+import { HomeComposerComponent } from './components/home-composer/home-composer.component';
 
 export interface MediaAttachment {
   file?: File;
@@ -30,7 +31,7 @@ type MediaType = MediaAttachment['type'];
 @Component({
   selector: 'app-home-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, ReactiveFormsModule, StateCardComponent, UserAvatarComponent, AudioRecorderModalComponent, AudioPlayerComponent, MediaUrlPipe],
+  imports: [DatePipe, ReactiveFormsModule, StateCardComponent, UserAvatarComponent, AudioRecorderModalComponent, AudioPlayerComponent, MediaUrlPipe, HomeComposerComponent],
   host: {
     '(document:click)': 'closeAllMenus()',
   },
