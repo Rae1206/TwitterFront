@@ -1,7 +1,7 @@
-<div class="media-carousel" [class.audio-only]="isAudioOnly()" [class.detail-carousel]="detail()" (click)="$event.stopPropagation()">
+<div class="media-carousel" [class.audio-only]="isAudioOnly()" [class.detail-carousel]="detail()" (click)="onCarouselClick($event)">
   <div class="carousel-track">
     @for (url of mediaUrls(); track url; let idx = $index) {
-      @if (detail() || isActive(idx)) {
+      @if (isActive(idx)) {
         <div
           class="carousel-item"
           [class.audio-item]="mediaType(url) === 'audio'"

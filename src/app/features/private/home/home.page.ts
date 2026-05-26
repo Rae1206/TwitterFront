@@ -7,7 +7,6 @@ import { firstValueFrom } from 'rxjs';
 import { getErrorMessage } from '../../../core/api/api.utils';
 import { SessionService } from '../../../core/auth/session.service';
 import { ConfirmService } from '../../../core/ui/confirm.service';
-import { MediaUrlPipe } from '../../../core/ui/media-url.pipe';
 import { StateCardComponent } from '../../../shared/components/state-card/state-card.component';
 import { AudioPlayerComponent } from '../../posts/audio-player.component';
 import { AudioRecorderModalComponent } from '../../posts/audio-recorder-modal.component';
@@ -19,6 +18,7 @@ import { UserDto } from '../../users/users.models';
 import { HomeComposerComponent } from './components/home-composer/home-composer.component';
 import { PostActionsComponent } from './components/post-actions/post-actions.component';
 import { PostMediaCarouselComponent } from './components/post-media-carousel/post-media-carousel.component';
+import { PostCardComponent } from '../../posts/post-card.component';
 
 export interface MediaAttachment {
   file?: File;
@@ -30,7 +30,7 @@ export interface MediaAttachment {
 @Component({
   selector: 'app-home-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, ReactiveFormsModule, StateCardComponent, UserAvatarComponent, AudioRecorderModalComponent, AudioPlayerComponent, MediaUrlPipe, HomeComposerComponent, PostActionsComponent, PostMediaCarouselComponent],
+  imports: [DatePipe, ReactiveFormsModule, StateCardComponent, UserAvatarComponent, AudioRecorderModalComponent, AudioPlayerComponent, HomeComposerComponent, PostActionsComponent, PostMediaCarouselComponent, PostCardComponent],
   host: {
     '(document:click)': 'closeAllMenus()',
   },
@@ -104,6 +104,7 @@ export class HomePage {
     return list.filter((post) => this.matchesPostQuery(post, query));
   });
   readonly hasNoMatches = computed(() => this.hasActiveSearch() && !this.filteredPosts().length && !!this.posts().length);
+  readonly currentUserId = computed(() => this.sessionService.userId());
 
   readonly activeCarouselIndex = signal<Record<string, number>>({});
 
@@ -204,6 +205,7 @@ export class HomePage {
   }
 
   protected startEdit(post: PostDto): void {
+    this.activePostMenu.set(null);
     this.editingPostId.set(post.postId ?? null);
     this.form.reset({
       content: post.content ?? '',
@@ -259,6 +261,7 @@ export class HomePage {
   }
 
   protected async toggleStatus(post: PostDto): Promise<void> {
+    this.activePostMenu.set(null);
     const confirmed = await this.confirm.confirm({
       title: post.isPublished ? '¿Pasar la publicación a borrador?' : '¿Publicar ahora?',
       message: post.isPublished
@@ -275,6 +278,7 @@ export class HomePage {
   }
 
   protected async remove(postId: string | undefined): Promise<void> {
+    this.activePostMenu.set(null);
     if (!postId) {
       return;
     }
@@ -511,13 +515,7 @@ export class HomePage {
     }
   }
 
-  /**
-   * Opens the detail modal for a specific post (e.g. the embedded original inside a
-   * quote-tweet card). Stops propagation so the outer article click handler does not
-   * fire a second time and override the selection.
-   */
-  protected openOriginalPostModal(origPost: PostDto, event: MouseEvent): void {
-    event.stopPropagation();
+  protected onQuoteCardClick(origPost: PostDto): void {
     this.postInDetail.set(origPost);
     this.isDetailModalOpen.set(true);
   }

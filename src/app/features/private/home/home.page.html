@@ -80,279 +80,35 @@
     } @else {
       <div class="feed-list">
         @for (post of filteredPosts(); track trackPost($index, post)) {
-          <article class="surface-card post-card clickable-card" [class.retweet-card]="post.retweetOfPostId && !post.content" (click)="openDetailModal(post)">
-            
-            <!-- 1. RETWEET PURO HEADER BANNER (Outside standard 2-column flow but spans both) -->
-            @if (post.retweetOfPostId && !post.content) {
-              <div class="retweet-indicator-row" aria-hidden="true">
-                <svg class="retweet-indicator-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
-                </svg>
-                <span>{{ post.userFullName }} compartió esto</span>
-              </div>
-            }
-
-            <!-- 2. AVATAR COLUMN (Resolved based on post type) -->
-            @if (post.retweetOfPostId && !post.content) {
-              @if (getOriginalPost(post.retweetOfPostId); as origPost) {
-                <app-user-avatar class="post-avatar" [user]="postAuthor(origPost)" />
-              } @else {
-                <app-user-avatar class="post-avatar" [user]="postAuthor(post)" />
-              }
-            } @else {
-              <app-user-avatar class="post-avatar" [user]="postAuthor(post)" />
-            }
-
-            <!-- 3. MAIN BODY COLUMN -->
-            <div class="post-body">
-              
-              <!-- Content and details depending on post type -->
-              @if (post.retweetOfPostId && !post.content) {
-                @if (getOriginalPost(post.retweetOfPostId); as origPost) {
-                  <div class="post-meta">
-                    <div>
-                      <strong>{{ authorName(origPost) }}</strong>
-                      <p>{{ authorHandle(origPost) }} · {{ (origPost.createdAt | date: 'medium') || 'Sin fecha' }}</p>
-                    </div>
-                    <div class="post-meta-right" (click)="$event.stopPropagation()">
-                      @if (isOwnPost(post)) {
-                        <span class="chip" [class.warn]="!post.isPublished">{{ post.isPublished ? 'Publicado' : 'Borrador' }}</span>
-                        <div class="post-actions-wrapper">
-                          <button type="button" class="post-menu-toggle" (click)="togglePostMenu(post.postId, $event)" title="Más opciones">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                              <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
-                            </svg>
-                          </button>
-                          @if (activePostMenu() === post.postId) {
-                            <div class="post-dropdown-menu">
-                              <button type="button" class="dropdown-item" (click)="startEdit(post); activePostMenu.set(null)">
-                                <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                                </svg>
-                                <span>Editar</span>
-                              </button>
-                              <button type="button" class="dropdown-item" (click)="toggleStatus(post); activePostMenu.set(null)">
-                                @if (post.isPublished) {
-                                  <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="13" y2="13"/>
-                                  </svg>
-                                  <span>Pasar a borrador</span>
-                                } @else {
-                                  <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="20 6 9 17 4 12"/>
-                                  </svg>
-                                  <span>Publicar</span>
-                                }
-                              </button>
-                              <button type="button" class="dropdown-item danger-item" (click)="remove(post.postId); activePostMenu.set(null)">
-                                <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                                </svg>
-                                <span>Eliminar</span>
-                              </button>
-                            </div>
-                          }
-                        </div>
-                      }
-                    </div>
-                  </div>
-
-                  @if (origPost.content) {
-                    <p class="post-content">{{ origPost.content }}</p>
-                  }
-
-                  @if (origPost.mediaUrls && origPost.mediaUrls.length) {
-                    <app-post-media-carousel
-                      [mediaUrls]="origPost.mediaUrls"
-                      [postId]="origPost.postId"
-                      [currentIndex]="getCarouselIndex(origPost.postId)"
-                      [soundEnabled]="feedVideoSoundEnabled()"
-                      imageAlt="Adjunto de la publicación compartida"
-                      (previousRequested)="prevCarousel($event.postId, $event.total)"
-                      (nextRequested)="nextCarousel($event.postId, $event.total)"
-                      (soundEnabledChange)="feedVideoSoundEnabled.set($event)"
-                    />
-                  }
-                } @else {
-                  <p class="post-content">Cargando publicación compartida...</p>
-                }
-              } @else {
-                <!-- Standard post or Quote Tweet -->
-                <div class="post-meta">
-                  <div>
-                    <strong>{{ authorName(post) }}</strong>
-                    <p>{{ authorHandle(post) }} · {{ (post.createdAt | date: 'medium') || 'Sin fecha' }}</p>
-                  </div>
-                  <div class="post-meta-right" (click)="$event.stopPropagation()">
-                    @if (isOwnPost(post)) {
-                      <span class="chip" [class.warn]="!post.isPublished">{{ post.isPublished ? 'Publicado' : 'Borrador' }}</span>
-                      <div class="post-actions-wrapper">
-                        <button type="button" class="post-menu-toggle" (click)="togglePostMenu(post.postId, $event)" title="Más opciones">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
-                          </svg>
-                        </button>
-                        @if (activePostMenu() === post.postId) {
-                          <div class="post-dropdown-menu">
-                            <button type="button" class="dropdown-item" (click)="startEdit(post); activePostMenu.set(null)">
-                              <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                              </svg>
-                              <span>Editar</span>
-                            </button>
-                            <button type="button" class="dropdown-item" (click)="toggleStatus(post); activePostMenu.set(null)">
-                              @if (post.isPublished) {
-                                <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="13" y2="13"/>
-                                </svg>
-                                <span>Pasar a borrador</span>
-                              } @else {
-                                <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                  <polyline points="20 6 9 17 4 12"/>
-                                </svg>
-                                <span>Publicar</span>
-                              }
-                            </button>
-                            <button type="button" class="dropdown-item danger-item" (click)="remove(post.postId); activePostMenu.set(null)">
-                              <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                              </svg>
-                              <span>Eliminar</span>
-                            </button>
-                          </div>
-                        }
-                      </div>
-                    }
-                  </div>
-                </div>
-
-                @if (post.repliedToPostId) {
-                  <div class="replying-to-header">
-                    <span>Respondiendo a </span>
-                    <button type="button" class="reply-target-btn" (click)="inspect(post.repliedToPostId); $event.stopPropagation()">
-                      {{ getParentAuthorHandle(post.repliedToPostId) }}
-                    </button>
-                  </div>
-                }
-
-                @if (post.content) {
-                  <p class="post-content">{{ post.content }}</p>
-                }
-
-                <!-- Nested Quoted Post Box -->
-                @if (post.retweetOfPostId) {
-                  @if (getOriginalPost(post.retweetOfPostId); as origPost) {
-                    <div class="nested-quote-card" (click)="openOriginalPostModal(origPost, $event)">
-                      <header class="nested-quote-meta">
-                        <app-user-avatar class="nested-quote-avatar" [user]="postAuthor(origPost)" />
-                        <strong>{{ authorName(origPost) }}</strong>
-                        <span>{{ authorHandle(origPost) }}</span>
-                      </header>
-                      <p class="nested-quote-content">{{ origPost.content }}</p>
-
-                      @if (origPost.mediaUrls && origPost.mediaUrls.length) {
-                        <div class="nested-quote-media">
-                          <app-post-media-carousel
-                            [mediaUrls]="origPost.mediaUrls"
-                            [postId]="origPost.postId"
-                            [currentIndex]="getCarouselIndex(origPost.postId)"
-                            [soundEnabled]="feedVideoSoundEnabled()"
-                            imageAlt="Adjunto de la publicación compartida"
-                            (previousRequested)="prevCarousel($event.postId, $event.total)"
-                            (nextRequested)="nextCarousel($event.postId, $event.total)"
-                            (soundEnabledChange)="feedVideoSoundEnabled.set($event)"
-                          />
-                        </div>
-                      }
-                    </div>
-                  }
-                }
-
-
-                @if (post.mediaUrls && post.mediaUrls.length) {
-                  <app-post-media-carousel
-                    [mediaUrls]="post.mediaUrls"
-                    [postId]="post.postId"
-                    [currentIndex]="getCarouselIndex(post.postId)"
-                    [soundEnabled]="feedVideoSoundEnabled()"
-                    imageAlt="Adjunto de la publicación"
-                    (previousRequested)="prevCarousel($event.postId, $event.total)"
-                    (nextRequested)="nextCarousel($event.postId, $event.total)"
-                    (soundEnabledChange)="feedVideoSoundEnabled.set($event)"
-                  />
-                }
-              }
-
-              <app-post-actions
-                [post]="interactionTarget(post)"
-                [commentsOpen]="isCommentsOpen(interactionTarget(post).postId)"
-                [retweeted]="isRetweeted(interactionTarget(post).postId)"
-                [liked]="isLiked(interactionTarget(post).postId)"
-                [retweetMenuOpen]="activeRetweetMenu() === interactionTarget(post).postId"
-                [repliesCount]="getRepliesCount(interactionTarget(post))"
-                [retweetsCount]="getRetweetsCount(interactionTarget(post))"
-                [likesCount]="getLikesCount(interactionTarget(post))"
-                [viewCount]="getViewCount(interactionTarget(post))"
-                (commentRequested)="toggleComments(interactionTarget(post).postId)"
-                (retweetMenuRequested)="toggleRetweetMenu(interactionTarget(post).postId, $event)"
-                (directRetweetRequested)="directRetweet(interactionTarget(post))"
-                (quoteRequested)="openQuoteModal(interactionTarget(post))"
-                (likeRequested)="toggleLike(interactionTarget(post))"
-              />
-
-              <!-- 5. COLLAPSIBLE COMMENTS SECTION (Always rendered) -->
-              @if (isCommentsOpen(interactionTarget(post).postId)) {
-                <div class="comments-drawer" (click)="$event.stopPropagation()">
-                  <div class="comment-composer">
-                    <input #newCommentInput 
-                           type="text" 
-                           placeholder="Escribe tu respuesta..." 
-                           (keyup.enter)="addComment(interactionTarget(post).postId, newCommentInput.value); newCommentInput.value = ''" />
-                    <button type="button" 
-                            class="reply-action-btn"
-                            (click)="addComment(interactionTarget(post).postId, newCommentInput.value); newCommentInput.value = ''">
-                      Responder
-                    </button>
-                  </div>
-
-                  <div class="comments-list">
-                    @for (reply of getPostReplies(interactionTarget(post).postId); track reply.postId) {
-                      <div class="comment-item" (click)="openDetailModal(reply); $event.stopPropagation()">
-                        <app-user-avatar class="comment-avatar" [user]="postAuthor(reply)" />
-                        <div class="comment-content">
-                          <div class="comment-meta">
-                            <strong>{{ authorName(reply) }}</strong>
-                            <span>{{ authorHandle(reply) }} · {{ (reply.createdAt | date: 'shortTime') || 'Recién' }}</span>
-                          </div>
-                          <p class="comment-text">{{ reply.content }}</p>
-
-                          @if (reply.mediaUrls && reply.mediaUrls.length) {
-                            <div class="post-media-grid small-comments-media">
-                              @for (url of reply.mediaUrls; track url) {
-                                <div class="post-media-item">
-                                  <img [src]="url | mediaUrl" alt="Adjunto del comentario" class="post-image" />
-                                </div>
-                              }
-                            </div>
-                          }
-                        </div>
-                      </div>
-                    } @empty {
-                      <p class="no-comments-msg">¡Sé la primera persona en responder!</p>
-                    }
-                  </div>
-                </div>
-              }
-
-              <!-- 6. FOOTER ROW -->
-              <div class="post-footer">
-                <div class="post-health">
-                  <span>{{ post.reportCount ?? 0 }} reportes</span>
-                </div>
-              </div>
-
-            </div> <!-- END post-body -->
-          </article>
+          <app-post-card
+            [post]="post"
+            [currentUserId]="currentUserId()"
+            [carouselIndex]="getCarouselIndex(post.postId)"
+            [isCommentsOpen]="isCommentsOpen(post.postId)"
+            [isRetweeted]="isRetweeted(post.postId)"
+            [isLiked]="isLiked(post.postId)"
+            [retweetMenuOpen]="activeRetweetMenu() === post.postId"
+            [activePostMenu]="activePostMenu()"
+            [soundEnabled]="feedVideoSoundEnabled()"
+            [showFooter]="true"
+            (postClick)="openDetailModal(post)"
+            (editRequested)="startEdit(post)"
+            (deleteRequested)="remove(post.postId)"
+            (statusToggleRequested)="toggleStatus(post)"
+            (menuToggleRequested)="togglePostMenu(post.postId, $event)"
+            (commentToggleRequested)="toggleComments(post.postId)"
+            (likeToggleRequested)="toggleLike(post)"
+            (retweetMenuToggleRequested)="toggleRetweetMenu(post.postId, $event)"
+            (directRetweetRequested)="directRetweet(post)"
+            (quoteRequested)="openQuoteModal(post)"
+            (carouselPreviousRequested)="prevCarousel(post.postId, post.mediaUrls?.length ?? 0)"
+            (carouselNextRequested)="nextCarousel(post.postId, post.mediaUrls?.length ?? 0)"
+            (commentAdded)="addComment(post.postId, $event)"
+            (replyClick)="openDetailModal($event)"
+            (parentAuthorClick)="inspect($event)"
+            (quoteCardClick)="onQuoteCardClick($event)"
+            (soundEnabledChange)="feedVideoSoundEnabled.set($event)"
+          />
         }
       </div>
     }

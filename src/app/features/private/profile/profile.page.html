@@ -92,54 +92,35 @@
 
       <div class="profile-posts">
         @for (post of posts(); track trackPost($index, post)) {
-          <article class="inline-post clickable-post" (click)="openDetailModal(post)">
-            <div class="inline-post-head">
-              @if (isOwnPost(post)) {
-                <span class="chip" [class.warn]="!post.isPublished">{{ post.isPublished ? 'Publicado' : 'Borrador' }}</span>
-              }
-              <span>{{ (postDateLabel(post) | date: 'medium') || 'Sin fecha' }}</span>
-            </div>
-            @if (post.content) {
-              <p>{{ post.content }}</p>
-            }
-
-            @if (post.mediaUrls && post.mediaUrls.length) {
-              <div class="media-carousel" [class.audio-only]="post.mediaUrls.length === 1 && getMediaType(post.mediaUrls[0]) === 'audio'">
-                <div class="carousel-track">
-                  @for (url of post.mediaUrls; track url; let idx = $index) {
-                    @if (idx === getCarouselIndex(post.postId)) {
-                      <div class="carousel-item" [class.audio-item]="getMediaType(url) === 'audio'">
-                        @if (getMediaType(url) === 'video') {
-                          <video [src]="getAbsoluteMediaUrl(url)" controls class="post-video" (click)="$event.stopPropagation()"></video>
-                        } @else if (getMediaType(url) === 'audio') {
-                          <div class="audio-container" (click)="$event.stopPropagation()">
-                            <app-audio-player [src]="getAbsoluteMediaUrl(url)" />
-                          </div>
-                        } @else {
-                          <img [src]="getAbsoluteMediaUrl(url)" alt="Adjunto de la publicación" class="post-image" />
-                        }
-                      </div>
-                    }
-                  }
-                </div>
-
-                @if (post.mediaUrls.length > 1) {
-                  <button type="button" class="carousel-nav-btn prev-btn" (click)="prevCarousel(post.postId, post.mediaUrls.length, $event)" aria-label="Anterior">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-                  </button>
-                  <button type="button" class="carousel-nav-btn next-btn" (click)="nextCarousel(post.postId, post.mediaUrls.length, $event)" aria-label="Siguiente">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-                  </button>
-
-                  <div class="carousel-dots" (click)="$event.stopPropagation()">
-                    @for (url of post.mediaUrls; track url; let idx = $index) {
-                      <span class="dot" [class.active]="idx === getCarouselIndex(post.postId)"></span>
-                    }
-                  </div>
-                }
-              </div>
-            }
-          </article>
+          <app-post-card
+            [post]="post"
+            [currentUserId]="sessionUserId()"
+            [carouselIndex]="getCarouselIndex(post.postId)"
+            [isCommentsOpen]="isCommentsOpen(post.postId)"
+            [isRetweeted]="isRetweeted(post.postId)"
+            [isLiked]="isLiked(post.postId)"
+            [retweetMenuOpen]="activeRetweetMenu() === post.postId"
+            [activePostMenu]="activePostMenu()"
+            [soundEnabled]="feedVideoSoundEnabled()"
+            [showFooter]="true"
+            (postClick)="openDetailModal(post)"
+            (editRequested)="startEdit(post)"
+            (deleteRequested)="remove(post.postId)"
+            (statusToggleRequested)="toggleStatus(post)"
+            (menuToggleRequested)="togglePostMenu(post.postId, $event)"
+            (commentToggleRequested)="toggleComments(post.postId)"
+            (likeToggleRequested)="toggleLike(post)"
+            (retweetMenuToggleRequested)="toggleRetweetMenu(post.postId, $event)"
+            (directRetweetRequested)="directRetweet(post)"
+            (quoteRequested)="openQuoteModal(post)"
+            (carouselPreviousRequested)="prevCarousel(post.postId, post.mediaUrls?.length ?? 0)"
+            (carouselNextRequested)="nextCarousel(post.postId, post.mediaUrls?.length ?? 0)"
+            (commentAdded)="addComment(post.postId, $event)"
+            (replyClick)="openDetailModal($event)"
+            (parentAuthorClick)="inspect($event)"
+            (quoteCardClick)="onQuoteCardClick($event)"
+            (soundEnabledChange)="feedVideoSoundEnabled.set($event)"
+          />
         } @empty {
           <app-state-card
             tone="empty"
@@ -297,40 +278,16 @@
               <!-- Floating Close Button for Mobile/Responsive or overlay convenience -->
               <button type="button" class="close-modal-floating" (click)="closeDetailModal()" aria-label="Cerrar modal">&times;</button>
               
-              <div class="media-carousel" [class.audio-only]="detailPost.mediaUrls.length === 1 && getMediaType(detailPost.mediaUrls[0]) === 'audio'" (click)="$event.stopPropagation()">
-                <div class="carousel-track">
-                  @for (url of detailPost.mediaUrls; track url; let idx = $index) {
-                    @if (idx === getCarouselIndex(detailPost.postId)) {
-                      <div class="carousel-item" [class.audio-item]="getMediaType(url) === 'audio'">
-                        @if (getMediaType(url) === 'video') {
-                          <video [src]="getAbsoluteMediaUrl(url)" controls class="detail-video"></video>
-                        } @else if (getMediaType(url) === 'audio') {
-                          <div class="audio-container">
-                            <app-audio-player [src]="getAbsoluteMediaUrl(url)" />
-                          </div>
-                        } @else {
-                          <img [src]="getAbsoluteMediaUrl(url)" alt="Adjunto del detalle" class="detail-image" />
-                        }
-                      </div>
-                    }
-                  }
-                </div>
-
-                @if (detailPost.mediaUrls.length > 1) {
-                  <button type="button" class="carousel-nav-btn prev-btn" (click)="prevCarousel(detailPost.postId, detailPost.mediaUrls.length, $event)" aria-label="Anterior">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-                  </button>
-                  <button type="button" class="carousel-nav-btn next-btn" (click)="nextCarousel(detailPost.postId, detailPost.mediaUrls.length, $event)" aria-label="Siguiente">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-                  </button>
-
-                  <div class="carousel-dots">
-                    @for (url of detailPost.mediaUrls; track url; let idx = $index) {
-                      <span class="dot" [class.active]="idx === getCarouselIndex(detailPost.postId)"></span>
-                    }
-                  </div>
-                }
-              </div>
+              <app-post-media-carousel
+                [mediaUrls]="detailPost.mediaUrls"
+                [postId]="detailPost.postId"
+                [currentIndex]="getCarouselIndex(detailPost.postId)"
+                imageAlt="Adjunto del detalle"
+                [detail]="true"
+                [lazyVideo]="false"
+                (previousRequested)="prevCarousel($event.postId, $event.total)"
+                (nextRequested)="nextCarousel($event.postId, $event.total)"
+              />
             </div>
 
             <!-- Right Side: Info & Comments Column -->

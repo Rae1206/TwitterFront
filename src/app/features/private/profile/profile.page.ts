@@ -4,6 +4,7 @@ import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, Validatio
 import { firstValueFrom } from 'rxjs';
 
 import { getErrorMessage } from '../../../core/api/api.utils';
+import { ConfirmService } from '../../../core/ui/confirm.service';
 import { FeedbackService } from '../../../core/ui/feedback.service';
 import { StateCardComponent } from '../../../shared/components/state-card/state-card.component';
 import { PostDto } from '../../posts/posts.models';
@@ -12,14 +13,18 @@ import { UserAvatarComponent } from '../../users/user-avatar.component';
 import { UserStoreService } from '../../users/user-store.service';
 import { UsersApiService } from '../../users/users-api.service';
 import { UserDto } from '../../users/users.models';
-import { AudioPlayerComponent } from '../../posts/audio-player.component';
+import { PostCardComponent } from '../../posts/post-card.component';
+import { PostMediaCarouselComponent } from '../home/components/post-media-carousel/post-media-carousel.component';
 import { environment } from '../../../../environments/environment';
 import { PostsApiService } from '../../posts/posts-api.service';
 
 @Component({
   selector: 'app-profile-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, ReactiveFormsModule, StateCardComponent, UserAvatarComponent, AudioPlayerComponent],
+  imports: [DatePipe, ReactiveFormsModule, StateCardComponent, UserAvatarComponent, PostCardComponent, PostMediaCarouselComponent],
+  host: {
+    '(document:click)': 'closeAllMenus()',
+  },
   templateUrl: './profile.page.html',
   styleUrl: './profile.page.scss',
 })
@@ -32,6 +37,7 @@ export class ProfilePage {
   private readonly userStore = inject(UserStoreService);
   private readonly postStore = inject(PostStoreService);
   private readonly feedback = inject(FeedbackService);
+  private readonly confirm = inject(ConfirmService);
 
   readonly profile = signal<UserDto | null>(null);
   readonly profileError = signal<string | null>(null);
@@ -47,6 +53,9 @@ export class ProfilePage {
   readonly passwordSaving = signal(false);
   readonly pendingAvatarFile = signal<File | null>(null);
   readonly pendingAvatarPreviewUrl = signal<string | null>(null);
+  readonly openComments = signal<Record<string, boolean>>({});
+  readonly feedVideoSoundEnabled = signal(false);
+  readonly activePostMenu = signal<string | null>(null);
   readonly profileForm = this.formBuilder.group({
     fullName: ['', [Validators.required]],
     email: ['', [Validators.required, Validators.email]],
@@ -95,6 +104,7 @@ export class ProfilePage {
 
     return Boolean(resolvedUserId && sessionUserId && resolvedUserId === sessionUserId);
   });
+  readonly sessionUserId = computed(() => this.userStore.currentUserId());
 
   constructor() {
     effect(() => {
@@ -282,10 +292,6 @@ export class ProfilePage {
     return source || '??';
   }
 
-  protected postDateLabel(post: PostDto): string {
-    return post.createdAt ?? '';
-  }
-
   protected profilePhotoAlt(user: UserDto | null): string {
     return `Foto de perfil de ${user?.fullName || 'Usuario'}`;
   }
@@ -349,8 +355,8 @@ export class ProfilePage {
     return this.activeCarouselIndex()[postId] || 0;
   }
 
-  protected prevCarousel(postId: string | undefined, total: number, event: MouseEvent): void {
-    event.stopPropagation();
+  protected prevCarousel(postId: string | undefined, total: number, event?: MouseEvent): void {
+    event?.stopPropagation();
     if (!postId) return;
     this.activeCarouselIndex.update((prev) => {
       const idx = prev[postId] || 0;
@@ -358,8 +364,8 @@ export class ProfilePage {
     });
   }
 
-  protected nextCarousel(postId: string | undefined, total: number, event: MouseEvent): void {
-    event.stopPropagation();
+  protected nextCarousel(postId: string | undefined, total: number, event?: MouseEvent): void {
+    event?.stopPropagation();
     if (!postId) return;
     this.activeCarouselIndex.update((prev) => {
       const idx = prev[postId] || 0;
@@ -488,11 +494,6 @@ export class ProfilePage {
     return post.repliesCount ?? 0;
   }
 
-  protected isOwnPost(post: PostDto): boolean {
-    const sessionUserId = this.userStore.currentUserId();
-    return !!(sessionUserId && post.userId && sessionUserId === post.userId);
-  }
-
   protected postAuthor(post: PostDto): UserDto {
     return {
       userId: post.userId ?? '',
@@ -540,6 +541,71 @@ export class ProfilePage {
       return this.getOriginalPost(post.retweetOfPostId) ?? post;
     }
     return post;
+  }
+
+  protected closeAllMenus(): void {
+    this.activeRetweetMenu.set(null);
+    this.activePostMenu.set(null);
+  }
+
+  protected isCommentsOpen(postId: string | undefined): boolean {
+    return postId ? Boolean(this.openComments()[postId]) : false;
+  }
+
+  protected toggleComments(postId: string | undefined): void {
+    if (!postId) return;
+    this.openComments.update((prev) => ({ ...prev, [postId]: !prev[postId] }));
+  }
+
+  protected togglePostMenu(postId: string | undefined, event: Event): void {
+    if (!postId) return;
+    event.stopPropagation();
+    if (this.activePostMenu() === postId) {
+      this.activePostMenu.set(null);
+    } else {
+      this.activePostMenu.set(postId);
+    }
+  }
+
+  protected async startEdit(post: PostDto): Promise<void> {
+    this.feedback.info('La edición de publicaciones está disponible en el feed.', { title: 'Editar publicación' });
+    this.activePostMenu.set(null);
+  }
+
+  protected async toggleStatus(post: PostDto): Promise<void> {
+    await this.postStore.togglePublished(post);
+    this.activePostMenu.set(null);
+  }
+
+  protected async remove(postId: string | undefined): Promise<void> {
+    if (!postId) return;
+    const confirmed = await this.confirm.confirm({
+      title: '¿Eliminar esta publicación?',
+      message: 'Eliminarla la quita de tu feed actual y no se puede deshacer desde esta pantalla.',
+      confirmLabel: 'Eliminar publicación',
+      tone: 'danger',
+    });
+    if (!confirmed) return;
+    await this.postStore.deletePost(postId);
+    this.activePostMenu.set(null);
+  }
+
+  protected async inspect(postId: string | undefined): Promise<void> {
+    if (!postId) return;
+    try {
+      const fetched = await firstValueFrom(this.postsApi.getPostById(postId));
+      if (fetched) {
+        this.postInDetail.set(fetched);
+        this.isDetailModalOpen.set(true);
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  protected onQuoteCardClick(origPost: PostDto): void {
+    this.postInDetail.set(origPost);
+    this.isDetailModalOpen.set(true);
   }
 }
 

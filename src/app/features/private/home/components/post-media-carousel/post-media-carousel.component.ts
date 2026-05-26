@@ -114,6 +114,12 @@ export class PostMediaCarouselComponent {
     this.nextRequested.emit({ postId: this.postId(), total: this.mediaUrls().length });
   }
 
+  protected onCarouselClick(event: MouseEvent): void {
+    if (this.detail()) {
+      event.stopPropagation();
+    }
+  }
+
   protected isVideoLoaded(url: string): boolean {
     return !this.lazyVideo() || Boolean(this.loadedVideoUrls()[url]);
   }

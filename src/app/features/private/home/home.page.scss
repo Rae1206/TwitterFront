@@ -231,248 +231,7 @@
   }
 }
 
-/* Premium Media Carousel (similar to Twitter/X) */
-.media-carousel {
-  position: relative;
-  width: 100%;
-  margin-top: 0.75rem;
-  margin-bottom: 0.75rem;
-  border-radius: 1rem;
-  overflow: hidden;
-  border: 1.5px solid var(--border-color);
-  background: var(--bg-secondary);
-  box-shadow: var(--card-shadow);
-  display: flex;
-  flex-direction: column;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-
-  &:hover {
-    border-color: var(--border-strong);
-  }
-
-  // Audio-only modifier to preserve standalone clean pill layout
-  &.audio-only {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    overflow: visible !important;
-    margin-top: 0.5rem;
-    margin-bottom: 0.5rem;
-
-    .carousel-track {
-      background: transparent !important;
-      overflow: visible !important;
-      height: auto !important; // Let single audio player shrink the card
-    }
-
-    .carousel-item {
-      background: transparent !important;
-      padding: 0 !important;
-      overflow: visible !important;
-      height: auto !important;
-
-      &.audio-item {
-        background: transparent !important;
-        
-        &::before {
-          content: none !important;
-        }
-
-        .audio-container {
-          padding: 0 !important;
-          background: transparent !important;
-          border: none !important;
-          box-shadow: none !important;
-          max-width: 100% !important;
-          width: 100% !important;
-        }
-      }
-    }
-  }
-
-  .carousel-track {
-    position: relative;
-    width: 100%;
-    height: 360px; // Constant height in feed to avoid size changes!
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    background: #090d16; // Pure deep slate/black backdrop for media presentation
-  }
-
-  .carousel-item {
-    position: relative;
-    width: 100%;
-    height: 100%; // Make items occupy full track height
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-
-    .video-sound-toggle {
-      position: absolute;
-      right: 1rem;
-      bottom: 1rem;
-      z-index: 2;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      border-radius: 999px;
-      padding: 0.55rem 0.9rem;
-      background: rgba(7, 14, 23, 0.82);
-      color: #f8fafc;
-      font-size: 0.85rem;
-      font-weight: 700;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 10px 25px rgba(2, 6, 23, 0.25);
-      transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
-
-      &:hover {
-        transform: translateY(-1px);
-        background: rgba(12, 21, 36, 0.94);
-        border-color: rgba(255, 255, 255, 0.28);
-      }
-    }
-
-    &.audio-item {
-      justify-content: center !important;
-      align-items: center !important;
-      background: radial-gradient(circle at center, rgba(29, 155, 240, 0.08) 0%, rgba(9, 13, 22, 0.4) 100%);
-      width: 100%;
-      height: 100%;
-      position: relative;
-      overflow: hidden;
-
-      &::before {
-        content: '♪';
-        position: absolute;
-        font-size: 10rem;
-        color: rgba(29, 155, 240, 0.03);
-        font-family: sans-serif;
-        pointer-events: none;
-        line-height: 1;
-        z-index: 1;
-      }
-      
-      .audio-container {
-        position: relative;
-        z-index: 2;
-        width: 90%;
-        max-width: 440px;
-        padding: 1.25rem 1.5rem;
-        border-radius: 1.25rem;
-        background: rgba(15, 23, 42, 0.8) !important;
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-      }
-    }
-
-    img.post-image,
-    img.detail-image {
-      width: 100%;
-      height: 100%;
-      object-fit: cover; // Fill the container beautifully
-      transition: transform 0.3s ease;
-      cursor: zoom-in;
-
-      &:hover {
-        transform: scale(1.015);
-      }
-    }
-
-    video.post-video,
-    video.detail-video {
-      width: 100%;
-      height: 100%;
-      object-fit: contain; // Avoid stretching the video aspect ratio
-      background: #000000;
-      display: block;
-    }
-  }
-
-  /* Carousel Navigation Buttons (Glassmorphic style) */
-  .carousel-nav-btn {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 2.25rem;
-    height: 2.25rem;
-    border-radius: 9999px;
-    background: rgba(15, 23, 42, 0.65);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #ffffff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 10;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-
-    &.prev-btn {
-      left: 1rem;
-    }
-
-    &.next-btn {
-      right: 1rem;
-    }
-
-    &:hover {
-      background: rgba(15, 23, 42, 0.85);
-      border-color: rgba(255, 255, 255, 0.25);
-      transform: translateY(-50%) scale(1.08);
-    }
-
-    &:active {
-      transform: translateY(-50%) scale(0.95);
-    }
-
-    svg {
-      width: 1.15rem;
-      height: 1.15rem;
-      stroke: currentColor;
-    }
-  }
-
-  /* Carousel Dot Indicators */
-  .carousel-dots {
-    position: absolute;
-    bottom: 1rem;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-    z-index: 10;
-    background: rgba(15, 23, 42, 0.5);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    padding: 0.3rem 0.6rem;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-
-    .dot {
-      width: 5px;
-      height: 5px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.4);
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      display: inline-block;
-
-      &.active {
-        background: var(--brand-color, #1d9bf0);
-        width: 12px; // Premium elongated active dot
-        border-radius: 3px;
-      }
-    }
-  }
-}
-
+/* Carousel animations used by PostMediaCarouselComponent */
 @keyframes pulse {
   0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
@@ -719,64 +478,6 @@
       overflow: hidden;
     }
 
-    // Elegant overrides for nested quote carousels
-    .media-carousel {
-      margin-top: 0;
-      margin-bottom: 0;
-      border-radius: 0.5rem;
-      border-color: rgba(255, 255, 255, 0.05);
-
-      .carousel-track {
-        height: 240px; // Compact fixed height in quote cards to keep layout tight!
-      }
-
-      .carousel-item {
-        img.post-image {
-          max-height: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-        video.post-video {
-          max-height: 100%;
-          height: 100%;
-          object-fit: contain;
-        }
-        &.audio-item {
-          &::before {
-            font-size: 6rem;
-          }
-          .audio-container {
-            width: 92%;
-            padding: 0.88rem 1rem;
-            border-radius: 0.88rem;
-          }
-        }
-      }
-
-      .carousel-nav-btn {
-        width: 1.85rem;
-        height: 1.85rem;
-        
-        svg {
-          width: 0.95rem;
-          height: 0.95rem;
-        }
-      }
-      
-      .carousel-dots {
-        bottom: 0.75rem;
-        padding: 0.25rem 0.5rem;
-        
-        .dot {
-          width: 4px;
-          height: 4px;
-          
-          &.active {
-            width: 10px;
-          }
-        }
-      }
-    }
   }
 }
 
@@ -1176,51 +877,6 @@
   }
 }
 
-/* Responsive media carousel adjustments */
-@media (width <= 720px) {
-  .media-carousel {
-    .carousel-track {
-      height: 240px !important;
-    }
-  }
-
-  .nested-quote-media .media-carousel .carousel-track {
-    height: 180px !important;
-  }
-
-  .detail-post-card .media-carousel .carousel-track {
-    height: 320px !important;
-  }
-
-  .detail-media-column {
-    height: 280px !important;
-
-    .media-carousel .carousel-track {
-      height: 100% !important;
-    }
-  }
-}
-
-@media (width <= 480px) {
-  .media-carousel {
-    .carousel-track {
-      height: 200px !important;
-    }
-  }
-
-  .nested-quote-media .media-carousel .carousel-track {
-    height: 160px !important;
-  }
-
-  .detail-post-card .media-carousel .carousel-track {
-    height: 260px !important;
-  }
-
-  .detail-media-column {
-    height: 240px !important;
-  }
-}
-
 /* Detail Lightbox Modal Layout */
 .detail-lightbox-backdrop {
   background: rgba(0, 0, 0, 0.4) !important;
@@ -1261,6 +917,7 @@
   display: grid;
   grid-template-columns: 1.3fr 1fr;
   height: 100%;
+  min-height: 0;
   width: 100%;
   background: transparent;
 
@@ -1277,6 +934,8 @@
   justify-content: center;
   position: relative;
   height: 100%;
+  min-width: 0;
+  min-height: 0;
   width: 100%;
   overflow: hidden;
 
@@ -1305,75 +964,6 @@
     }
   }
 
-  .media-carousel {
-    width: 100%;
-    height: 100%;
-    margin: 0 !important;
-    border-radius: 0 !important;
-
-    .carousel-track {
-      height: 100% !important;
-      max-height: 100% !important;
-    }
-
-    .carousel-item {
-      display: none;
-      height: 100%;
-      width: 100%;
-      align-items: center;
-      justify-content: center;
-
-      &.is-active {
-        display: flex;
-      }
-
-      img.detail-image {
-        max-height: 100% !important;
-        height: 100% !important;
-        width: 100% !important;
-        object-fit: contain !important;
-        background: transparent !important;
-      }
-
-      video.detail-video {
-        max-height: 100% !important;
-        height: 100% !important;
-        width: 100% !important;
-        object-fit: contain !important;
-        background: #000000 !important;
-      }
-
-      &.audio-item {
-        background: radial-gradient(circle, rgba(16, 20, 30, 0.9) 0%, rgba(5, 8, 15, 0.95) 100%);
-        &::before {
-          font-size: 8rem;
-          color: rgba(255, 255, 255, 0.05);
-        }
-        .audio-container {
-          max-width: 420px;
-          padding: 1.25rem;
-          background: rgba(255, 255, 255, 0.03);
-          backdrop-filter: blur(12px);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 1.25rem;
-        }
-      }
-    }
-
-    .carousel-nav-btn {
-      background: rgba(0, 0, 0, 0.5) !important;
-      backdrop-filter: blur(4px) !important;
-      border: 1px solid rgba(255, 255, 255, 0.1) !important;
-      width: 40px !important;
-      height: 40px !important;
-
-      &:hover {
-        background: rgba(29, 155, 240, 0.8) !important;
-        color: white !important;
-      }
-    }
-  }
-
   @media (width <= 768px) {
     height: 350px !important;
     .close-modal-floating {
@@ -1388,6 +978,8 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-width: 0;
+  min-height: 0;
   overflow-y: auto;
   padding: 1.75rem;
 
@@ -1500,39 +1092,6 @@
   flex-direction: column;
   gap: 1.1rem;
 
-  // Dedicated detail post lightbox carousel overrides
-  .media-carousel {
-    margin-top: 1rem;
-    margin-bottom: 1rem;
-    border-radius: 1.25rem;
-
-    .carousel-track {
-      height: 500px; // Constant taller height in detail lightbox view!
-    }
-
-    .carousel-item {
-      img.detail-image {
-        max-height: 100%;
-        height: 100%;
-        object-fit: contain; // Contain presentation to prevent cropping in lightbox views
-        background: #05080f;
-      }
-      video.detail-video {
-        max-height: 100%;
-        height: 100%;
-        object-fit: contain;
-      }
-      &.audio-item {
-        &::before {
-          font-size: 12rem;
-        }
-        .audio-container {
-          max-width: 480px;
-          padding: 1.5rem 2rem;
-        }
-      }
-    }
-  }
 }
 
 .detail-post-header {
@@ -1579,50 +1138,7 @@
   letter-spacing: -0.01em;
 }
 
-.detail-media-container {
-  border-radius: 1rem;
-  overflow: hidden;
-  border: 1.5px solid var(--border-color);
-  background: var(--bg-secondary);
-  max-width: 100%;
-  display: flex;
-  flex-direction: column;
 
-  &.audio-container-wrap {
-    border: none !important;
-    background: transparent !important;
-    overflow: visible !important;
-  }
-
-  .detail-media-item {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-
-    &.audio-item {
-      justify-content: flex-start !important;
-      
-      .audio-container {
-        padding: 0 !important;
-        background: transparent !important;
-        width: 100% !important;
-      }
-    }
-
-    .detail-image {
-      width: 100%;
-      max-height: 480px;
-      object-fit: contain;
-      cursor: zoom-in;
-    }
-
-    .detail-video {
-      width: 100%;
-      max-height: 480px;
-      background: #000000;
-    }
-  }
-}
 
 .detail-timestamp-row {
   font-size: 0.88rem;
