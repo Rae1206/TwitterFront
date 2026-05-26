@@ -34,31 +34,41 @@
     margin-bottom: 0.5rem;
 
     .carousel-track {
-      background: transparent !important;
-      overflow: visible !important;
-      height: auto !important;
+      background: #090d16 !important;
+      overflow: hidden !important;
+      height: 160px !important;
     }
 
     .carousel-item {
-      background: transparent !important;
-      padding: 0 !important;
-      overflow: visible !important;
-      height: auto !important;
+      overflow: hidden !important;
 
       &.audio-item {
-        background: transparent !important;
+        background: radial-gradient(circle at center, rgba(29, 155, 240, 0.08) 0%, rgba(9, 13, 22, 0.4) 100%) !important;
 
         &::before {
-          content: none !important;
+          content: '♪' !important;
+          position: absolute;
+          font-size: 10rem;
+          color: rgba(29, 155, 240, 0.03);
+          font-family: sans-serif;
+          pointer-events: none;
+          line-height: 1;
+          z-index: 1;
         }
 
         .audio-container {
-          padding: 0 !important;
-          background: transparent !important;
-          border: none !important;
-          box-shadow: none !important;
-          max-width: 100% !important;
-          width: 100% !important;
+          position: relative;
+          z-index: 2;
+          width: 90% !important;
+          max-width: 440px !important;
+          padding: 1.25rem 1.5rem !important;
+          border-radius: 1.25rem !important;
+          background: rgba(15, 23, 42, 0.8) !important;
+          backdrop-filter: blur(16px) !important;
+          -webkit-backdrop-filter: blur(16px) !important;
+          border: 1px solid rgba(255, 255, 255, 0.08) !important;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45) !important;
+          margin: 0 auto;
         }
       }
     }
