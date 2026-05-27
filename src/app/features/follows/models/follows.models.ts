@@ -1,6 +1,6 @@
 export interface FollowUserDto {
     userId: string;
-    fullName: string;
+    nickname: string;
     email: string;
     biography?: string;
     profilePhotoUrl?: string;

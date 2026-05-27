@@ -8,6 +8,7 @@ import { AccentPickerComponent } from '../../ui/accent-picker.component';
 import { ThemeToggleComponent } from '../../ui/theme-toggle.component';
 import { UserAvatarComponent } from '../../../features/users/components/user-avatar.component';
 import { UserStoreService } from '../../../features/users/services/user-store.service';
+import { getUserDisplayName } from '../../../features/users/models/users.models';
 
 @Component({
   selector: 'app-private-layout',
@@ -38,7 +39,7 @@ export class PrivateLayoutComponent {
     return role !== null && adminRoles.includes(role as (typeof adminRoles)[number]);
   });
   protected readonly currentRole = this.sessionService.role;
-  protected readonly accountName = computed(() => this.currentUser()?.fullName || this.currentUser()?.email || this.sessionService.userId() || 'Miembro');
+  protected readonly accountName = computed(() => getUserDisplayName(this.currentUser()) || this.sessionService.userId() || 'Miembro');
   protected readonly accountBiography = computed(() => this.currentUser()?.biography?.trim() || 'Aún no has agregado una biografía.');
   protected readonly accountMeta = computed(() => this.currentUser()?.email || this.sessionService.userId() || 'Sin identificador de sesión');
 

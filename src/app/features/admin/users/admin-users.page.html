@@ -37,22 +37,48 @@
           <tbody>
             @for (user of users(); track user.userId ?? user.email ?? $index) {
               <tr>
-                <td>{{ user.fullName || 'Desconocido' }}</td>
+                <td>{{ user.nickname || 'Desconocido' }}</td>
                 <td>{{ user.email || '—' }}</td>
                 <td>{{ (user.roles ?? []).join(', ') || 'Usuario' }}</td>
-                <td>{{ user.deletedAt ? 'Eliminado' : user.isVerified ? 'Verificado' : 'Activo' }}</td>
+                <td>
+                  {{ user.deletedAt ? 'Eliminado' : user.isVerified ? 'Verificado' : 'Activo' }}
+                </td>
                 <td>
                   <div class="table-actions">
-                    <button type="button" class="secondary-action small-action" (click)="pick(user)">Seleccionar</button>
-                    <button type="button" class="secondary-action small-action" (click)="verifyUser(user.userId, !!user.isVerified)">
+                    <button
+                      type="button"
+                      class="secondary-action small-action"
+                      (click)="pick(user)"
+                    >
+                      Seleccionar
+                    </button>
+                    <button
+                      type="button"
+                      class="secondary-action small-action"
+                      (click)="verifyUser(user.userId, !!user.isVerified)"
+                    >
                       {{ user.isVerified ? 'Quitar verificación' : 'Verificar' }}
                     </button>
                     @if (isSelf(user.userId)) {
-                      <span class="chip warn" title="No podés eliminar tu propia cuenta">Tu cuenta</span>
+                      <span class="chip warn" title="No podés eliminar tu propia cuenta"
+                        >Tu cuenta</span
+                      >
                     } @else {
-                      <button type="button" class="danger-action small-action" (click)="deleteUser(user.userId)">Eliminar</button>
+                      <button
+                        type="button"
+                        class="danger-action small-action"
+                        (click)="deleteUser(user.userId)"
+                      >
+                        Eliminar
+                      </button>
                     }
-                    <button type="button" class="secondary-action small-action" (click)="restoreUser(user.userId)">Restaurar</button>
+                    <button
+                      type="button"
+                      class="secondary-action small-action"
+                      (click)="restoreUser(user.userId)"
+                    >
+                      Restaurar
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -82,11 +108,12 @@
       </label>
 
       <div class="button-row">
-        <button type="submit" class="primary-action" [disabled]="!!actingId()">Actualizar rol</button>
+        <button type="submit" class="primary-action" [disabled]="!!actingId()">
+          Actualizar rol
+        </button>
       </div>
     </form>
   </section>
 
-  @if (selected(); as user) {
-  }
+  @if (selected(); as user) {}
 </section>

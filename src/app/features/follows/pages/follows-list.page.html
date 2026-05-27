@@ -46,7 +46,7 @@
             <div class="user-info" (click)="navigateToProfile(user.userId)">
               <app-user-avatar [user]="toUserDto(user)" class="user-avatar" />
               <div class="user-details">
-                <strong class="user-name">{{ user.fullName }}</strong>
+                <strong class="user-name">{{ user.nickname }}</strong>
                 <p class="user-handle">{{ user.email }}</p>
                 @if (user.biography) {
                   <p class="user-bio">{{ user.biography }}</p>

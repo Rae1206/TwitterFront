@@ -1,7 +1,23 @@
 import { environment } from '../../../../environments/environment';
 import { UserDto } from '../models/users.models';
 
+/**
+ * Helper functions
+ */
+function isAbsoluteUrl(url: string): boolean {
+  return /^https?:\/\//i.test(url);
+}
 
+function joinUrl(base: string, path: string): string {
+  if (!base) {
+    return path;
+  }
+
+  const trimmedBase = base.replace(/\/+$/, '');
+  const trimmedPath = path.startsWith('/') ? path : `/${path}`;
+
+  return `${trimmedBase}${trimmedPath}`;
+}
 
 /**
  * Returns the absolute URL to use as `<img src>` for a user's avatar.
@@ -34,7 +50,7 @@ export function resolveAvatarUrl(user: UserDto | null | undefined): string | nul
  * Initials derived from the user full name / email / id, capped to 2 chars.
  */
 export function deriveUserInitials(user: UserDto | null | undefined): string {
-  const source = (user?.fullName || user?.email || user?.userId || 'Unknown')
+  const source = (user?.nickname || user?.email || user?.userId || 'Unknown')
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
@@ -42,19 +58,4 @@ export function deriveUserInitials(user: UserDto | null | undefined): string {
     .join('');
 
   return source || '??';
-}
-
-function isAbsoluteUrl(url: string): boolean {
-  return /^https?:\/\//i.test(url);
-}
-
-function joinUrl(base: string, path: string): string {
-  if (!base) {
-    return path;
-  }
-
-  const trimmedBase = base.replace(/\/+$/, '');
-  const trimmedPath = path.startsWith('/') ? path : `/${path}`;
-
-  return `${trimmedBase}${trimmedPath}`;
 }

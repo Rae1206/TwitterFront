@@ -13,7 +13,7 @@ import { StateCardComponent } from '../../../shared/components/state-card/state-
 import { MessagesApiService } from '../services/messages-api.service';
 import { MessageDto } from '../models/messages.models';
 import { UserAvatarComponent } from '../../users/components/user-avatar.component';
-import { UserDto } from '../../users/models/users.models';
+import { UserDto, getUserDisplayName } from '../../users/models/users.models';
 
 
 @Component({
@@ -35,9 +35,15 @@ export class MessagesPage {
     readonly conversations = signal<MessageDto[]>([]);
     readonly selectedConversation = signal<MessageDto[]>([]);
     readonly selectedUserId = signal<string | null>(null);
+    readonly selectedUserInfo = signal<{ name: string; avatar?: string } | null>(null);
     readonly loading = signal(false);
     readonly sending = signal(false);
     readonly error = signal<string | null>(null);
+
+    // Real-time status tracking
+    readonly onlineUsers = signal<Set<string>>(new Set());
+    readonly typingUsers = signal<Set<string>>(new Set());
+    private typingTimeout: any = null;
 
     readonly unreadCount = toSignal(
         interval(10000).pipe(
@@ -52,7 +58,11 @@ export class MessagesPage {
 
     readonly currentUserId = computed(() => this.sessionService.userId());
     readonly hasSelectedConversation = computed(() => this.selectedUserId() !== null);
+
     readonly selectedUserName = computed(() => {
+        const userInfo = this.selectedUserInfo();
+        if (userInfo) return userInfo.name;
+
         const userId = this.selectedUserId();
         if (!userId) return '';
 
@@ -66,6 +76,33 @@ export class MessagesPage {
         return isSender ? conv.senderUsername : conv.receiverUsername;
     });
 
+    readonly selectedUserAvatar = computed(() => {
+        const userInfo = this.selectedUserInfo();
+        if (userInfo) return userInfo.avatar;
+
+        const userId = this.selectedUserId();
+        if (!userId) return undefined;
+
+        const conv = this.conversations().find(
+            (m) => m.senderId === userId || m.receiverId === userId
+        );
+
+        if (!conv) return undefined;
+
+        const isSender = conv.senderId === userId;
+        return isSender ? conv.senderAvatar : conv.receiverAvatar;
+    });
+
+    readonly isSelectedUserOnline = computed(() => {
+        const userId = this.selectedUserId();
+        return userId ? this.onlineUsers().has(userId) : false;
+    });
+
+    readonly isSelectedUserTyping = computed(() => {
+        const userId = this.selectedUserId();
+        return userId ? this.typingUsers().has(userId) : false;
+    });
+
     constructor() {
         void this.loadConversations();
 
@@ -74,6 +111,9 @@ export class MessagesPage {
 
         // Escuchar mensajes en tiempo real
         this.listenToNewMessages();
+
+        // Escuchar eventos de estado de usuarios
+        this.listenToUserStatus();
 
         // Verificar si hay un userId en los query params para iniciar conversación
         this.checkForNewConversation();
@@ -102,10 +142,61 @@ export class MessagesPage {
             if (selectedUserId &&
                 (message.senderId === selectedUserId || message.receiverId === selectedUserId)) {
                 this.selectedConversation.update(messages => [...messages, message]);
+
+                // Actualizar info del usuario si no existe
+                if (!this.selectedUserInfo()) {
+                    const currentUserId = this.currentUserId();
+                    const isOtherUserSender = message.senderId !== currentUserId;
+                    this.selectedUserInfo.set({
+                        name: isOtherUserSender ? message.senderUsername : message.receiverUsername,
+                        avatar: isOtherUserSender ? message.senderAvatar : message.receiverAvatar
+                    });
+                }
             }
 
             // Recargar la lista de conversaciones
             void this.loadConversations();
+        });
+    }
+
+    /**
+     * Escucha eventos de estado de usuarios (online/offline, typing)
+     */
+    private listenToUserStatus(): void {
+        // Usuario se conectó
+        this.signalRService.onUserOnline.subscribe((userId) => {
+            this.onlineUsers.update(users => {
+                const newSet = new Set(users);
+                newSet.add(userId);
+                return newSet;
+            });
+        });
+
+        // Usuario se desconectó
+        this.signalRService.onUserOffline.subscribe((userId) => {
+            this.onlineUsers.update(users => {
+                const newSet = new Set(users);
+                newSet.delete(userId);
+                return newSet;
+            });
+        });
+
+        // Usuario está escribiendo
+        this.signalRService.onUserTyping.subscribe((userId) => {
+            this.typingUsers.update(users => {
+                const newSet = new Set(users);
+                newSet.add(userId);
+                return newSet;
+            });
+        });
+
+        // Usuario dejó de escribir
+        this.signalRService.onUserStopTyping.subscribe((userId) => {
+            this.typingUsers.update(users => {
+                const newSet = new Set(users);
+                newSet.delete(userId);
+                return newSet;
+            });
         });
     }
 
@@ -135,13 +226,49 @@ export class MessagesPage {
             );
             this.selectedConversation.set(messages.reverse());
 
+            // Guardar info del usuario desde el primer mensaje
             if (messages.length > 0) {
+                const firstMsg = messages[0];
+                const currentUserId = this.currentUserId();
+                const isOtherUserSender = firstMsg.senderId !== currentUserId;
+
+                this.selectedUserInfo.set({
+                    name: isOtherUserSender ? firstMsg.senderUsername : firstMsg.receiverUsername,
+                    avatar: isOtherUserSender ? firstMsg.senderAvatar : firstMsg.receiverAvatar
+                });
+
                 // Marcar como leído si hay mensajes
                 await firstValueFrom(this.messagesApi.markConversationAsRead(userId));
+            } else {
+                // Si no hay mensajes, intentar obtener info de conversations
+                const conv = this.conversations().find(
+                    (m) => m.senderId === userId || m.receiverId === userId
+                );
+                if (conv) {
+                    const currentUserId = this.currentUserId();
+                    const isSender = conv.senderId === userId;
+                    this.selectedUserInfo.set({
+                        name: isSender ? conv.senderUsername : conv.receiverUsername,
+                        avatar: isSender ? conv.senderAvatar : conv.receiverAvatar
+                    });
+                }
             }
         } catch (err) {
             // Si no hay mensajes, simplemente iniciar una conversación vacía
             this.selectedConversation.set([]);
+
+            // Intentar obtener info de conversations
+            const conv = this.conversations().find(
+                (m) => m.senderId === userId || m.receiverId === userId
+            );
+            if (conv) {
+                const currentUserId = this.currentUserId();
+                const isSender = conv.senderId === userId;
+                this.selectedUserInfo.set({
+                    name: isSender ? conv.senderUsername : conv.receiverUsername,
+                    avatar: isSender ? conv.senderAvatar : conv.receiverAvatar
+                });
+            }
         }
     }
 
@@ -164,6 +291,14 @@ export class MessagesPage {
         if (!currentUserId) return;
 
         const otherUserId = message.senderId === currentUserId ? message.receiverId : message.senderId;
+
+        // Guardar info del usuario antes de cargar la conversación
+        const isSender = message.senderId !== currentUserId;
+        this.selectedUserInfo.set({
+            name: isSender ? message.senderUsername : message.receiverUsername,
+            avatar: isSender ? message.senderAvatar : message.receiverAvatar
+        });
+
         await this.startNewConversation(otherUserId);
     }
 
@@ -185,6 +320,10 @@ export class MessagesPage {
 
             this.selectedConversation.update((messages) => [...messages, newMessage]);
             this.messageForm.reset();
+
+            // Notificar que dejó de escribir
+            await this.signalRService.notifyStopTyping(userId);
+
             await this.loadConversations();
         } catch (err) {
             this.feedback.error(getErrorMessage(err, 'No se pudo enviar el mensaje'));
@@ -193,9 +332,32 @@ export class MessagesPage {
         }
     }
 
+    /**
+     * Maneja el evento de escritura en el input
+     * Notifica al otro usuario que está escribiendo
+     */
+    onInputChange(): void {
+        const userId = this.selectedUserId();
+        if (!userId) return;
+
+        // Notificar que está escribiendo
+        void this.signalRService.notifyTyping(userId);
+
+        // Limpiar timeout anterior
+        if (this.typingTimeout) {
+            clearTimeout(this.typingTimeout);
+        }
+
+        // Después de 2 segundos sin escribir, notificar que dejó de escribir
+        this.typingTimeout = setTimeout(() => {
+            void this.signalRService.notifyStopTyping(userId);
+        }, 2000);
+    }
+
     closeConversation(): void {
         this.selectedUserId.set(null);
         this.selectedConversation.set([]);
+        this.selectedUserInfo.set(null);
         this.messageForm.reset();
     }
 
@@ -219,6 +381,10 @@ export class MessagesPage {
         return message.receiverId === currentUserId && !message.isRead;
     }
 
+    isUserOnline(userId: string): boolean {
+        return this.onlineUsers().has(userId);
+    }
+
     isSentByMe(message: MessageDto): boolean {
         return message.senderId === this.currentUserId();
     }
@@ -226,7 +392,7 @@ export class MessagesPage {
     toUserDto(message: MessageDto, isSender: boolean): UserDto {
         return {
             userId: isSender ? message.senderId : message.receiverId,
-            fullName: isSender ? message.senderUsername : message.receiverUsername,
+            nickname: isSender ? message.senderUsername : message.receiverUsername,
             email: isSender ? message.senderUsername : message.receiverUsername,
             profilePhotoUrl: isSender ? message.senderAvatar : message.receiverAvatar,
         };

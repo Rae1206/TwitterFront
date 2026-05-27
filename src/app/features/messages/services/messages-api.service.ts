@@ -28,7 +28,7 @@ export class MessagesApiService {
     }
 
     getUnreadCountInConversation(otherUserId: string): Observable<number> {
-        return this.apiClient.get<number>(`${this.baseUrl}/unread/conversation/${otherUserId}/count`);
+        return this.apiClient.get<number>(`${this.baseUrl}/conversation/${otherUserId}/unread/count`);
     }
 
     markAsRead(messageId: string): Observable<null> {

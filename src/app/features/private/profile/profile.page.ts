@@ -316,7 +316,7 @@ export class ProfilePage {
   }
 
   protected profilePhotoAlt(user: UserDto | null): string {
-    return `Foto de perfil de ${user?.fullName || 'Usuario'}`;
+    return `Foto de perfil de ${user?.nickname || 'Usuario'}`;
   }
 
   protected removePendingAvatar(): void {

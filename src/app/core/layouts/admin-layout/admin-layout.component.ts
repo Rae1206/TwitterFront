@@ -6,6 +6,7 @@ import { AccentPickerComponent } from '../../ui/accent-picker.component';
 import { FeedbackService } from '../../ui/feedback.service';
 import { ThemeToggleComponent } from '../../ui/theme-toggle.component';
 import { UserStoreService } from '../../../features/users/services/user-store.service';
+import { getUserDisplayName } from '../../../features/users/models/users.models';
 
 @Component({
   selector: 'app-admin-layout',
@@ -27,7 +28,7 @@ export class AdminLayoutComponent {
   private readonly router = inject(Router);
 
   readonly currentUser = computed(() => this.userStore.currentUser());
-  readonly accountName = computed(() => this.currentUser()?.fullName || this.currentUser()?.email || 'Administrador');
+  readonly accountName = computed(() => getUserDisplayName(this.currentUser()) || 'Administrador');
   readonly accountMeta = computed(() => {
     const user = this.currentUser();
     return user?.email ?? '';

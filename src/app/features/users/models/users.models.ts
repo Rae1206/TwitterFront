@@ -3,7 +3,8 @@ import { JsonRecord, PaginationQuery } from "../../../core/api/api.models";
 
 export interface UserDto extends JsonRecord {
   userId?: string;
-  fullName?: string;
+  nickname?: string;
+  fullName?: string; // Deprecated: mantener temporalmente para compatibilidad con datos cacheados
   email?: string;
   biography?: string | null;
   isActive?: boolean;
@@ -16,16 +17,26 @@ export interface UserDto extends JsonRecord {
   profilePhotoFileName?: string | null;
   profilePhotoStoragePath?: string | null;
   profilePhotoUrl?: string | null;
+  followersCount?: number;
+  followingCount?: number;
+}
+
+/**
+ * Helper function to get user display name with fallback for old cached data
+ */
+export function getUserDisplayName(user: UserDto | null | undefined): string {
+  if (!user) return 'Usuario';
+  return user.nickname || user.fullName || user.email || 'Usuario';
 }
 
 export interface RegisterUserRequest {
-  fullName: string;
+  nickname: string;
   email: string;
   password: string;
 }
 
 export interface UpdateUserRequest {
-  fullName?: string;
+  nickname?: string;
   email?: string;
   biography?: string | null;
   isActive?: boolean;

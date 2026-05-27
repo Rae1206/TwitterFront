@@ -37,6 +37,11 @@
                 [user]="toUserDto(conv, conv.senderId !== currentUserId())"
                 class="conversation-avatar"
               />
+              <div class="online-indicator-wrapper">
+                @if (isUserOnline(getOtherUserId(conv))) {
+                  <span class="online-indicator"></span>
+                }
+              </div>
               <div class="conversation-content">
                 <div class="conversation-header">
                   <strong class="conversation-name">{{ getOtherUserName(conv) }}</strong>
@@ -62,7 +67,31 @@
               <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
           </button>
-          <strong>{{ selectedUserName() }}</strong>
+
+          <div class="chat-header-user">
+            @if (selectedUserAvatar()) {
+              <app-user-avatar
+                [user]="{
+                  userId: selectedUserId()!,
+                  nickname: selectedUserName(),
+                  email: selectedUserName(),
+                  profilePhotoUrl: selectedUserAvatar(),
+                }"
+                class="chat-header-avatar"
+              />
+            }
+            <div class="chat-header-info">
+              <div class="user-name-row">
+                <strong class="user-name">{{ selectedUserName() }}</strong>
+                @if (isSelectedUserOnline()) {
+                  <span class="online-dot"></span>
+                }
+              </div>
+              @if (!isSelectedUserOnline()) {
+                <span class="last-seen">Última conexión reciente</span>
+              }
+            </div>
+          </div>
         </div>
 
         <div class="chat-messages">
@@ -78,6 +107,17 @@
               </div>
             </div>
           }
+
+          @if (isSelectedUserTyping()) {
+            <div class="typing-indicator">
+              <div class="typing-bubble">
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+              </div>
+              <span class="typing-text">está escribiendo...</span>
+            </div>
+          }
         </div>
 
         <form class="chat-input-form" [formGroup]="messageForm" (ngSubmit)="sendMessage()">
@@ -87,6 +127,7 @@
             placeholder="Escribe un mensaje..."
             class="chat-input"
             [disabled]="sending()"
+            (input)="onInputChange()"
           />
           <button type="submit" class="send-button" [disabled]="messageForm.invalid || sending()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

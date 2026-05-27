@@ -96,7 +96,7 @@ export class FollowsPage {
     toUserDto(user: FollowUserDto): UserDto {
         return {
             userId: user.userId,
-            fullName: user.fullName,
+            nickname: user.nickname,
             email: user.email,
             biography: user.biography,
             profilePhotoUrl: user.profilePhotoUrl ?? null,

@@ -68,7 +68,7 @@ export class UserAvatarComponent {
   private readonly revisions = inject(UserAvatarRevisionService);
   private readonly imageError = signal(false);
 
-  readonly altText = computed(() => `${this.user()?.fullName || 'User'} profile photo`);
+  readonly altText = computed(() => `${this.user()?.nickname || 'User'} profile photo`);
   readonly initials = computed(() => deriveUserInitials(this.user()));
 
   readonly effectiveImageUrl = computed(() => {

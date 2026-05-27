@@ -16,7 +16,7 @@
     <aside class="hero-spotlight">
       <p class="eyebrow">Tu perfil</p>
       <app-user-avatar class="spotlight-avatar" [user]="currentUser()" />
-      <strong>{{ currentUser()?.fullName || 'Cargando...' }}</strong>
+      <strong>{{ currentUser()?.nickname || 'Cargando...' }}</strong>
       <p>{{ biographyPreview() }}</p>
     </aside>
   </header>
@@ -36,7 +36,13 @@
   @if (loading() && !currentUser()) {
     <app-state-card tone="loading" title="Cargando tu perfil" message="Un momento..." />
   } @else if (!loading() && !currentUser()) {
-    <app-state-card tone="empty" title="Sin perfil" message="No pudimos cargar tu perfil." actionLabel="Reintentar" (action)="reload()" />
+    <app-state-card
+      tone="empty"
+      title="Sin perfil"
+      message="No pudimos cargar tu perfil."
+      actionLabel="Reintentar"
+      (action)="reload()"
+    />
   } @else {
     <section class="detail-grid">
       <section class="surface-card">
@@ -49,30 +55,50 @@
         <form class="stack" [formGroup]="form" (ngSubmit)="save()">
           <div class="avatar-editor">
             <div class="avatar-editor-frame">
-              <app-user-avatar class="avatar-editor-photo" [user]="currentUser()" [previewUrl]="pendingAvatarPreviewUrl()" />
+              <app-user-avatar
+                class="avatar-editor-photo"
+                [user]="currentUser()"
+                [previewUrl]="pendingAvatarPreviewUrl()"
+              />
 
-              <label class="avatar-editor-edit" [class.disabled]="loading()" title="Cambiar foto de perfil">
+              <label
+                class="avatar-editor-edit"
+                [class.disabled]="loading()"
+                title="Cambiar foto de perfil"
+              >
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                  <path
+                    fill="currentColor"
+                    d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
+                  />
                 </svg>
                 <span class="visually-hidden">Cambiar foto de perfil</span>
-                <input type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" [disabled]="loading()" (change)="stageAvatar($event)" />
+                <input
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                  [disabled]="loading()"
+                  (change)="stageAvatar($event)"
+                />
               </label>
             </div>
 
-            <p class="avatar-editor-hint">JPG, JPEG, PNG o WEBP. La nueva foto se sube solo cuando guardas.</p>
+            <p class="avatar-editor-hint">
+              JPG, JPEG, PNG o WEBP. La nueva foto se sube solo cuando guardas.
+            </p>
 
             @if (pendingAvatarFile(); as pendingAvatar) {
               <div class="avatar-editor-meta">
                 <span>{{ pendingAvatar.name }}</span>
-                <button type="button" class="inline-link" (click)="removePendingAvatar()">Quitar selección</button>
+                <button type="button" class="inline-link" (click)="removePendingAvatar()">
+                  Quitar selección
+                </button>
               </div>
             }
           </div>
 
           <label class="field">
             <span>Nombre completo</span>
-            <input type="text" formControlName="fullName" autocomplete="name" />
+            <input type="text" formControlName="nickname" autocomplete="name" />
           </label>
 
           <label class="field">
@@ -82,12 +108,26 @@
 
           <label class="field">
             <span>Biografía</span>
-            <textarea rows="4" formControlName="biography" autocomplete="off" placeholder="Cuéntale a la gente sobre esta cuenta"></textarea>
+            <textarea
+              rows="4"
+              formControlName="biography"
+              autocomplete="off"
+              placeholder="Cuéntale a la gente sobre esta cuenta"
+            ></textarea>
           </label>
 
           <div class="button-row">
-            <button type="submit" class="primary-action" [disabled]="!canSave()">{{ loading() ? 'Guardando...' : 'Guardar cambios' }}</button>
-            <button type="button" class="secondary-action" [disabled]="loading()" (click)="resetToCurrentValues()">Restablecer formulario</button>
+            <button type="submit" class="primary-action" [disabled]="!canSave()">
+              {{ loading() ? 'Guardando...' : 'Guardar cambios' }}
+            </button>
+            <button
+              type="button"
+              class="secondary-action"
+              [disabled]="loading()"
+              (click)="resetToCurrentValues()"
+            >
+              Restablecer formulario
+            </button>
           </div>
         </form>
       </section>
