@@ -6,12 +6,14 @@ import { SessionService } from '../../../core/auth/session.service';
 import { FeedbackService } from '../../../core/ui/feedback.service';
 import { PostsApiService } from './posts-api.service';
 import { PostDto, SavePostRequest } from '../models/posts.models';
+import { ReportStoreService } from '../../reports/services/report-store.service';
 
 @Injectable({ providedIn: 'root' })
 export class PostStoreService {
   private readonly postsApi = inject(PostsApiService);
   private readonly sessionService = inject(SessionService);
   private readonly feedback = inject(FeedbackService);
+  private readonly reportsStore = inject(ReportStoreService);
 
   private readonly postsState = signal<PostDto[]>([]);
   private readonly loadingState = signal(false);
@@ -34,7 +36,11 @@ export class PostStoreService {
       this.loadingState.set(true);
       this.errorState.set(null);
       this.loadPersistedInteractions();
-      this.postsState.set(await firstValueFrom(this.postsApi.listPosts()));
+      const [posts] = await Promise.all([
+        firstValueFrom(this.postsApi.listPosts()),
+        this.reportsStore.loadMyReports(),
+      ]);
+      this.postsState.set(posts);
     } catch (error) {
       this.errorState.set(getErrorMessage(error, 'No pudimos cargar el feed todavía.'));
     } finally {

@@ -1,4 +1,4 @@
-﻿<section class="page-shell">
+<section class="page-shell">
   <header class="surface-card hero-card">
     <div class="profile-banner"></div>
 
@@ -314,28 +314,7 @@
             <input type="password" formControlName="confirmPassword" autocomplete="new-password" />
           </label>
 
-          <div class="checklist compact-checklist">
-            <article
-              class="check-item"
-              [class.ready]="passwordForm.controls.currentPassword.value.length > 0"
-            >
-              <strong>Contraseña actual ingresada</strong>
-              <p>El endpoint requiere la contraseña actual antes de aceptar el cambio.</p>
-            </article>
-            <article class="check-item" [class.ready]="passwordLengthMet()">
-              <strong>Longitud mínima cumplida</strong>
-              <p>La nueva contraseña debe tener al menos seis caracteres.</p>
-            </article>
-            <article
-              class="check-item"
-              [class.ready]="
-                !passwordMismatch() && passwordForm.controls.confirmPassword.value.length > 0
-              "
-            >
-              <strong>La confirmación coincide</strong>
-              <p>El campo de confirmación debe coincidir exactamente con la nueva contraseña.</p>
-            </article>
-          </div>
+
 
           @if (passwordMismatch()) {
             <p class="feedback error">

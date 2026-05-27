@@ -36,6 +36,22 @@ export class ReportStoreService {
     }
   }
 
+  /** Load all user reports to cache their reported states */
+  async loadMyReports(): Promise<void> {
+    try {
+      const reports = await firstValueFrom(this.reportsApi.getMyReports());
+      const stateUpdate: Record<string, boolean> = {};
+      for (const report of reports) {
+        if (report.entityId && report.entityType === REPORT_ENTITY_TYPE_POST) {
+          stateUpdate[report.entityId] = true;
+        }
+      }
+      this.reportedEntitiesState.set(stateUpdate);
+    } catch {
+      // Fail silently
+    }
+  }
+
   /** Load reported status for a batch of post IDs */
   async loadReportedStatus(postIds: string[]): Promise<void> {
     for (const id of postIds) {
