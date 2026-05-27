@@ -1,4 +1,4 @@
-<section class="page-shell">
+﻿<section class="page-shell">
   <header class="page-header">
     <div>
       <p class="eyebrow">Administración</p>
@@ -38,7 +38,7 @@
             @for (post of posts(); track post.postId ?? $index) {
               <tr>
                 <td>{{ post.content || 'Sin contenido' }}</td>
-                <td>{{ post.userFullName || post.userId || 'Desconocido' }}</td>
+                <td>{{ post.userNickname || post.userId || 'Desconocido' }}</td>
                 <td>{{ post.isPublished ? 'Sí' : 'No' }}</td>
                 <td>{{ post.reportCount ?? 0 }}</td>
                 <td>

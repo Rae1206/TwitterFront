@@ -1,0 +1,66 @@
+@if (isOpen()) {
+  <div class="modal-backdrop" (click)="close()">
+    <div class="modal-container surface-card" (click)="$event.stopPropagation()">
+      <header class="modal-header">
+        <h3>Reportar publicación</h3>
+        <button type="button" class="close-modal-btn" (click)="close()">&times;</button>
+      </header>
+
+      @if (alreadyReported()) {
+        <div class="report-already-content">
+          <svg class="already-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
+          <p>Ya reportaste esta publicación. Estamos revisándolo.</p>
+          <button type="button" class="secondary-action" (click)="close()">Entendido</button>
+        </div>
+      } @else {
+        <div class="report-form-content">
+          <p class="report-intro">Seleccioná el motivo del reporte:</p>
+
+          <div class="category-grid">
+            @for (cat of categories; track cat.value) {
+              <button
+                type="button"
+                class="category-option"
+                [class.selected]="selectedCategory === cat.value"
+                (click)="selectCategory(cat.value)"
+              >
+                {{ cat.label }}
+              </button>
+            }
+          </div>
+
+          <label class="field">
+            <span>Detalles adicionales (opcional)</span>
+            <textarea
+              rows="3"
+              [(ngModel)]="description"
+              placeholder="Describí el problema..."
+              class="report-textarea"
+            ></textarea>
+          </label>
+
+          <div class="button-row">
+            <button
+              type="button"
+              class="primary-action"
+              [disabled]="!canSubmit || isSubmitting()"
+              (click)="submitReport()"
+            >
+              @if (isSubmitting()) {
+                Enviando...
+              } @else {
+                Reportar
+              }
+            </button>
+            <button type="button" class="secondary-action" (click)="close()">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+}

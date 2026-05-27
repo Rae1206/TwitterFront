@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+﻿import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 import { SessionService } from '../../auth/session.service';
@@ -27,7 +27,7 @@ export class AdminLayoutComponent {
   private readonly router = inject(Router);
 
   readonly currentUser = computed(() => this.userStore.currentUser());
-  readonly accountName = computed(() => this.currentUser()?.fullName || this.currentUser()?.email || 'Administrador');
+  readonly accountName = computed(() => this.currentUser()?.nickname || this.currentUser()?.email || 'Administrador');
   readonly accountMeta = computed(() => {
     const user = this.currentUser();
     return user?.email ?? '';

@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+﻿import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -109,7 +109,7 @@ export class PeoplePage {
     const confirmed = await this.confirm.confirm({
       title: '¿Eliminar este usuario?',
       message: 'Esto usa el endpoint privilegiado de eliminación y solo debe activarse cuando estés seguro de que la cuenta debe ser removida.',
-      details: user.fullName || user.email || userId,
+      details: user.nickname || user.email || userId,
       confirmLabel: 'Eliminar usuario',
       tone: 'danger',
     });
@@ -154,7 +154,7 @@ export class PeoplePage {
 
   private compareUsers(left: UserDto, right: UserDto): number {
     return this.scoreUser(right) - this.scoreUser(left)
-      || (left.fullName || left.email || '').localeCompare(right.fullName || right.email || '');
+      || (left.nickname || left.email || '').localeCompare(right.nickname || right.email || '');
   }
 
   protected updateSearch(value: string): void {
@@ -167,7 +167,7 @@ export class PeoplePage {
 
   private matchesQuery(user: UserDto, query: string): boolean {
     const haystack = [
-      user.fullName,
+      user.nickname,
       user.email,
       user.biography,
       user.userId,

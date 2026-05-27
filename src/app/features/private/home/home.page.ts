@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+﻿import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -22,6 +22,9 @@ import { PostCardComponent } from '../../posts/components/post-card.component';
 import { PostsApiService } from '../../posts/services/posts-api.service';
 import { PostDto } from '../../posts/models/posts.models';
 import { UserDto } from '../../users/models/users.models';
+import { ReportStoreService } from '../../reports/services/report-store.service';
+import { ReportModalComponent } from '../../reports/components/report-modal.component';
+import { REPORT_ENTITY_TYPE_POST } from '../../reports/models/reports.models';
 
 export interface MediaAttachment {
   file?: File;
@@ -33,7 +36,7 @@ export interface MediaAttachment {
 @Component({
   selector: 'app-home-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, ReactiveFormsModule, StateCardComponent, UserAvatarComponent, AudioRecorderModalComponent, AudioPlayerComponent, HomeComposerComponent, PostActionsComponent, PostMediaCarouselComponent, PostCardComponent],
+  imports: [DatePipe, ReactiveFormsModule, StateCardComponent, UserAvatarComponent, AudioRecorderModalComponent, AudioPlayerComponent, HomeComposerComponent, PostActionsComponent, PostMediaCarouselComponent, PostCardComponent, ReportModalComponent],
   host: {
     '(document:click)': 'closeAllMenus()',
   },
@@ -46,6 +49,7 @@ export class HomePage {
   private readonly postsApi = inject(PostsApiService);
   private readonly confirm = inject(ConfirmService);
   private readonly sessionService = inject(SessionService);
+  private readonly reportStore = inject(ReportStoreService);
   private readonly composerSection = viewChild<ElementRef<HTMLElement>>('composerSection');
   readonly attachments = signal<MediaAttachment[]>([]);
   readonly uploadingFile = signal(false);
@@ -73,6 +77,10 @@ export class HomePage {
   readonly isDetailModalOpen = signal(false);
   readonly postInDetail = signal<PostDto | null>(null);
   readonly isRecorderOpen = signal(false);
+
+  readonly isReportModalOpen = signal(false);
+  readonly reportTargetPostId = signal<string | null>(null);
+  readonly isReportSubmitting = signal(false);
 
   readonly form = this.formBuilder.group({
     content: [''],
@@ -314,7 +322,7 @@ export class HomePage {
   }
 
   private matchesPostQuery(post: PostDto, query: string): boolean {
-    const haystack = [post.content, post.userFullName, post.username, post.userId]
+    const haystack = [post.content, post.userNickname, post.username, post.userId]
       .filter((value): value is string => typeof value === 'string' && value.length > 0)
       .map((value) => value.toLowerCase());
 
@@ -326,7 +334,7 @@ export class HomePage {
   }
 
   protected authorName(post: PostDto): string {
-    return post.userFullName || post.username || post.userId || 'Autor desconocido';
+    return post.userNickname || post.username || post.userId || 'Autor desconocido';
   }
 
   protected authorHandle(post: PostDto): string {
@@ -334,8 +342,8 @@ export class HomePage {
       return `@${post.username.replace(/^@/, '')}`;
     }
 
-    if (post.userFullName) {
-      return `@${post.userFullName.replace(/\s+/g, '').toLowerCase()}`;
+    if (post.userNickname) {
+      return `@${post.userNickname.replace(/\s+/g, '').toLowerCase()}`;
     }
 
     return '@desconocido';
@@ -358,7 +366,7 @@ export class HomePage {
 
     const author: UserDto = {
       userId: post.userId,
-      fullName: post.userFullName ?? post.username ?? undefined,
+      nickname: post.userNickname ?? post.username ?? undefined,
       email: post.username ?? undefined,
       profilePhotoUrl: post.userAvatar ?? null,
     };
@@ -393,6 +401,18 @@ export class HomePage {
     return postId ? Boolean(this.retweetedPosts()[postId]) : false;
   }
 
+  /**
+   * Resolves the target post ID for retweet actions.
+   * For pure retweets (retweetOfPostId && !content), the target is the original post ID.
+   * For normal posts, the target is the post's own ID.
+   */
+  protected getRetweetTargetId(post: PostDto): string | undefined {
+    if (post.retweetOfPostId && !post.content) {
+      return post.retweetOfPostId;
+    }
+    return post.postId;
+  }
+
   protected toggleRetweetMenu(postId: string | undefined, event: Event): void {
     if (!postId) return;
     event.stopPropagation();
@@ -404,14 +424,14 @@ export class HomePage {
   }
 
   protected async directRetweet(post: PostDto): Promise<void> {
-    const postId = post.postId;
-    if (!postId) return;
+    const targetId = this.getRetweetTargetId(post);
+    if (!targetId) return;
     this.activeRetweetMenu.set(null);
 
-    if (this.isRetweeted(postId)) {
-      await this.postStore.unretweet(postId);
+    if (this.isRetweeted(targetId)) {
+      await this.postStore.unretweet(targetId);
     } else {
-      await this.postStore.retweet(postId, null);
+      await this.postStore.retweet(targetId, null);
     }
   }
 
@@ -529,6 +549,37 @@ export class HomePage {
     this.postInDetail.set(null);
   }
 
+  // ── Report ──
+
+  protected openReportModal(postId: string | undefined): void {
+    if (!postId) return;
+    this.reportTargetPostId.set(postId);
+    this.isReportModalOpen.set(true);
+  }
+
+  protected closeReportModal(): void {
+    this.isReportModalOpen.set(false);
+    this.reportTargetPostId.set(null);
+  }
+
+  protected isPostReported(postId: string | undefined): boolean {
+    return postId ? this.reportStore.isReported(postId) : false;
+  }
+
+  protected async submitReport(payload: { entityType: string; entityId: string; category: string; description?: string }): Promise<void> {
+    this.isReportSubmitting.set(true);
+    const success = await this.reportStore.submitReport({
+      entityType: payload.entityType,
+      entityId: payload.entityId,
+      category: payload.category,
+      description: payload.description ?? null,
+    });
+    this.isReportSubmitting.set(false);
+    if (success) {
+      this.closeReportModal();
+    }
+  }
+
   protected getRetweetsCount(post: PostDto): number {
     return post.retweetsCount ?? 0;
   }
@@ -579,7 +630,7 @@ export class HomePage {
         ...cache,
         [retweetOfPostId]: {
           postId: retweetOfPostId,
-          userFullName: 'Autor original',
+          userNickname: 'Autor original',
           username: 'original',
           content: 'Cargando detalles de la publicación compartida...',
           createdAt: new Date().toISOString(),
@@ -601,7 +652,7 @@ export class HomePage {
             ...cache,
             [retweetOfPostId]: {
               postId: retweetOfPostId,
-              userFullName: 'No disponible',
+              userNickname: 'No disponible',
               username: 'no-disponible',
               content: 'Esta publicación compartida no se pudo cargar (puede ser privada o estar eliminada).',
               createdAt: new Date().toISOString(),

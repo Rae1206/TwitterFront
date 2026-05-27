@@ -25,6 +25,7 @@ export class AdminReportsPage {
   private readonly formBuilder = inject(NonNullableFormBuilder);
   private readonly feedback = inject(FeedbackService);
   private readonly confirm = inject(ConfirmService);
+  private isInitialLoad = true;
 
   readonly pendingReports = signal<AdminReportDto[]>([]);
   readonly allReports = signal<AdminReportDto[]>([]);
@@ -34,15 +35,12 @@ export class AdminReportsPage {
   readonly selected = signal<AdminReportDto | null>(null);
   readonly historyFilter = signal<ReportHistoryFilter>('all');
   readonly createForm = this.formBuilder.group({ postId: ['', Validators.required], reason: ['', Validators.required], description: [''] });
-  readonly assignForm = this.formBuilder.group({ reportId: ['', Validators.required], assignedToUserId: ['', Validators.required] });
   readonly resolveForm = this.formBuilder.group({ reportId: ['', Validators.required], resolutionNote: [''] });
   readonly queueFocus = computed(() => this.selected() ?? this.pendingReports()[0] ?? this.allReports()[0] ?? null);
   readonly pendingCount = computed(() => this.pendingReports().length);
   readonly resolvedCount = computed(() => this.allReports().filter((report) => this.reportStatus(report) === 'Resuelto').length);
   readonly dismissedCount = computed(() => this.allReports().filter((report) => this.reportStatus(report) === 'Descartado').length);
-  readonly unassignedPendingCount = computed(
-    () => this.pendingReports().filter((report) => !(report.assignedToUserId ?? '').trim()).length,
-  );
+
   readonly filteredHistory = computed(() => {
     const filter = this.historyFilter();
 
@@ -88,7 +86,6 @@ export class AdminReportsPage {
 
   protected pick(report: AdminReportDto): void {
     this.selected.set(report);
-    this.assignForm.patchValue({ reportId: report.reportId ?? '' });
     this.resolveForm.patchValue({ reportId: report.reportId ?? '' });
   }
 
@@ -101,11 +98,7 @@ export class AdminReportsPage {
     await this.run(null, async () => { await firstValueFrom(this.adminApi.createReport(this.createForm.getRawValue())); this.feedback.success('El reporte se creó correctamente.', { title: 'Reporte creado' }); this.createForm.reset({ postId: '', reason: '', description: '' }); await this.load(); }, 'Falló la creación del reporte.');
   }
 
-  protected async assign(): Promise<void> {
-    if (this.assignForm.invalid) { this.assignForm.markAllAsTouched(); return; }
-    const { reportId, assignedToUserId } = this.assignForm.getRawValue();
-    await this.run(reportId, async () => { await firstValueFrom(this.adminApi.assignReport(reportId, { assignedToUserId })); this.feedback.success('El reporte fue asignado.', { title: 'Reporte asignado' }); await this.load(); }, 'Falló la asignación del reporte.');
-  }
+
 
   protected async resolve(): Promise<void> {
     if (this.resolveForm.invalid) { this.resolveForm.markAllAsTouched(); return; }
@@ -123,7 +116,13 @@ export class AdminReportsPage {
       return;
     }
 
-    await this.run(reportId, async () => { await firstValueFrom(this.adminApi.resolveReport(reportId, { resolutionNote })); this.feedback.success('El reporte se resolvió.', { title: 'Reporte resuelto' }); await this.load(); }, 'Falló la resolución del reporte.');
+    await this.run(reportId, async () => { 
+      await firstValueFrom(this.adminApi.resolveReport(reportId, { resolutionNote })); 
+      this.feedback.success('El reporte se resolvió.', { title: 'Reporte resuelto' }); 
+      this.selected.set(null);
+      this.resolveForm.reset();
+      await this.load(); 
+    }, 'Falló la resolución del reporte.');
   }
 
   protected async dismiss(report: AdminReportDto): Promise<void> {
@@ -143,7 +142,13 @@ export class AdminReportsPage {
       return;
     }
 
-    await this.run(reportId, async () => { await firstValueFrom(this.adminApi.dismissReport(reportId, {})); this.feedback.info('El reporte se descartó.', { title: 'Reporte descartado' }); await this.load(); }, 'Falló el descarte del reporte.');
+    await this.run(reportId, async () => { 
+      await firstValueFrom(this.adminApi.dismissReport(reportId, {})); 
+      this.feedback.info('El reporte se descartó.', { title: 'Reporte descartado' }); 
+      this.selected.set(null);
+      this.resolveForm.reset();
+      await this.load(); 
+    }, 'Falló el descarte del reporte.');
   }
 
   protected reportTitle(report: AdminReportDto): string {
@@ -189,14 +194,22 @@ export class AdminReportsPage {
     const availableReports = [...pending, ...all];
 
     if (currentSelectionId) {
-      this.selected.set(availableReports.find((report) => report.reportId === currentSelectionId) ?? null);
+      const found = availableReports.find((report) => report.reportId === currentSelectionId);
+      this.selected.set(found ?? null);
+      if (found) {
+        this.pick(found);
+      }
       return;
     }
 
-    this.selected.set(pending[0] ?? all[0] ?? null);
-
-    if (this.selected()) {
-      this.pick(this.selected()!);
+    if (this.isInitialLoad) {
+      this.isInitialLoad = false;
+      this.selected.set(pending[0] ?? all[0] ?? null);
+      if (this.selected()) {
+        this.pick(this.selected()!);
+      }
+    } else {
+      this.selected.set(null);
     }
   }
 

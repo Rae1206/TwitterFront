@@ -40,19 +40,19 @@ export class SignalRService {
     async startConnection(): Promise<void> {
         // Si ya está conectado, no hacer nada
         if (this.hubConnection && this.hubConnection.state === HubConnectionState.Connected) {
-            console.log('✅ SignalR: Ya conectado');
+            console.log(' SignalR: Ya conectado');
             return;
         }
 
         // Obtener el token de autenticación
         const token = this.sessionService.getAccessToken();
         if (!token) {
-            console.warn('⚠️ SignalR: No hay token de autenticación, no se puede conectar');
+            console.warn(' SignalR: No hay token de autenticación, no se puede conectar');
             return;
         }
 
         try {
-            console.log('🔄 SignalR: Iniciando conexión...');
+            console.log(' SignalR: Iniciando conexión...');
 
             // Construir la conexión al Hub
             this.hubConnection = new HubConnectionBuilder()
@@ -75,9 +75,9 @@ export class SignalRService {
             this.connectionState.set(this.hubConnection.state);
             this.isConnected.set(true);
 
-            console.log('✅ SignalR: Conectado exitosamente al hub de mensajes');
+            console.log(' SignalR: Conectado exitosamente al hub de mensajes');
         } catch (error) {
-            console.error('❌ SignalR: Error al conectar', error);
+            console.error(' SignalR: Error al conectar', error);
             this.connectionState.set(HubConnectionState.Disconnected);
             this.isConnected.set(false);
             throw error;
@@ -94,9 +94,9 @@ export class SignalRService {
                 await this.hubConnection.stop();
                 this.connectionState.set(HubConnectionState.Disconnected);
                 this.isConnected.set(false);
-                console.log('🔌 SignalR: Desconectado correctamente');
+                console.log(' SignalR: Desconectado correctamente');
             } catch (error) {
-                console.error('❌ SignalR: Error al desconectar', error);
+                console.error(' SignalR: Error al desconectar', error);
             }
         }
     }
@@ -109,14 +109,14 @@ export class SignalRService {
      */
     async notifyTyping(receiverId: string): Promise<void> {
         if (!this.hubConnection || this.hubConnection.state !== HubConnectionState.Connected) {
-            console.warn('⚠️ SignalR: No hay conexión activa para notificar typing');
+            console.warn(' SignalR: No hay conexión activa para notificar typing');
             return;
         }
 
         try {
             await this.hubConnection.invoke('NotifyTyping', receiverId);
         } catch (error) {
-            console.error('❌ SignalR: Error al notificar typing', error);
+            console.error(' SignalR: Error al notificar typing', error);
         }
     }
 
@@ -133,7 +133,7 @@ export class SignalRService {
         try {
             await this.hubConnection.invoke('NotifyStopTyping', receiverId);
         } catch (error) {
-            console.error('❌ SignalR: Error al notificar stop typing', error);
+            console.error(' SignalR: Error al notificar stop typing', error);
         }
     }
 
@@ -209,7 +209,7 @@ export class SignalRService {
 
         // Cuando se está reconectando
         this.hubConnection.onreconnecting((error) => {
-            console.warn('ignalR: Reconectando...', error);
+            console.warn(' SignalR: Reconectando...', error);
             this.connectionState.set(HubConnectionState.Reconnecting);
             this.isConnected.set(false);
         });

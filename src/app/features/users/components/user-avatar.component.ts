@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+﻿import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 
 import { UserAvatarRevisionService } from '../services/user-avatar-revision.service';
 import { deriveUserInitials, resolveAvatarUrl } from '../utils/users-avatar.utils';
@@ -68,7 +68,7 @@ export class UserAvatarComponent {
   private readonly revisions = inject(UserAvatarRevisionService);
   private readonly imageError = signal(false);
 
-  readonly altText = computed(() => `${this.user()?.fullName || 'User'} profile photo`);
+  readonly altText = computed(() => `${this.user()?.nickname || 'User'} profile photo`);
   readonly initials = computed(() => deriveUserInitials(this.user()));
 
   readonly effectiveImageUrl = computed(() => {

@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiClientService } from '../../../core/api/api-client.service';
-import { AdminConfigEntry, AdminDashboardStats, AdminPostRecord, AdminReportDto, AdminUserRecord, AssignReportRequest, AuditLogEntry, ChangeUserRoleRequest, CreateReportRequest, FlagPostRequest, LiftSuspensionRequest, ResolveReportRequest, SuspendUserRequest, SuspensionDto, UpdateConfigRequest } from '../models/admin.models';
+import { AdminConfigEntry, AdminDashboardStats, AdminPostRecord, AdminReportDto, AdminUserRecord, AuditLogEntry, ChangeUserRoleRequest, CreateReportRequest, FlagPostRequest, LiftSuspensionRequest, ResolveReportRequest, SuspendUserRequest, SuspensionDto, UpdateConfigRequest } from '../models/admin.models';
 import { JsonRecord } from '../../../core/api/api.models';
 
 
@@ -73,9 +73,7 @@ export class AdminApiService {
     return this.api.post<JsonRecord, CreateReportRequest>('/api/admin/reports/create', payload);
   }
 
-  assignReport(id: string, payload: AssignReportRequest): Observable<JsonRecord> {
-    return this.api.put<JsonRecord, AssignReportRequest>(`/api/admin/reports/${id}/assign`, payload);
-  }
+
 
   resolveReport(id: string, payload: ResolveReportRequest): Observable<JsonRecord> {
     return this.api.put<JsonRecord, ResolveReportRequest>(`/api/admin/reports/${id}/resolve`, payload);

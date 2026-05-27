@@ -18,7 +18,7 @@ export class SettingsProfilePage {
   private readonly userStore = inject(UserStoreService);
 
   readonly form = this.formBuilder.group({
-    fullName: ['', [Validators.required]],
+    nickname: ['', [Validators.required]],
     email: ['', [Validators.required, Validators.email]],
     biography: [''],
   });
@@ -65,7 +65,7 @@ export class SettingsProfilePage {
       }
 
       this.form.reset({
-        fullName: user.fullName ?? '',
+        nickname: user.nickname ?? '',
         email: user.email ?? '',
         biography: user.biography ?? '',
       });
@@ -133,7 +133,7 @@ export class SettingsProfilePage {
     }
 
     this.form.reset({
-      fullName: user.fullName ?? '',
+      nickname: user.nickname ?? '',
       email: user.email ?? '',
       biography: user.biography ?? '',
     });

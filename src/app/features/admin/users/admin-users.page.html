@@ -1,4 +1,4 @@
-<section class="page-shell">
+﻿<section class="page-shell">
   <header class="page-header">
     <div>
       <p class="eyebrow">Administración</p>
@@ -37,7 +37,7 @@
           <tbody>
             @for (user of users(); track user.userId ?? user.email ?? $index) {
               <tr>
-                <td>{{ user.fullName || 'Desconocido' }}</td>
+                <td>{{ user.nickname || 'Desconocido' }}</td>
                 <td>{{ user.email || '—' }}</td>
                 <td>{{ (user.roles ?? []).join(', ') || 'Usuario' }}</td>
                 <td>{{ user.deletedAt ? 'Eliminado' : user.isVerified ? 'Verificado' : 'Activo' }}</td>

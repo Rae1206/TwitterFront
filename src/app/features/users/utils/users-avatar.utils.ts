@@ -1,4 +1,4 @@
-import { environment } from '../../../../environments/environment';
+﻿import { environment } from '../../../../environments/environment';
 import { UserDto } from '../models/users.models';
 
 
@@ -34,7 +34,7 @@ export function resolveAvatarUrl(user: UserDto | null | undefined): string | nul
  * Initials derived from the user full name / email / id, capped to 2 chars.
  */
 export function deriveUserInitials(user: UserDto | null | undefined): string {
-  const source = (user?.fullName || user?.email || user?.userId || 'Unknown')
+  const source = (user?.nickname || user?.email || user?.userId || 'Unknown')
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)

@@ -10,10 +10,7 @@
           <strong>{{ pendingCount() }}</strong>
           <p>Reportes esperando una decisión de moderación.</p>
         </article>
-        <article class="metric-card">
-          <strong>{{ unassignedPendingCount() }}</strong>
-          <p>Casos pendientes sin moderador asignado.</p>
-        </article>
+
         <article class="metric-card">
           <strong>{{ resolvedCount() }}</strong>
           <p>Casos resueltos retirados del flujo.</p>
@@ -82,10 +79,7 @@
                   <dt>Usuario reportado</dt>
                   <dd>{{ report.reportedUserId || 'Sin id' }}</dd>
                 </div>
-                <div>
-                  <dt>Asignado</dt>
-                  <dd>{{ report.assignedToUserId || 'Sin asignar' }}</dd>
-                </div>
+
               </dl>
 
               <div class="table-actions">
@@ -179,29 +173,10 @@
             <dt>Usuario reportado</dt>
             <dd>{{ report.reportedUserId || 'Sin id' }}</dd>
           </div>
-          <div>
-            <dt>Asignado a</dt>
-            <dd>{{ report.assignedToUserId || 'Nadie todavía' }}</dd>
-          </div>
+
         </dl>
 
-        <form class="stack" [formGroup]="assignForm" (ngSubmit)="assign()">
-          <label class="field">
-            <span>ID del reporte</span>
-            <input formControlName="reportId" />
-          </label>
 
-          <label class="field">
-            <span>Asignar al ID de usuario</span>
-            <input formControlName="assignedToUserId" placeholder="ID de moderador o administrador" />
-          </label>
-
-          <div class="button-row">
-            <button type="submit" class="primary-action" [disabled]="isActing(report.reportId)">
-              {{ isActing(report.reportId) ? 'Asignando...' : 'Asignar reporte' }}
-            </button>
-          </div>
-        </form>
 
         <form class="stack top-gap" [formGroup]="resolveForm" (ngSubmit)="resolve()">
           <label class="field">

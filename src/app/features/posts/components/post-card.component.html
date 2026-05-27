@@ -1,11 +1,11 @@
-<article class="surface-card post-card clickable-card" [class.retweet-card]="post().retweetOfPostId && !post().content" (click)="onPostClick()">
+﻿<article class="surface-card post-card clickable-card" [class.retweet-card]="post().retweetOfPostId && !post().content" (click)="onPostClick()">
   <!-- 1. RETWEET PURO HEADER BANNER -->
   @if (post().retweetOfPostId && !post().content) {
     <div class="retweet-indicator-row" aria-hidden="true">
       <svg class="retweet-indicator-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
       </svg>
-      <span>{{ post().userFullName }} compartió esto</span>
+      <span>{{ post().userNickname }} compartió esto</span>
     </div>
   }
 
@@ -33,6 +33,27 @@
           <div class="post-meta-right" (click)="$event.stopPropagation()">
             @if (isOwnPost()) {
               <span class="chip" [class.warn]="!post().isPublished">{{ post().isPublished ? 'Publicado' : 'Borrador' }}</span>
+            }
+            @if (!isOwnPost()) {
+              <button
+                type="button"
+                class="report-btn"
+                [class.reported]="isReported()"
+                [title]="isReported() ? 'Ya reportado' : 'Reportar'"
+                (click)="onReportClick($event)"
+              >
+                @if (isReported()) {
+                  <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" stroke-width="0">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                  </svg>
+                } @else {
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 9v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
+                  </svg>
+                }
+              </button>
+            }
+            @if (isOwnPost()) {
               <div class="post-actions-wrapper">
                 <button type="button" class="post-menu-toggle" (click)="onMenuToggle($event)" title="Más opciones">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -102,6 +123,27 @@
         <div class="post-meta-right" (click)="$event.stopPropagation()">
           @if (isOwnPost()) {
             <span class="chip" [class.warn]="!post().isPublished">{{ post().isPublished ? 'Publicado' : 'Borrador' }}</span>
+          }
+          @if (!isOwnPost()) {
+            <button
+              type="button"
+              class="report-btn"
+              [class.reported]="isReported()"
+              [title]="isReported() ? 'Ya reportado' : 'Reportar'"
+              (click)="onReportClick($event)"
+            >
+              @if (isReported()) {
+                <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" stroke-width="0">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                </svg>
+              } @else {
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 9v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
+                </svg>
+              }
+            </button>
+          }
+          @if (isOwnPost()) {
             <div class="post-actions-wrapper">
               <button type="button" class="post-menu-toggle" (click)="onMenuToggle($event)" title="Más opciones">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">

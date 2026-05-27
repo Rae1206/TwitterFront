@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+﻿import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ViewEncapsulation, computed, effect, inject, input, output, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
@@ -10,6 +10,8 @@ import { PostStoreService } from '../services/post-store.service';
 import { PostsApiService } from '../services/posts-api.service';
 import { PostDto } from '../models/posts.models';
 import { UserDto } from '../../users/models/users.models';
+import { ReportStoreService } from '../../reports/services/report-store.service';
+import { REPORT_ENTITY_TYPE_POST } from '../../reports/models/reports.models';
 
 
 @Component({
@@ -42,6 +44,10 @@ export class PostCardComponent {
   readonly soundEnabled = input(false);
   readonly showFooter = input(true);
 
+  readonly reportModalOpen = input(false);
+  readonly isReported = input(false);
+  readonly isReportSubmitting = input(false);
+
   readonly postClick = output<void>();
   readonly editRequested = output<void>();
   readonly deleteRequested = output<void>();
@@ -59,6 +65,8 @@ export class PostCardComponent {
   readonly parentAuthorClick = output<string | undefined>();
   readonly quoteCardClick = output<PostDto>();
   readonly soundEnabledChange = output<boolean>();
+  readonly reportRequested = output<string>();
+  readonly reportModalCloseRequested = output<void>();
 
   private readonly originalPostsCache = signal<Record<string, PostDto>>({});
 
@@ -85,15 +93,15 @@ export class PostCardComponent {
   }
 
   protected authorName(post: PostDto): string {
-    return post.userFullName || post.username || post.userId || 'Autor desconocido';
+    return post.userNickname || post.username || post.userId || 'Autor desconocido';
   }
 
   protected authorHandle(post: PostDto): string {
     if (post.username) {
       return `@${post.username.replace(/^@/, '')}`;
     }
-    if (post.userFullName) {
-      return `@${post.userFullName.replace(/\s+/g, '').toLowerCase()}`;
+    if (post.userNickname) {
+      return `@${post.userNickname.replace(/\s+/g, '').toLowerCase()}`;
     }
     return '@desconocido';
   }
@@ -107,7 +115,7 @@ export class PostCardComponent {
     }
     const author: UserDto = {
       userId: post.userId,
-      fullName: post.userFullName ?? post.username ?? undefined,
+      nickname: post.userNickname ?? post.username ?? undefined,
       email: post.username ?? undefined,
       profilePhotoUrl: post.userAvatar ?? null,
     };
@@ -139,7 +147,7 @@ export class PostCardComponent {
       ...cache,
       [postId]: {
         postId,
-        userFullName: 'Autor original',
+        userNickname: 'Autor original',
         username: 'original',
         content: 'Cargando detalles de la publicación compartida...',
         createdAt: new Date().toISOString(),
@@ -161,7 +169,7 @@ export class PostCardComponent {
           ...cache,
           [postId]: {
             postId,
-            userFullName: 'No disponible',
+            userNickname: 'No disponible',
             username: 'no-disponible',
             content: 'Esta publicación compartida no se pudo cargar (puede ser privada o estar eliminada).',
             createdAt: new Date().toISOString(),
@@ -177,7 +185,7 @@ export class PostCardComponent {
           ...cache,
           [postId]: {
             postId,
-            userFullName: 'No disponible',
+            userNickname: 'No disponible',
             username: 'no-disponible',
             content: 'Esta publicación compartida no se pudo cargar (puede ser privada o estar eliminada).',
             createdAt: new Date().toISOString(),
@@ -251,6 +259,14 @@ export class PostCardComponent {
     if (trimmed) {
       this.commentAdded.emit(trimmed);
       inputRef.value = '';
+    }
+  }
+
+  protected onReportClick(event: MouseEvent): void {
+    event.stopPropagation();
+    const postId = this.post().postId;
+    if (postId) {
+      this.reportRequested.emit(postId);
     }
   }
 }

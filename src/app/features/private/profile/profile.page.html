@@ -1,4 +1,4 @@
-<section class="page-shell">
+﻿<section class="page-shell">
   <header class="surface-card hero-card">
     <div class="profile-banner"></div>
 
@@ -10,7 +10,7 @@
 
         <div class="identity-copy">
           <p class="eyebrow">Perfil</p>
-          <h1>{{ user.fullName || 'Usuario sin nombre' }}</h1>
+          <h1>{{ user.nickname || 'Usuario sin nombre' }}</h1>
           <p>{{ displayHandle() }} · {{ user.email || 'Sin correo' }}</p>
           <p class="identity-biography">{{ biographyPreview() }}</p>
         </div>
@@ -107,9 +107,12 @@
             [currentUserId]="sessionUserId()"
             [carouselIndex]="getCarouselIndex(post.postId)"
             [isCommentsOpen]="isCommentsOpen(post.postId)"
-            [isRetweeted]="isRetweeted(post.postId)"
+            [isRetweeted]="isRetweeted(getRetweetTargetId(post))"
             [isLiked]="isLiked(post.postId)"
-            [retweetMenuOpen]="activeRetweetMenu() === post.postId"
+            [retweetMenuOpen]="activeRetweetMenu() === getRetweetTargetId(post)"
+            [reportModalOpen]="isReportModalOpen() && reportTargetPostId() === post.postId"
+            [isReported]="isPostReported(post.postId)"
+            [isReportSubmitting]="isReportSubmitting()"
             [activePostMenu]="activePostMenu()"
             [soundEnabled]="feedVideoSoundEnabled()"
             [showFooter]="true"
@@ -120,7 +123,7 @@
             (menuToggleRequested)="togglePostMenu(post.postId, $event)"
             (commentToggleRequested)="toggleComments(post.postId)"
             (likeToggleRequested)="toggleLike(post)"
-            (retweetMenuToggleRequested)="toggleRetweetMenu(post.postId, $event)"
+            (retweetMenuToggleRequested)="toggleRetweetMenu(getRetweetTargetId(post), $event)"
             (directRetweetRequested)="directRetweet(post)"
             (quoteRequested)="openQuoteModal(post)"
             (carouselPreviousRequested)="prevCarousel(post.postId, post.mediaUrls?.length ?? 0)"
@@ -130,6 +133,8 @@
             (parentAuthorClick)="inspect($event)"
             (quoteCardClick)="onQuoteCardClick($event)"
             (soundEnabledChange)="feedVideoSoundEnabled.set($event)"
+            (reportRequested)="openReportModal($event)"
+            (reportModalCloseRequested)="closeReportModal()"
           />
         } @empty {
           <app-state-card
@@ -220,8 +225,8 @@
             }
           </div>
           <label class="field">
-            <span>Nombre completo</span>
-            <input type="text" formControlName="fullName" autocomplete="name" />
+            <span>Apodo (Nickname)</span>
+            <input type="text" formControlName="nickname" autocomplete="name" />
           </label>
 
           <label class="field">
@@ -406,6 +411,25 @@
                 >
                   &times;
                 </button>
+                @if (detailPost.userId !== sessionUserId()) {
+                  <button
+                    type="button"
+                    class="report-btn"
+                    [class.reported]="isPostReported(detailPost.postId)"
+                    [title]="isPostReported(detailPost.postId) ? 'Ya reportado' : 'Reportar'"
+                    (click)="openReportModal(detailPost.postId); $event.stopPropagation()"
+                  >
+                    @if (isPostReported(detailPost.postId)) {
+                      <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" stroke-width="0">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                      </svg>
+                    } @else {
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 9v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
+                      </svg>
+                    }
+                  </button>
+                }
               </header>
 
               <div class="detail-info-body">
@@ -455,8 +479,8 @@
                     <button
                       type="button"
                       class="social-btn retweet-btn"
-                      [class.active]="isRetweeted(detailPost.postId)"
-                      (click)="toggleRetweetMenu(detailPost.postId, $event)"
+                      [class.active]="isRetweeted(getRetweetTargetId(detailPost))"
+                      (click)="toggleRetweetMenu(getRetweetTargetId(detailPost), $event)"
                       title="Compartir"
                     >
                       <svg
@@ -473,7 +497,7 @@
                       </svg>
                     </button>
 
-                    @if (activeRetweetMenu() === detailPost.postId) {
+                    @if (activeRetweetMenu() === getRetweetTargetId(detailPost)) {
                       <div class="retweet-dropdown-menu" (click)="$event.stopPropagation()">
                         <button
                           type="button"
@@ -591,9 +615,28 @@
           <!-- Fallback: Standard layout for media-less posts to look perfectly centered and clean -->
           <header class="modal-header">
             <h3>Detalle de la publicación</h3>
-            <button type="button" class="close-modal-btn" (click)="closeDetailModal()">
-              &times;
-            </button>
+            <div class="detail-header-actions">
+              @if (detailPost.userId !== sessionUserId()) {
+                <button
+                  type="button"
+                  class="report-btn"
+                  [class.reported]="isPostReported(detailPost.postId)"
+                  [title]="isPostReported(detailPost.postId) ? 'Ya reportado' : 'Reportar'"
+                  (click)="openReportModal(detailPost.postId); $event.stopPropagation()"
+                >
+                  @if (isPostReported(detailPost.postId)) {
+                    <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" stroke-width="0">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                    </svg>
+                  } @else {
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 9v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
+                    </svg>
+                  }
+                </button>
+              }
+              <button type="button" class="close-modal-btn" (click)="closeDetailModal()">&times;</button>
+            </div>
           </header>
 
           <div class="detail-post-wrapper scrollable-content">
@@ -652,8 +695,8 @@
                   <button
                     type="button"
                     class="social-btn retweet-btn"
-                    [class.active]="isRetweeted(detailPost.postId)"
-                    (click)="toggleRetweetMenu(detailPost.postId, $event)"
+                    [class.active]="isRetweeted(getRetweetTargetId(detailPost))"
+                    (click)="toggleRetweetMenu(getRetweetTargetId(detailPost), $event)"
                     title="Compartir"
                   >
                     <svg
@@ -670,7 +713,7 @@
                     </svg>
                   </button>
 
-                  @if (activeRetweetMenu() === detailPost.postId) {
+                  @if (activeRetweetMenu() === getRetweetTargetId(detailPost)) {
                     <div class="retweet-dropdown-menu" (click)="$event.stopPropagation()">
                       <button
                         type="button"
@@ -784,5 +827,17 @@
         }
       </div>
     </div>
+  }
+
+  @if (reportTargetPostId(); as targetPostId) {
+    <app-report-modal
+      [isOpen]="isReportModalOpen()"
+      [entityType]="'Post'"
+      [entityId]="targetPostId"
+      [isSubmitting]="isReportSubmitting()"
+      [alreadyReported]="isPostReported(targetPostId)"
+      (reportSubmitted)="submitReport($event)"
+      (closeModal)="closeReportModal()"
+    />
   }
 </section>

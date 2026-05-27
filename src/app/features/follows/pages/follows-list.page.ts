@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+﻿import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -96,7 +96,7 @@ export class FollowsPage {
     toUserDto(user: FollowUserDto): UserDto {
         return {
             userId: user.userId,
-            fullName: user.fullName,
+            nickname: user.nickname,
             email: user.email,
             biography: user.biography,
             profilePhotoUrl: user.profilePhotoUrl ?? null,

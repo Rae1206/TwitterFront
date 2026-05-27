@@ -85,9 +85,12 @@
             [currentUserId]="currentUserId()"
             [carouselIndex]="getCarouselIndex(post.postId)"
             [isCommentsOpen]="isCommentsOpen(post.postId)"
-            [isRetweeted]="isRetweeted(post.postId)"
+            [isRetweeted]="isRetweeted(getRetweetTargetId(post))"
             [isLiked]="isLiked(post.postId)"
-            [retweetMenuOpen]="activeRetweetMenu() === post.postId"
+            [retweetMenuOpen]="activeRetweetMenu() === getRetweetTargetId(post)"
+            [reportModalOpen]="isReportModalOpen() && reportTargetPostId() === post.postId"
+            [isReported]="isPostReported(post.postId)"
+            [isReportSubmitting]="isReportSubmitting()"
             [activePostMenu]="activePostMenu()"
             [soundEnabled]="feedVideoSoundEnabled()"
             [showFooter]="true"
@@ -98,7 +101,7 @@
             (menuToggleRequested)="togglePostMenu(post.postId, $event)"
             (commentToggleRequested)="toggleComments(post.postId)"
             (likeToggleRequested)="toggleLike(post)"
-            (retweetMenuToggleRequested)="toggleRetweetMenu(post.postId, $event)"
+            (retweetMenuToggleRequested)="toggleRetweetMenu(getRetweetTargetId(post), $event)"
             (directRetweetRequested)="directRetweet(post)"
             (quoteRequested)="openQuoteModal(post)"
             (carouselPreviousRequested)="prevCarousel(post.postId, post.mediaUrls?.length ?? 0)"
@@ -108,6 +111,8 @@
             (parentAuthorClick)="inspect($event)"
             (quoteCardClick)="onQuoteCardClick($event)"
             (soundEnabledChange)="feedVideoSoundEnabled.set($event)"
+            (reportRequested)="openReportModal($event)"
+            (reportModalCloseRequested)="closeReportModal()"
           />
         }
       </div>
@@ -317,6 +322,25 @@
                     </div>
                   }
                   <button type="button" class="close-modal-btn-inline" (click)="closeDetailModal()" aria-label="Cerrar modal">&times;</button>
+                  @if (!isOwnPost(detailPost)) {
+                    <button
+                      type="button"
+                      class="report-btn"
+                      [class.reported]="isPostReported(detailPost.postId)"
+                      [title]="isPostReported(detailPost.postId) ? 'Ya reportado' : 'Reportar'"
+                      (click)="openReportModal(detailPost.postId); $event.stopPropagation()"
+                    >
+                      @if (isPostReported(detailPost.postId)) {
+                        <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" stroke-width="0">
+                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                        </svg>
+                      } @else {
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M12 9v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
+                        </svg>
+                      }
+                    </button>
+                  }
                 </div>
               </header>
 
@@ -336,15 +360,15 @@
                   <span class="stat-item"><strong>{{ getLikesCount(detailPost) }}</strong> Me gusta</span>
                 </div>
 
-                <app-post-actions
+<app-post-actions
                   [post]="detailPost"
-                  [retweeted]="isRetweeted(detailPost.postId)"
+                  [retweeted]="isRetweeted(getRetweetTargetId(detailPost))"
                   [liked]="isLiked(detailPost.postId)"
-                  [retweetMenuOpen]="activeRetweetMenu() === detailPost.postId"
+                  [retweetMenuOpen]="activeRetweetMenu() === getRetweetTargetId(detailPost)"
                   [showCounts]="false"
                   [detail]="true"
                   (commentRequested)="detailCommentInputSplit.focus()"
-                  (retweetMenuRequested)="toggleRetweetMenu(detailPost.postId, $event)"
+                  (retweetMenuRequested)="toggleRetweetMenu(getRetweetTargetId(detailPost), $event)"
                   (directRetweetRequested)="directRetweet(detailPost)"
                   (quoteRequested)="openQuoteModal(detailPost)"
                   (likeRequested)="toggleLike(detailPost)"
@@ -385,10 +409,31 @@
             </div>
           </div>
         } @else {
-          <!-- Fallback: Standard layout for media-less posts to look perfectly centered and clean -->
+<!-- Fallback: Standard layout for media-less posts to look perfectly centered and clean -->
           <header class="modal-header">
             <h3>Detalle de la publicación</h3>
-            <button type="button" class="close-modal-btn" (click)="closeDetailModal()">&times;</button>
+            <div class="detail-header-actions">
+              @if (!isOwnPost(detailPost)) {
+                <button
+                  type="button"
+                  class="report-btn"
+                  [class.reported]="isPostReported(detailPost.postId)"
+                  [title]="isPostReported(detailPost.postId) ? 'Ya reportado' : 'Reportar'"
+                  (click)="openReportModal(detailPost.postId); $event.stopPropagation()"
+                >
+                  @if (isPostReported(detailPost.postId)) {
+                    <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" stroke-width="0">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                    </svg>
+                  } @else {
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 9v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
+                    </svg>
+                  }
+                </button>
+              }
+              <button type="button" class="close-modal-btn" (click)="closeDetailModal()">&times;</button>
+            </div>
           </header>
 
           <div class="detail-post-wrapper scrollable-content">
@@ -456,19 +501,19 @@
                 <span class="stat-item"><strong>{{ getLikesCount(detailPost) }}</strong> Me gusta</span>
               </div>
 
-              <app-post-actions
-                [post]="detailPost"
-                [retweeted]="isRetweeted(detailPost.postId)"
-                [liked]="isLiked(detailPost.postId)"
-                [retweetMenuOpen]="activeRetweetMenu() === detailPost.postId"
-                [showCounts]="false"
-                [detail]="true"
-                (commentRequested)="detailCommentInput.focus()"
-                (retweetMenuRequested)="toggleRetweetMenu(detailPost.postId, $event)"
-                (directRetweetRequested)="directRetweet(detailPost)"
-                (quoteRequested)="openQuoteModal(detailPost)"
-                (likeRequested)="toggleLike(detailPost)"
-              />
+<app-post-actions
+                 [post]="detailPost"
+                 [retweeted]="isRetweeted(getRetweetTargetId(detailPost))"
+                 [liked]="isLiked(detailPost.postId)"
+                 [retweetMenuOpen]="activeRetweetMenu() === getRetweetTargetId(detailPost)"
+                 [showCounts]="false"
+                 [detail]="true"
+                 (commentRequested)="detailCommentInput.focus()"
+                 (retweetMenuRequested)="toggleRetweetMenu(getRetweetTargetId(detailPost), $event)"
+                 (directRetweetRequested)="directRetweet(detailPost)"
+                 (quoteRequested)="openQuoteModal(detailPost)"
+                 (likeRequested)="toggleLike(detailPost)"
+               />
 
               <!-- Comments thread inside detail lightbox -->
               <div class="detail-comments-drawer" (click)="$event.stopPropagation()">
@@ -508,8 +553,20 @@
     </div>
   }
 
-  @if (isRecorderOpen()) {
+@if (isRecorderOpen()) {
     <app-audio-recorder-modal (audioReady)="onAudioReady($event)" (closed)="closeRecorder()" />
+  }
+
+  @if (reportTargetPostId(); as targetPostId) {
+    <app-report-modal
+      [isOpen]="isReportModalOpen()"
+      [entityType]="'Post'"
+      [entityId]="targetPostId"
+      [isSubmitting]="isReportSubmitting()"
+      [alreadyReported]="isPostReported(targetPostId)"
+      (reportSubmitted)="submitReport($event)"
+      (closeModal)="closeReportModal()"
+    />
   }
 </section>
 

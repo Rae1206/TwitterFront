@@ -7,7 +7,7 @@ export interface PostDto extends JsonRecord {
   content?: string;
   isPublished?: boolean;
   createdAt?: string;
-  userFullName?: string;
+  userNickname?: string;
   userAvatar?: string | null;
   username?: string | null;
   repliedToPostId?: string | null;

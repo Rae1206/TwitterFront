@@ -16,7 +16,7 @@
     <aside class="hero-spotlight">
       <p class="eyebrow">Tu perfil</p>
       <app-user-avatar class="spotlight-avatar" [user]="currentUser()" />
-      <strong>{{ currentUser()?.fullName || 'Cargando...' }}</strong>
+      <strong>{{ currentUser()?.nickname || 'Cargando...' }}</strong>
       <p>{{ biographyPreview() }}</p>
     </aside>
   </header>
@@ -71,8 +71,8 @@
           </div>
 
           <label class="field">
-            <span>Nombre completo</span>
-            <input type="text" formControlName="fullName" autocomplete="name" />
+            <span>Apodo (Nickname)</span>
+            <input type="text" formControlName="nickname" autocomplete="username" />
           </label>
 
           <label class="field">

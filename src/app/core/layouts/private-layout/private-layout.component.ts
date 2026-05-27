@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+﻿import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 import { SessionService } from '../../auth/session.service';
@@ -38,7 +38,7 @@ export class PrivateLayoutComponent {
     return role !== null && adminRoles.includes(role as (typeof adminRoles)[number]);
   });
   protected readonly currentRole = this.sessionService.role;
-  protected readonly accountName = computed(() => this.currentUser()?.fullName || this.currentUser()?.email || this.sessionService.userId() || 'Miembro');
+  protected readonly accountName = computed(() => this.currentUser()?.nickname || this.currentUser()?.email || this.sessionService.userId() || 'Miembro');
   protected readonly accountBiography = computed(() => this.currentUser()?.biography?.trim() || 'Aún no has agregado una biografía.');
   protected readonly accountMeta = computed(() => this.currentUser()?.email || this.sessionService.userId() || 'Sin identificador de sesión');
 

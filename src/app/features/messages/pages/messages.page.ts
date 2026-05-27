@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+﻿import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -226,7 +226,7 @@ export class MessagesPage {
     toUserDto(message: MessageDto, isSender: boolean): UserDto {
         return {
             userId: isSender ? message.senderId : message.receiverId,
-            fullName: isSender ? message.senderUsername : message.receiverUsername,
+            nickname: isSender ? message.senderUsername : message.receiverUsername,
             email: isSender ? message.senderUsername : message.receiverUsername,
             profilePhotoUrl: isSender ? message.senderAvatar : message.receiverAvatar,
         };

@@ -3,7 +3,7 @@ import { JsonRecord, PaginationQuery } from "../../../core/api/api.models";
 
 export interface UserDto extends JsonRecord {
   userId?: string;
-  fullName?: string;
+  nickname?: string;
   email?: string;
   biography?: string | null;
   isActive?: boolean;
@@ -19,13 +19,13 @@ export interface UserDto extends JsonRecord {
 }
 
 export interface RegisterUserRequest {
-  fullName: string;
+  nickname: string;
   email: string;
   password: string;
 }
 
 export interface UpdateUserRequest {
-  fullName?: string;
+  nickname?: string;
   email?: string;
   biography?: string | null;
   isActive?: boolean;

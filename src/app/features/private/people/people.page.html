@@ -1,4 +1,4 @@
-<section class="page-shell">
+﻿<section class="page-shell">
   <header class="page-header page-hero">
     <div class="hero-copy">
       <h1>Personas</h1>
@@ -25,7 +25,7 @@
 
       @if (featuredUser(); as user) {
         <app-user-avatar class="person-avatar person-avatar-image" [user]="user" />
-        <strong>{{ user.fullName || 'Usuario' }}</strong>
+        <strong>{{ user.nickname || 'Usuario' }}</strong>
         <p>{{ user.biography || 'Sin biografía.' }}</p>
         <div class="spotlight-meta">
           @if (statusLabel(user) !== 'Activo') {
@@ -131,7 +131,7 @@
               <app-user-avatar class="person-avatar person-avatar-image" [user]="user" />
 
               <div>
-                <h3>{{ user.fullName || 'Usuario' }}</h3>
+                <h3>{{ user.nickname || 'Usuario' }}</h3>
                 <p>{{ user.email || 'Sin correo' }}</p>
                 <p class="person-biography">{{ user.biography || 'Sin biografía.' }}</p>
               </div>

@@ -21,7 +21,7 @@ export class RegisterPage {
   private readonly feedback = inject(FeedbackService);
 
   readonly registerForm = this.formBuilder.group({
-    fullName: ['', [Validators.required, Validators.minLength(3)]],
+    nickname: ['', [Validators.required, Validators.minLength(3)]],
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(6)]],
   });
@@ -43,7 +43,7 @@ export class RegisterPage {
       await firstValueFrom(this.usersApi.register(this.registerForm.getRawValue()));
       this.successMessage.set('Solicitud de registro enviada. Ahora puedes intentar iniciar sesión.');
       this.feedback.success('Cuenta creada. Ahora puedes iniciar sesión.', { title: 'Registro completado' });
-      this.registerForm.reset({ fullName: '', email: '', password: '' });
+      this.registerForm.reset({ nickname: '', email: '', password: '' });
     } catch (error) {
       const message = getErrorMessage(error, 'No pudimos crear el usuario todavía.');
       this.errorMessage.set(message);
@@ -51,5 +51,10 @@ export class RegisterPage {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  protected showControlError(controlName: 'nickname' | 'email' | 'password'): boolean {
+    const control = this.registerForm.controls[controlName];
+    return control.invalid && (control.dirty || control.touched);
   }
 }

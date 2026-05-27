@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+﻿import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -23,12 +23,14 @@ import { UsersApiService } from '../../users/services/users-api.service';
 import { PostsApiService } from '../../posts/services/posts-api.service';
 import { UserDto } from '../../users/models/users.models';
 import { PostDto } from '../../posts/models/posts.models';
+import { ReportStoreService } from '../../reports/services/report-store.service';
+import { ReportModalComponent } from '../../reports/components/report-modal.component';
 
 
 @Component({
   selector: 'app-profile-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, ReactiveFormsModule, StateCardComponent, UserAvatarComponent, PostCardComponent, PostMediaCarouselComponent, FollowButtonComponent, SendMessageButtonComponent],
+  imports: [DatePipe, ReactiveFormsModule, StateCardComponent, UserAvatarComponent, PostCardComponent, PostMediaCarouselComponent, FollowButtonComponent, SendMessageButtonComponent, ReportModalComponent],
   host: {
     '(document:click)': 'closeAllMenus()',
   },
@@ -47,6 +49,7 @@ export class ProfilePage {
   private readonly confirm = inject(ConfirmService);
   private readonly followsApi = inject(FollowsApiService);
   private readonly router = inject(Router);
+  private readonly reportStore = inject(ReportStoreService);
 
   readonly profile = signal<UserDto | null>(null);
   readonly profileError = signal<string | null>(null);
@@ -68,7 +71,7 @@ export class ProfilePage {
   readonly followersCount = signal(0);
   readonly followingCount = signal(0);
   readonly profileForm = this.formBuilder.group({
-    fullName: ['', [Validators.required]],
+    nickname: ['', [Validators.required]],
     email: ['', [Validators.required, Validators.email]],
     biography: [''],
   });
@@ -82,7 +85,7 @@ export class ProfilePage {
     return routeId === 'me' ? this.userStore.currentUserId() ?? '' : routeId;
   });
   readonly posts = computed(() => this.postStore.posts().filter((post) => post.userId === this.resolvedUserId()));
-  readonly displayHandle = computed(() => `@${this.profile()?.fullName?.replace(/\s+/g, '').toLowerCase() || this.resolvedUserId()}`);
+  readonly displayHandle = computed(() => `@${this.profile()?.nickname?.replace(/\s+/g, '').toLowerCase() || this.resolvedUserId()}`);
   readonly publishedPostsCount = computed(() => this.posts().filter((post) => Boolean(post.isPublished)).length);
   readonly draftPostsCount = computed(() => this.posts().filter((post) => !post.isPublished).length);
   readonly statusLabel = computed(() => {
@@ -144,7 +147,7 @@ export class ProfilePage {
       }
 
       this.profileForm.reset({
-        fullName: user.fullName ?? '',
+        nickname: user.nickname ?? '',
         email: user.email ?? '',
         biography: user.biography ?? '',
       });
@@ -305,7 +308,7 @@ export class ProfilePage {
   }
 
   protected initials(user: UserDto | null): string {
-    const source = (user?.fullName || this.resolvedUserId())
+    const source = (user?.nickname || this.resolvedUserId())
       .split(/\s+/)
       .filter(Boolean)
       .slice(0, 2)
@@ -316,7 +319,7 @@ export class ProfilePage {
   }
 
   protected profilePhotoAlt(user: UserDto | null): string {
-    return `Foto de perfil de ${user?.fullName || 'Usuario'}`;
+    return `Foto de perfil de ${user?.nickname || 'Usuario'}`;
   }
 
   protected removePendingAvatar(): void {
@@ -332,7 +335,7 @@ export class ProfilePage {
     }
 
     this.profileForm.reset({
-      fullName: user.fullName ?? '',
+      nickname: user.nickname ?? '',
       email: user.email ?? '',
       biography: user.biography ?? '',
     });
@@ -372,6 +375,10 @@ export class ProfilePage {
   readonly postInDetail = signal<PostDto | null>(null);
   readonly originalPostsCache = signal<Record<string, PostDto>>({});
   readonly activeRetweetMenu = signal<string | null>(null);
+
+  readonly isReportModalOpen = signal(false);
+  readonly reportTargetPostId = signal<string | null>(null);
+  readonly isReportSubmitting = signal(false);
 
   protected getCarouselIndex(postId: string | undefined): number {
     if (!postId) return 0;
@@ -499,6 +506,13 @@ export class ProfilePage {
     return postId ? Boolean(this.retweetedPosts()[postId]) : false;
   }
 
+  protected getRetweetTargetId(post: PostDto): string | undefined {
+    if (post.retweetOfPostId && !post.content) {
+      return post.retweetOfPostId;
+    }
+    return post.postId;
+  }
+
   protected toggleRetweetMenu(postId: string | undefined, event: Event): void {
     if (!postId) return;
     event.stopPropagation();
@@ -520,7 +534,7 @@ export class ProfilePage {
   protected postAuthor(post: PostDto): UserDto {
     return {
       userId: post.userId ?? '',
-      fullName: post.userFullName ?? 'Usuario',
+      nickname: post.userNickname ?? 'Usuario',
       email: '',
       isVerified: false, // This field is not available in PostDto
       profilePhotoUrl: post.userAvatar ?? null,
@@ -528,11 +542,11 @@ export class ProfilePage {
   }
 
   protected authorName(post: PostDto): string {
-    return post.userFullName ?? 'Usuario';
+    return post.userNickname ?? 'Usuario';
   }
 
   protected authorHandle(post: PostDto): string {
-    return `@${post.userFullName?.replace(/\s+/g, '').toLowerCase() || 'usuario'}`;
+    return `@${post.userNickname?.replace(/\s+/g, '').toLowerCase() || 'usuario'}`;
   }
 
   protected async addComment(postId: string | undefined, text: string): Promise<void> {
@@ -548,10 +562,15 @@ export class ProfilePage {
   }
 
   protected async directRetweet(post: PostDto): Promise<void> {
-    const postId = post.postId;
-    if (!postId) return;
+    const targetId = this.getRetweetTargetId(post);
+    if (!targetId) return;
     this.activeRetweetMenu.set(null);
-    await this.postStore.retweet(postId, null);
+
+    if (this.isRetweeted(targetId)) {
+      await this.postStore.unretweet(targetId);
+    } else {
+      await this.postStore.retweet(targetId, null);
+    }
   }
 
   protected openQuoteModal(post: PostDto): void {
@@ -635,6 +654,37 @@ export class ProfilePage {
     const userId = this.resolvedUserId();
     if (userId) {
       void this.router.navigate(['/follows', userId], { queryParams: { tab } });
+    }
+  }
+
+  // ── Report ──
+
+  protected openReportModal(postId: string | undefined): void {
+    if (!postId) return;
+    this.reportTargetPostId.set(postId);
+    this.isReportModalOpen.set(true);
+  }
+
+  protected closeReportModal(): void {
+    this.isReportModalOpen.set(false);
+    this.reportTargetPostId.set(null);
+  }
+
+  protected isPostReported(postId: string | undefined): boolean {
+    return postId ? this.reportStore.isReported(postId) : false;
+  }
+
+  protected async submitReport(payload: { entityType: string; entityId: string; category: string; description?: string }): Promise<void> {
+    this.isReportSubmitting.set(true);
+    const success = await this.reportStore.submitReport({
+      entityType: payload.entityType,
+      entityId: payload.entityId,
+      category: payload.category,
+      description: payload.description ?? null,
+    });
+    this.isReportSubmitting.set(false);
+    if (success) {
+      this.closeReportModal();
     }
   }
 }
