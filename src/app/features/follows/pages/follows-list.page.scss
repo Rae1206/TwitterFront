@@ -6,12 +6,39 @@
 
 .follows-header {
   margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 
   h1 {
     font-size: 1.5rem;
     font-weight: 700;
     margin: 0;
   }
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.back-btn:hover {
+  background: var(--bg-secondary);
+}
+
+.back-btn svg {
+  width: 1.1rem;
+  height: 1.1rem;
 }
 
 .tabs {
@@ -87,6 +114,9 @@
 
 .user-avatar {
   flex-shrink: 0;
+  width: 3.5rem;
+  height: 3.5rem;
+  aspect-ratio: 1 / 1;
 }
 
 .user-details {

@@ -1,6 +1,6 @@
-﻿import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+﻿import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { getErrorMessage } from '../../../core/api/api.utils';
@@ -19,7 +19,7 @@ type TabType = 'followers' | 'following';
     selector: 'app-follows-page',
     changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: true,
-    imports: [StateCardComponent, UserAvatarComponent, FollowButtonComponent],
+    imports: [StateCardComponent, UserAvatarComponent, FollowButtonComponent, RouterLink],
     templateUrl: './follows-list.page.html',
     styleUrl: './follows-list.page.scss',
 })
@@ -28,7 +28,7 @@ export class FollowsPage {
     private readonly sessionService = inject(SessionService);
     private readonly router = inject(Router);
 
-    readonly userId = input.required<string>();
+    readonly userId = input.required<string>({ alias: 'id' });
     readonly tab = input<TabType>('followers');
 
     readonly followers = signal<FollowUserDto[]>([]);
@@ -47,7 +47,13 @@ export class FollowsPage {
     readonly isOwnProfile = computed(() => this.currentUserId() === this.userId());
 
     constructor() {
-        void this.loadData();
+        effect(() => {
+            const userId = this.userId();
+            const tab = this.tab();
+            if (userId) {
+                void this.loadData();
+            }
+        });
     }
 
     async loadData(): Promise<void> {

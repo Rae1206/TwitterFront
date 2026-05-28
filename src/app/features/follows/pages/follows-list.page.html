@@ -1,5 +1,11 @@
 ﻿<div class="follows-container">
   <div class="follows-header">
+    <a class="back-btn" [routerLink]="['/profile', userId()]" title="Volver al perfil" aria-label="Volver al perfil">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"/>
+        <polyline points="12 19 5 12 12 5"/>
+      </svg>
+    </a>
     <h1>{{ isOwnProfile() ? 'Mis conexiones' : 'Conexiones' }}</h1>
   </div>
 
@@ -57,7 +63,9 @@
                 </div>
               </div>
             </div>
-            <app-follow-button [userId]="user.userId" />
+            @if (user.userId) {
+              <app-follow-button [userId]="user.userId" />
+            }
           </div>
         }
       </div>

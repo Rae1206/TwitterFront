@@ -17,6 +17,8 @@ import { getErrorMessage } from '../../../core/api/api.utils';
         [class]="buttonClass()"
         [disabled]="loading()"
         (click)="toggleFollow()"
+        (mouseenter)="hovering.set(true)"
+        (mouseleave)="hovering.set(false)"
       >
         {{ buttonLabel() }}
       </button>
@@ -31,6 +33,8 @@ import { getErrorMessage } from '../../../core/api/api.utils';
       transition: all 0.2s;
       border: 1px solid transparent;
       cursor: pointer;
+      min-width: 7rem;
+      text-align: center;
     }
 
     .follow-btn {
@@ -49,17 +53,10 @@ import { getErrorMessage } from '../../../core/api/api.utils';
       border-color: var(--border-color);
     }
 
-    .following-btn:hover:not(:disabled) {
+    .following-btn.is-hovering {
       background: rgba(244, 33, 46, 0.1);
       color: rgb(244, 33, 46);
       border-color: rgba(244, 33, 46, 0.4);
-    }
-
-    .following-btn:hover:not(:disabled)::after {
-      content: 'Dejar de seguir';
-      position: absolute;
-      left: 0;
-      right: 0;
     }
 
     button:disabled {
@@ -78,13 +75,20 @@ export class FollowButtonComponent {
 
   readonly loading = signal(false);
   readonly isFollowing = signal(false);
+  readonly hovering = signal(false);
   readonly isOwnProfile = computed(() => this.sessionService.userId() === this.userId());
 
-  readonly buttonLabel = computed(() => (this.isFollowing() ? 'Siguiendo' : 'Seguir'));
-  readonly buttonClass = computed(() => (this.isFollowing() ? 'following-btn' : 'follow-btn'));
+  readonly buttonLabel = computed(() => {
+    if (!this.isFollowing()) return 'Seguir';
+    return this.hovering() ? 'Dejar de seguir' : 'Siguiendo';
+  });
+
+  readonly buttonClass = computed(() => {
+    const base = this.isFollowing() ? 'following-btn' : 'follow-btn';
+    return this.isFollowing() && this.hovering() ? `${base} is-hovering` : base;
+  });
 
   constructor() {
-    // Load following status when userId changes
     effect(() => {
       const userId = this.userId();
       if (userId && !this.isOwnProfile()) {
@@ -98,7 +102,6 @@ export class FollowButtonComponent {
       const response = await firstValueFrom(this.followsApi.isFollowing(this.userId()));
       this.isFollowing.set(response.isFollowing);
     } catch (error) {
-      // Silently fail - button will show "Follow" by default
       console.error('Error loading following status:', error);
     }
   }
