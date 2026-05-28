@@ -552,8 +552,8 @@ export class ChatComponent implements OnInit, OnDestroy {
         // Usuario en línea
         this.signalRService.onUserOnline
             .pipe(takeUntil(this.destroy$))
-            .subscribe((userId) => {
-                if (userId === this.otherUserId()) {
+            .subscribe((userInfo) => {
+                if (userInfo.userId === this.otherUserId()) {
                     this.isOtherUserOnline.set(true);
                 }
             });

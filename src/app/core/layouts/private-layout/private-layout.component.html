@@ -112,7 +112,7 @@
         </svg>
         <span class="nav-label">Personas</span>
       </a>
-      <a routerLink="/messages" routerLinkActive="active">
+      <a routerLink="/messages" routerLinkActive="active" class="nav-link-with-badge">
         <svg
           class="nav-icon"
           viewBox="0 0 24 24"
@@ -123,6 +123,9 @@
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
         </svg>
         <span class="nav-label">Mensajes</span>
+        @if (unreadMessagesCount() > 0) {
+          <span class="nav-badge">{{ unreadMessagesCount() }}</span>
+        }
       </a>
 
       @if (isAdmin()) {
@@ -144,8 +147,7 @@
       }
     </nav>
 
-    <div class="sidebar-footer">
-    </div>
+    <div class="sidebar-footer"></div>
   </aside>
 
   <main class="content-column">
@@ -163,8 +165,14 @@
 
       @for (post of trendingPosts(); track post.postId) {
         <div class="trend-item">
-          <span>{{ post.userNickname || 'Usuario' }} · ❤️ {{ post.likesCount ?? 0 }} · 🔁 {{ post.retweetsCount ?? 0 }} · 💬 {{ post.repliesCount ?? 0 }}</span>
-          <strong>{{ (post.content ?? '').slice(0, 60) }}{{ (post.content ?? '').length > 60 ? '...' : '' }}</strong>
+          <span
+            >{{ post.userNickname || 'Usuario' }} · ❤️ {{ post.likesCount ?? 0 }} · 🔁
+            {{ post.retweetsCount ?? 0 }} · 💬 {{ post.repliesCount ?? 0 }}</span
+          >
+          <strong
+            >{{ (post.content ?? '').slice(0, 60)
+            }}{{ (post.content ?? '').length > 60 ? '...' : '' }}</strong
+          >
         </div>
       }
 

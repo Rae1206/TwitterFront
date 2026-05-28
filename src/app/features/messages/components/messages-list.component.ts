@@ -319,9 +319,9 @@ export class MessagesListComponent implements OnInit, OnDestroy {
         // Usuario en línea
         this.signalRService.onUserOnline
             .pipe(takeUntil(this.destroy$))
-            .subscribe((userId) => {
+            .subscribe((userInfo) => {
                 const online = new Set(this.onlineUsers());
-                online.add(userId);
+                online.add(userInfo.userId);
                 this.onlineUsers.set(online);
             });
 
