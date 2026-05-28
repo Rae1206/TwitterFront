@@ -126,7 +126,7 @@
             formControlName="content"
             placeholder="Escribe un mensaje..."
             class="chat-input"
-            [disabled]="sending()"
+            [readonly]="sending()"
             (input)="onInputChange()"
           />
           <button type="submit" class="send-button" [disabled]="messageForm.invalid || sending()">

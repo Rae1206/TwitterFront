@@ -40,19 +40,19 @@ export class SignalRService {
     async startConnection(): Promise<void> {
         // Si ya está conectado, no hacer nada
         if (this.hubConnection && this.hubConnection.state === HubConnectionState.Connected) {
-            console.log('✅ SignalR: Ya conectado');
+            console.log('SignalR: Ya conectado');
             return;
         }
 
         // Obtener el token de autenticación
         const token = this.sessionService.getAccessToken();
         if (!token) {
-            console.warn('⚠️ SignalR: No hay token de autenticación, no se puede conectar');
+            console.warn('SignalR: No hay token de autenticación, no se puede conectar');
             return;
         }
 
         try {
-            console.log('🔄 SignalR: Iniciando conexión...');
+            console.log('SignalR: Iniciando conexión...');
 
             // Construir la conexión al Hub
             this.hubConnection = new HubConnectionBuilder()
@@ -79,9 +79,9 @@ export class SignalRService {
             this.connectionState.set(this.hubConnection.state);
             this.isConnected.set(true);
 
-            console.log('✅ SignalR: Conectado exitosamente al hub de mensajes');
+            console.log('SignalR: Conectado exitosamente al hub de mensajes');
         } catch (error) {
-            console.error('❌ SignalR: Error al conectar', error);
+            console.error('SignalR: Error al conectar', error);
             this.connectionState.set(HubConnectionState.Disconnected);
             this.isConnected.set(false);
             throw error;
@@ -98,9 +98,9 @@ export class SignalRService {
                 await this.hubConnection.stop();
                 this.connectionState.set(HubConnectionState.Disconnected);
                 this.isConnected.set(false);
-                console.log('🔌 SignalR: Desconectado correctamente');
+                console.log('SignalR: Desconectado correctamente');
             } catch (error) {
-                console.error('❌ SignalR: Error al desconectar', error);
+                console.error('SignalR: Error al desconectar', error);
             }
         }
     }
@@ -113,14 +113,14 @@ export class SignalRService {
      */
     async notifyTyping(receiverId: string): Promise<void> {
         if (!this.hubConnection || this.hubConnection.state !== HubConnectionState.Connected) {
-            console.warn('⚠️ SignalR: No hay conexión activa para notificar typing');
+            console.warn('SignalR: No hay conexión activa para notificar typing');
             return;
         }
 
         try {
             await this.hubConnection.invoke('NotifyTyping', receiverId);
         } catch (error) {
-            console.error('❌ SignalR: Error al notificar typing', error);
+            console.error('SignalR: Error al notificar typing', error);
         }
     }
 
@@ -131,13 +131,14 @@ export class SignalRService {
      */
     async notifyStopTyping(receiverId: string): Promise<void> {
         if (!this.hubConnection || this.hubConnection.state !== HubConnectionState.Connected) {
+
             return;
         }
 
         try {
             await this.hubConnection.invoke('NotifyStopTyping', receiverId);
         } catch (error) {
-            console.error('❌ SignalR: Error al notificar stop typing', error);
+            console.error('SignalR: Error al notificar stop typing', error);
         }
     }
 
@@ -162,55 +163,45 @@ export class SignalRService {
     private setupEventHandlers(): void {
         if (!this.hubConnection) return;
 
-        // ========================================
         // EVENTO: ReceiveMessage
         // Se dispara cuando otro usuario te envía un mensaje
-        // ========================================
+
         this.hubConnection.on('ReceiveMessage', (message: MessageDto) => {
             console.log('SignalR: Mensaje recibido', message);
             this.messageReceived$.next(message);
         });
 
-        // ========================================
+
         // EVENTO: UserOnline
         // Se dispara cuando un usuario se conecta
-        // ========================================
         this.hubConnection.on('UserOnline', (userId: string) => {
             console.log('SignalR: Usuario en línea', userId);
             this.userOnline$.next(userId);
         });
 
-        // ========================================
+
         // EVENTO: UserOffline
         // Se dispara cuando un usuario se desconecta
-        // ========================================
         this.hubConnection.on('UserOffline', (userId: string) => {
             console.log('SignalR: Usuario fuera de línea', userId);
             this.userOffline$.next(userId);
         });
 
-        // ========================================
         // EVENTO: UserTyping
         // Se dispara cuando un usuario está escribiendo
-        // ========================================
         this.hubConnection.on('UserTyping', (userId: string) => {
             console.log('SignalR: Usuario escribiendo', userId);
             this.userTyping$.next(userId);
         });
 
-        // ========================================
         // EVENTO: UserStopTyping
         // Se dispara cuando un usuario deja de escribir
-        // ========================================
         this.hubConnection.on('UserStopTyping', (userId: string) => {
             console.log('SignalR: Usuario dejó de escribir', userId);
             this.userStopTyping$.next(userId);
         });
 
-        // ========================================
         // EVENTOS DE CONEXIÓN
-        // ========================================
-
         // Cuando se está reconectando
         this.hubConnection.onreconnecting((error) => {
             console.warn('ignalR: Reconectando...', error);

@@ -40,7 +40,6 @@ export class MessagesPage {
     readonly sending = signal(false);
     readonly error = signal<string | null>(null);
 
-    // Real-time status tracking
     readonly onlineUsers = signal<Set<string>>(new Set());
     readonly typingUsers = signal<Set<string>>(new Set());
     private typingTimeout: any = null;
