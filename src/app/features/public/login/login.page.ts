@@ -25,6 +25,7 @@ export class LoginPage {
   readonly returnUrl = input('/home');
   readonly submitting = signal(false);
   readonly errorMessage = signal<string | null>(null);
+  readonly showPassword = signal(false);
   readonly form = this.formBuilder.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required]],

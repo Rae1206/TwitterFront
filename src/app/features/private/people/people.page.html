@@ -21,12 +21,19 @@
     </div>
 
     <aside class="hero-spotlight">
-      <p class="eyebrow">Destacado</p>
+      <p class="eyebrow">{{ selectedUser() ? 'Detalles' : 'Destacado' }}</p>
 
-      @if (featuredUser(); as user) {
+      @if ((selectedUser() ?? featuredUser()); as user) {
         <app-user-avatar class="person-avatar person-avatar-image" [user]="user" />
         <strong>{{ user.nickname || 'Usuario' }}</strong>
         <p>{{ user.biography || 'Sin biografía.' }}</p>
+
+        <div class="spotlight-facts">
+          <p><span>Correo:</span> {{ user.email || 'Sin correo' }}</p>
+          <p><span>Roles:</span> {{ (user.roles ?? []).join(', ') || 'Usuario' }}</p>
+          <p><span>Se unió:</span> {{ (user.createdAt | date: 'mediumDate') || '—' }}</p>
+        </div>
+
         <div class="spotlight-meta">
           @if (statusLabel(user) !== 'Activo') {
             <span class="chip" [class.warn]="statusLabel(user) !== 'Verificado'">{{
@@ -34,6 +41,13 @@
             }}</span>
           }
         </div>
+
+        @if (selectedUser()) {
+          <div class="spotlight-actions">
+            <a class="primary-action small-action" [routerLink]="['/profile', user.userId || 'unknown']">Abrir perfil</a>
+            <button type="button" class="secondary-action small-action" (click)="inspect(null)">Cerrar</button>
+          </div>
+        }
       } @else {
         <strong>Aún no hay perfiles</strong>
         <p>Cuando haya personas registradas, aparecerán aquí.</p>
@@ -144,35 +158,25 @@
             </div>
 
             <div class="role-row">
-              @for (role of user.roles ?? ['Usuario']; track role) {
-                <span class="role-pill">{{ role }}</span>
-              }
+              <span class="role-pill">{{ (user.roles ?? ['Usuario']).join(', ') }}</span>
             </div>
 
-            <div class="table-actions">
-              <a class="inline-link" [routerLink]="['/profile', user.userId || 'unknown']"
-                >Ver perfil</a
-              >
-
+            <div class="person-actions">
               @if (user.userId && !isSelf(user.userId)) {
-                <app-send-message-button [userId]="user.userId" />
+                <div class="message-row">
+                  <app-send-message-button [userId]="user.userId" />
+                </div>
               }
 
-              <button type="button" class="secondary-action small-action" (click)="inspect(user)">
-                Detalles
-              </button>
-              @if (canDeleteUsers() && user.userId && !isSelf(user.userId)) {
-                <button
-                  type="button"
-                  class="danger-action small-action"
-                  [disabled]="deletingUserId() === user.userId"
-                  (click)="deleteUser(user)"
-                >
-                  {{ deletingUserId() === user.userId ? 'Eliminando...' : 'Eliminar' }}
+              <div class="icon-actions">
+                <a class="icon-btn" [routerLink]="['/profile', user.userId || 'unknown']" title="Ver perfil">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </a>
+                  
+                <button type="button" class="icon-btn" (click)="inspect(user)" title="Detalles" >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                 </button>
-              } @else if (canDeleteUsers() && isSelf(user.userId)) {
-                <span class="chip" title="No podés eliminar tu propia cuenta">Tu cuenta</span>
-              }
+              </div>
             </div>
           </article>
         }
@@ -181,37 +185,5 @@
   </section>
 
   @if (selectedUser(); as user) {
-    <section class="surface-card">
-      <header class="section-head">
-        <div>
-          <h2>Detalles</h2>
-        </div>
-      </header>
-
-      <div class="fact-grid">
-        <article class="fact-card">
-          <span>Correo</span>
-          <strong>{{ user.email || 'Sin correo' }}</strong>
-        </article>
-        <article class="fact-card">
-          <span>Roles</span>
-          <strong>{{ (user.roles ?? []).join(', ') || 'Usuario' }}</strong>
-        </article>
-        <article class="fact-card">
-          <span>Se unió</span>
-          <strong>{{ (user.createdAt | date: 'mediumDate') || '—' }}</strong>
-        </article>
-        <article class="fact-card fact-card-wide">
-          <span>Biografía</span>
-          <strong>{{ user.biography || 'Sin biografía.' }}</strong>
-        </article>
-      </div>
-
-      <div class="table-actions">
-        <a class="primary-action" [routerLink]="['/profile', user.userId || 'unknown']"
-          >Abrir perfil completo</a
-        >
-      </div>
-    </section>
   }
 </section>

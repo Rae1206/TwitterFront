@@ -54,13 +54,6 @@ export const routes: Routes = [
         loadComponent: () => import('./features/follows/pages/follows-list.page').then((module) => module.FollowsPage),
       },
       {
-        path: 'settings/profile',
-        loadComponent: () =>
-          import('./features/private/settings/profile/settings-profile.page').then(
-            (module) => module.SettingsProfilePage,
-          ),
-      },
-      {
         path: 'settings/password',
         loadComponent: () =>
           import('./features/private/settings/password/settings-password.page').then(

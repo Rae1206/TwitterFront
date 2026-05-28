@@ -29,6 +29,7 @@ export class RegisterPage {
   readonly loading = signal(false);
   readonly successMessage = signal<string | null>(null);
   readonly errorMessage = signal<string | null>(null);
+  readonly showPassword = signal(false);
 
   protected async register(): Promise<void> {
     if (this.registerForm.invalid || this.loading()) {

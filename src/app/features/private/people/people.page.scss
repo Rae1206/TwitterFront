@@ -139,3 +139,82 @@
     justify-items: start;
   }
 }
+
+
+.icon-actions {
+   gap: 10px;
+  justify-content: center;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+   margin-right: 5px;
+}
+
+.icon-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.icon-btn svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+
+.person-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.message-row {
+  display: flex;
+  width: 100%;
+}
+
+.message-row > * {
+  width: 100%;
+}
+
+.spotlight-facts {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+  width: 100%;
+}
+
+.spotlight-facts p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.spotlight-facts p span {
+  color: var(--text-primary);
+  font-weight: 600;
+  margin-right: 0.35rem;
+}
+
+.spotlight-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  width: 100%;
+}
+
+.spotlight-actions > * {
+  flex: 1;
+}

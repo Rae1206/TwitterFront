@@ -111,7 +111,12 @@ export class ProfilePage {
   });
   readonly joinedLabel = computed(() => this.profile()?.createdAt ?? null);
   readonly biographyPreview = computed(() => this.profile()?.biography?.trim() || 'Aún no se agregó una biografía.');
-  readonly canSaveProfile = computed(() => !this.profileFormLoading() && (!this.profileForm.pristine || !!this.pendingAvatarFile()));
+  private readonly profileFormDirty = signal(false);
+  readonly canSaveProfile = computed(() => !this.profileFormLoading() && (this.profileFormDirty() || !!this.pendingAvatarFile()));
+
+  protected markProfileDirty(): void {
+    this.profileFormDirty.set(true);
+  }
   readonly isOwnProfile = computed(() => {
     const resolvedUserId = this.resolvedUserId();
     const sessionUserId = this.userStore.currentUserId();
@@ -150,7 +155,8 @@ export class ProfilePage {
         nickname: user.nickname ?? '',
         email: user.email ?? '',
         biography: user.biography ?? '',
-      });
+      }, { emitEvent: false });
+      this.profileFormDirty.set(false);
     });
   }
 
@@ -338,7 +344,8 @@ export class ProfilePage {
       nickname: user.nickname ?? '',
       email: user.email ?? '',
       biography: user.biography ?? '',
-    });
+    }, { emitEvent: false });
+    this.profileFormDirty.set(false);
   }
 
   private setPendingAvatar(file: File): void {

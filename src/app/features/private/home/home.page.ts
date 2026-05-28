@@ -7,6 +7,7 @@ import { firstValueFrom } from 'rxjs';
 import { getErrorMessage } from '../../../core/api/api.utils';
 import { SessionService } from '../../../core/auth/session.service';
 import { ConfirmService } from '../../../core/ui/confirm.service';
+import { TrendingService } from '../../../core/ui/trending.service';
 import { StateCardComponent } from '../../../shared/components/state-card/state-card.component';
 import { AudioPlayerComponent } from '../../posts/components/audio-player.component';
 import { AudioRecorderModalComponent } from '../../posts/components/audio-recorder-modal.component';
@@ -50,6 +51,7 @@ export class HomePage {
   private readonly confirm = inject(ConfirmService);
   private readonly sessionService = inject(SessionService);
   private readonly reportStore = inject(ReportStoreService);
+  private readonly trendingService = inject(TrendingService);
   private readonly composerSection = viewChild<ElementRef<HTMLElement>>('composerSection');
   readonly attachments = signal<MediaAttachment[]>([]);
   readonly uploadingFile = signal(false);
@@ -331,6 +333,7 @@ export class HomePage {
 
   protected async reloadFeed(): Promise<void> {
     await this.postStore.loadPosts();
+    void this.trendingService.refresh();
   }
 
   protected authorName(post: PostDto): string {

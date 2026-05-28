@@ -66,7 +66,7 @@ input:focus {
   color: var(--success-color);
 }
 
-button,
+button:not(.toggle-password),
 a {
   width: 100%;
   padding: 0.95rem 1rem;
@@ -80,7 +80,7 @@ a {
   cursor: pointer;
 }
 
-button {
+button:not(.toggle-password) {
   background: var(--brand-color);
   border-color: var(--brand-color);
   color: #fff;

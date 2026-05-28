@@ -78,7 +78,7 @@ export class PeoplePage {
     void this.userStore.loadUsers();
   }
 
-  protected inspect(user: UserDto): void {
+  protected inspect(user: UserDto | null): void {
     this.selectedUser.set(user);
   }
 
