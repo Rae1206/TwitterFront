@@ -6,6 +6,8 @@
       <app-accent-picker />
     </div>
     <nav class="public-nav">
+      <button type="button" class="nav-btn" (click)="openAbout()">Quiénes somos</button>
+      <button type="button" class="nav-btn" (click)="openContact()">Contáctanos</button>
       <a routerLink="/login">Iniciar sesión</a>
       <a routerLink="/register">Registrarse</a>
     </nav>
@@ -15,10 +17,169 @@
     <section class="public-copy">
       <h1>Conecta. Comparte. Conversa.</h1>
       <p>Únete a la conversación y mantente al día con lo que importa.</p>
+      
+      <div class="landing-links">
+        <button type="button" class="landing-btn" (click)="openAbout()">Quiénes somos</button>
+        <button type="button" class="landing-btn" (click)="openContact()">Contáctanos</button>
+      </div>
     </section>
 
     <section class="public-card" aria-label="Área de autenticación">
       <router-outlet />
     </section>
   </main>
+
+  @if (aboutOpen()) {
+    <div class="modal-backdrop" (click)="closeAbout()">
+      <section
+        class="modal-container surface-card about-modal"
+        (click)="$event.stopPropagation()"
+        aria-labelledby="about-title"
+        aria-modal="true"
+        role="dialog"
+      >
+        <header class="modal-header">
+          <div>
+            <p class="eyebrow">Sobre nosotros</p>
+            <h3 id="about-title">Quiénes somos</h3>
+          </div>
+          <button
+            type="button"
+            class="close-modal-btn"
+            (click)="closeAbout()"
+            aria-label="Cerrar el modal de Quiénes somos"
+          >
+            &times;
+          </button>
+        </header>
+
+        <div class="modal-body stack-gap">
+          <div class="brand-badge-row">
+            <span class="badge-icon">🚀</span>
+            <div>
+              <h4>Bootcamp VMTDEV</h4>
+              <span class="badge-subtitle">Impulsa tu futuro</span>
+            </div>
+          </div>
+          
+          <p>
+            Somos una iniciativa de aprendizaje y desarrollo tecnológico enfocada en la creación de software con impacto real. A través de este bootcamp impulsamos las capacidades de futuros ingenieros mediante arquitecturas limpias y modernas.
+          </p>
+
+          <div class="team-section">
+            <h5>Desarrolladores</h5>
+            <div class="team-grid">
+              <div class="team-card">
+                <div class="avatar-placeholder">A</div>
+                <div class="member-info">
+                  <strong>Alex Alvarado Triana</strong>
+                  <span>Desarrollador FullStack</span>
+                </div>
+              </div>
+              <div class="team-card">
+                <div class="avatar-placeholder">L</div>
+                <div class="member-info">
+                  <strong>Leonardo Alvarado Triana</strong>
+                  <span>Desarrollador FullStack</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p class="about-footer">
+            Impulsando el ecosistema tecnológico con una plataforma de código abierto orientada a soluciones inteligentes.
+          </p>
+        </div>
+      </section>
+    </div>
+  }
+
+  @if (contactOpen()) {
+    <div class="modal-backdrop" (click)="closeContact()">
+      <section
+        class="modal-container surface-card contact-modal"
+        (click)="$event.stopPropagation()"
+        aria-labelledby="contact-title"
+        aria-modal="true"
+        role="dialog"
+      >
+        <header class="modal-header">
+          <div>
+            <p class="eyebrow">Atención al cliente</p>
+            <h3 id="contact-title">Contáctanos</h3>
+          </div>
+          <button
+            type="button"
+            class="close-modal-btn"
+            (click)="closeContact()"
+            aria-label="Cerrar el modal de Contáctanos"
+          >
+            &times;
+          </button>
+        </header>
+
+        <div class="modal-body">
+          @if (contactSuccess()) {
+            <div class="success-alert">
+              <span class="success-icon">✉️</span>
+              <h4>¡Mensaje enviado con éxito!</h4>
+              <p>Gracias por ponerte en contacto. Nuestro equipo te responderá a la brevedad posible.</p>
+              <button type="button" class="primary-action small-action" (click)="closeContact()">
+                Aceptar
+              </button>
+            </div>
+          } @else {
+            <form class="stack" (ngSubmit)="submitContact()">
+              <label class="field">
+                <span>Tu Nombre</span>
+                <input
+                  type="text"
+                  [value]="contactName()"
+                  (input)="onNameInput($event)"
+                  placeholder="Ej. Alvarado Triana"
+                  required
+                />
+              </label>
+
+              <label class="field">
+                <span>Correo electrónico</span>
+                <input
+                  type="email"
+                  [value]="contactEmail()"
+                  (input)="onEmailInput($event)"
+                  placeholder="tu@ejemplo.com"
+                  required
+                />
+              </label>
+
+              <label class="field">
+                <span>Tu mensaje</span>
+                <textarea
+                  rows="4"
+                  [value]="contactMessage()"
+                  (input)="onMessageInput($event)"
+                  placeholder="¿En qué podemos ayudarte hoy?"
+                  required
+                ></textarea>
+              </label>
+
+              <div class="button-row">
+                <button type="submit" class="primary-action" [disabled]="contactSubmitting()">
+                  {{ contactSubmitting() ? 'Enviando...' : 'Enviar mensaje' }}
+                </button>
+                <button
+                  type="button"
+                  class="secondary-action"
+                  [disabled]="contactSubmitting()"
+                  (click)="closeContact()"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          }
+        </div>
+      </section>
+    </div>
+  }
 </section>

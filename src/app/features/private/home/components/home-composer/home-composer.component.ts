@@ -24,4 +24,20 @@ export class HomeComposerComponent {
   readonly recorderOpened = output<void>();
   readonly attachmentRemoved = output<number>();
   readonly editCancelled = output<void>();
+  readonly imagePasted = output<File>();
+
+  protected onPaste(event: ClipboardEvent): void {
+    const items = event.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        const file = items[i].getAsFile();
+        if (file) {
+          event.preventDefault();
+          this.imagePasted.emit(file);
+        }
+        break;
+      }
+    }
+  }
 }

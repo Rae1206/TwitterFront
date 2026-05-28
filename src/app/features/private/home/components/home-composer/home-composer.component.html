@@ -8,7 +8,7 @@
   <form class="stack" [formGroup]="form()" (ngSubmit)="submitted.emit()">
     <label class="field">
       <span>Contenido</span>
-      <textarea rows="5" formControlName="content" placeholder="¿Qué vale la pena publicar hoy?"></textarea>
+      <textarea rows="5" formControlName="content" placeholder="¿Qué vale la pena publicar hoy?" (paste)="onPaste($event)"></textarea>
     </label>
 
     <div class="composer-media-section stack">

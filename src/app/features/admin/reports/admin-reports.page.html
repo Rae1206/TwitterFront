@@ -83,6 +83,12 @@
               </dl>
 
               <div class="table-actions">
+                @if (report.postId) {
+                  <button type="button" class="secondary-action small-action preview-btn" (click)="openPostPreview(report.postId); pick(report)" title="Ver publicación">
+                    <svg class="preview-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    Ver publicación
+                  </button>
+                }
                 <button type="button" class="secondary-action small-action" (click)="pick(report)">Abrir espacio de trabajo</button>
                 <button
                   type="button"
@@ -176,6 +182,13 @@
 
         </dl>
 
+        @if (report.postId) {
+          <button type="button" class="secondary-action small-action preview-btn" (click)="openPostPreview(report.postId)" title="Ver publicación">
+            <svg class="preview-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Ver publicación reportada
+          </button>
+        }
+
 
 
         <form class="stack top-gap" [formGroup]="resolveForm" (ngSubmit)="resolve()">
@@ -184,10 +197,21 @@
             <input formControlName="reportId" />
           </label>
 
-          <label class="field">
+  <label class="field">
             <span>Nota de resolución</span>
             <textarea rows="4" formControlName="resolutionNote" placeholder="Nota opcional para el rastro de moderación"></textarea>
           </label>
+
+          @if (report.postId) {
+            <label class="field">
+              <span>Acción sobre la publicación</span>
+              <select formControlName="postAction">
+                <option value="none">Ninguna penalización</option>
+                <option value="flag">Marcar publicación (Flag)</option>
+                <option value="delete">Eliminar publicación</option>
+              </select>
+            </label>
+          }
 
           <div class="button-row">
             <button type="submit" class="primary-action" [disabled]="isActing(report.reportId)">
@@ -207,37 +231,61 @@
       }
     </article>
 
-    <article class="surface-card">
-      <header class="section-head">
-        <div>
-          <h2>Crear reporte manual</h2>
-          <p>Registra un reporte directamente desde administración.</p>
-        </div>
-      </header>
-
-      <form class="stack" [formGroup]="createForm" (ngSubmit)="create()">
-        <label class="field">
-          <span>ID de publicación</span>
-          <input formControlName="postId" />
-        </label>
-
-        <label class="field">
-          <span>Motivo</span>
-          <input formControlName="reason" />
-        </label>
-
-        <label class="field">
-          <span>Descripción</span>
-          <textarea rows="4" formControlName="description" placeholder="Contexto opcional de moderación"></textarea>
-        </label>
-
-        <div class="button-row">
-          <button type="submit" class="primary-action">Crear reporte</button>
-        </div>
-      </form>
-    </article>
   </section>
 
-  @if (selected(); as report) {
+  @if (previewPost(); as post) {
+    <div class="modal-backdrop" (click)="closePostPreview()">
+      <div class="modal-container surface-card preview-modal" (click)="$event.stopPropagation()">
+        <header class="modal-header">
+          <h3>Publicación reportada</h3>
+          <button type="button" class="close-modal-btn" (click)="closePostPreview()">&times;</button>
+        </header>
+
+        <article class="preview-post-card">
+          <header class="preview-post-header">
+            <div class="preview-avatar-placeholder">{{ (post.userNickname || post.username || 'U').charAt(0).toUpperCase() }}</div>
+            <div class="preview-author-meta">
+              <strong>{{ previewAuthorName(post) }}</strong>
+              <p>{{ previewAuthorHandle(post) }}</p>
+            </div>
+          </header>
+
+          @if (post.content) {
+            <p class="preview-post-content">{{ post.content }}</p>
+          }
+
+          @if (post.mediaUrls && post.mediaUrls.length > 0) {
+            <app-post-media-carousel
+              [mediaUrls]="post.mediaUrls"
+              [postId]="post.postId!"
+              [currentIndex]="getCarouselIndex(post.postId)"
+              imageAlt="Media de la publicación"
+              [detail]="true"
+              [lazyVideo]="false"
+              (previousRequested)="prevCarousel($event.postId, $event.total)"
+              (nextRequested)="nextCarousel($event.postId, $event.total)"
+            />
+          }
+
+          <div class="preview-timestamp-row">
+            <span>{{ (post.createdAt | date: 'medium') || 'Sin fecha' }}</span>
+          </div>
+
+          <div class="preview-stats-bar">
+            <span class="stat-item"><strong>{{ post.repliesCount ?? 0 }}</strong> Respuestas</span>
+            <span class="stat-item"><strong>{{ post.retweetsCount ?? 0 }}</strong> Compartidas</span>
+            <span class="stat-item"><strong>{{ post.likesCount ?? 0 }}</strong> Me gusta</span>
+          </div>
+
+          <div class="preview-meta-bar">
+            <span class="chip" [class.warn]="!post.isPublished">{{ post.isPublished ? 'Publicado' : 'Borrador' }}</span>
+            @if (post.isFlagged) {
+              <span class="chip danger">Marcado</span>
+            }
+            <span class="meta-id">ID: {{ post.postId }}</span>
+          </div>
+        </article>
+      </div>
+    </div>
   }
 </section>

@@ -8,7 +8,7 @@ import { ConfirmService } from '../../../core/ui/confirm.service';
 import { FeedbackService } from '../../../core/ui/feedback.service';
 import { StateCardComponent } from '../../../shared/components/state-card/state-card.component';
 
-import { AdminUserRecord } from '../models/admin.models';
+import { AdminUserRecord, RoleDto } from '../models/admin.models';
 import { AdminApiService } from '../services/admin-api.service';
 
 @Component({
@@ -31,10 +31,15 @@ export class AdminUsersPage {
   readonly error = signal<string | null>(null);
   readonly selected = signal<AdminUserRecord | null>(null);
   readonly currentUserId = computed(() => this.sessionService.userId());
+
+  readonly activeUsers = computed(() => this.users().filter(u => !u.deletedAt && u.isActive !== false));
+  readonly inactiveUsers = computed(() => this.users().filter(u => u.deletedAt || u.isActive === false));
   readonly roleForm = this.formBuilder.group({
     userId: ['', [Validators.required]],
-    role: ['User', [Validators.required]],
+    roleId: ['', [Validators.required]],
   });
+
+  readonly roles = signal<RoleDto[]>([]);
 
   protected isSelf(userId: string | undefined | null): boolean {
     const current = this.currentUserId();
@@ -43,6 +48,7 @@ export class AdminUsersPage {
 
   constructor() {
     void this.load();
+    void this.loadRoles();
   }
 
   protected async load(): Promise<void> {
@@ -57,9 +63,15 @@ export class AdminUsersPage {
     }
   }
 
+  private async loadRoles(): Promise<void> {
+    try {
+      this.roles.set(await firstValueFrom(this.adminApi.listRoles()));
+    } catch { /* roles fallback empty */ }
+  }
+
   protected pick(user: AdminUserRecord): void {
     this.selected.set(user);
-    this.roleForm.reset({ userId: user.userId ?? '', role: user.roles?.[0] ?? 'User' });
+    this.roleForm.reset({ userId: user.userId ?? '', roleId: '' });
   }
 
   protected async submitRoleChange(): Promise<void> {
@@ -68,9 +80,9 @@ export class AdminUsersPage {
       return;
     }
 
-    const { userId, role } = this.roleForm.getRawValue();
+    const { userId, roleId } = this.roleForm.getRawValue();
     await this.run(userId, async () => {
-      await firstValueFrom(this.adminApi.changeUserRole(userId, { role }));
+      await firstValueFrom(this.adminApi.changeUserRole(userId, { roleId }));
       this.feedback.success('El rol del usuario se actualizó.', { title: 'Rol cambiado' });
       await this.load();
     }, 'Falló la actualización del rol.');
@@ -129,17 +141,17 @@ export class AdminUsersPage {
     }, 'Falló la restauración del usuario.');
   }
 
-  protected async verifyUser(userId: string | undefined, verified: boolean): Promise<void> {
+  protected async verifyUser(userId: string | undefined, active: boolean): Promise<void> {
     if (!userId) {
       return;
     }
 
     const confirmed = await this.confirm.confirm({
-      title: verified ? '¿Quitar la verificación?' : '¿Verificar este usuario?',
-      message: verified
-        ? 'Quita el estado de verificación de la cuenta. Debería coincidir con tu política de moderación.'
-        : 'Marca la cuenta como verificada en el sistema de administración.',
-      confirmLabel: verified ? 'Quitar verificación' : 'Verificar usuario',
+      title: active ? '¿Desactivar este usuario?' : '¿Activar este usuario?',
+      message: active
+        ? 'Desactiva la cuenta del usuario. No podrá iniciar sesión ni realizar acciones.'
+        : 'Activa la cuenta del usuario, restaurando su acceso completo a la plataforma.',
+      confirmLabel: active ? 'Desactivar' : 'Activar',
     });
 
     if (!confirmed) {
@@ -147,12 +159,12 @@ export class AdminUsersPage {
     }
 
     await this.run(userId, async () => {
-      await firstValueFrom(verified ? this.adminApi.unverifyUser(userId) : this.adminApi.verifyUser(userId));
-      this.feedback.success(verified ? 'Se quitó la verificación al usuario.' : 'El usuario fue verificado.', {
-        title: verified ? 'Verificación quitada' : 'Usuario verificado',
+      await firstValueFrom(active ? this.adminApi.unverifyUser(userId) : this.adminApi.verifyUser(userId));
+      this.feedback.success(active ? 'La cuenta se desactivó.' : 'La cuenta se activó.', {
+        title: active ? 'Cuenta desactivada' : 'Cuenta activada',
       });
       await this.load();
-    }, 'Falló la acción de verificación.');
+    }, active ? 'Falló la desactivación.' : 'Falló la activación.');
   }
 
   private async run(id: string, task: () => Promise<void>, fallback: string): Promise<void> {

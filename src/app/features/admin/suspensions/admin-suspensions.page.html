@@ -8,12 +8,8 @@
 
     <div class="summary-grid">
       <article class="metric-card">
-        <strong>{{ history().length }}</strong>
-        <p>Entradas en el historial</p>
-      </article>
-      <article class="metric-card">
-        <strong>{{ activeHistoryCount() }}</strong>
-        <p>Suspensiones activas</p>
+        <strong>{{ pendingUserReports().length }}</strong>
+        <p>Reportes de usuarios pendientes</p>
       </article>
     </div>
   </header>
@@ -21,6 +17,68 @@
   @if (error(); as message) {
     <p class="feedback error" role="alert">{{ message }}</p>
   }
+
+  <section class="surface-card panel-stack" style="margin-bottom: 2rem;">
+    <header class="section-head">
+      <div>
+        <h2>Reportes de Usuarios Pendientes</h2>
+        <p>Denuncias activas dirigidas a cuentas de usuarios que requieren revisión.</p>
+      </div>
+    </header>
+
+    <div class="report-stack" style="display: flex; flex-direction: column; gap: 1rem;">
+      @for (report of pendingUserReports(); track report.reportId ?? $index) {
+        <article class="report-card" style="padding: 1.25rem; border: 1px solid var(--border-color, rgba(255,255,255,0.1)); border-radius: 8px; background-color: rgba(255, 255, 255, 0.02); display: flex; flex-direction: column; gap: 0.75rem;">
+          <div class="report-card-head" style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--text-muted, #888);">
+            <span class="chip warn" style="padding: 0.2rem 0.5rem; border-radius: 4px; background-color: rgba(245, 158, 11, 0.15); color: #f59e0b; font-weight: 500;">Pendiente</span>
+            <span>{{ (report.createdAt | date: 'medium') || 'Sin fecha' }}</span>
+          </div>
+
+          <h3 style="margin: 0; font-size: 1.15rem; font-weight: 600;">{{ report.reason || 'Reporte de Usuario' }}</h3>
+          @if (report.description) {
+            <p style="margin: 0; font-size: 0.95rem; line-height: 1.5; opacity: 0.85;">{{ report.description }}</p>
+          }
+
+          @if (getUser(report.reportedUserId); as user) {
+            <div class="reported-user-banner" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; border-radius: 8px; background-color: rgba(255, 255, 255, 0.05); margin-top: 0.25rem;">
+              <div class="user-avatar" style="width: 40px; height: 40px; border-radius: 50%; background-color: var(--brand-color, #1d9bf0); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem;">
+                {{ (user.nickname || 'U').charAt(0).toUpperCase() }}
+              </div>
+              <div class="user-info" style="display: flex; flex-direction: column; gap: 0.15rem;">
+                <span style="font-weight: 600; color: var(--text-primary);">{{ user.nickname || 'Usuario' }}</span>
+                <span style="font-size: 0.85rem; color: var(--text-muted);">{{ user.email }}</span>
+              </div>
+              <a [routerLink]="['/profile', user.userId]" class="secondary-action small-action" style="margin-left: auto; text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.85rem;">
+                Ver perfil
+              </a>
+            </div>
+          }
+
+          <dl class="fact-grid compact-facts" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; margin: 0.25rem 0; padding: 0.75rem; border-radius: 6px; background-color: rgba(0, 0, 0, 0.15); font-size: 0.85rem;">
+            <div>
+              <dt style="font-weight: 500; color: var(--text-muted, #888); margin-bottom: 0.15rem;">ID Reporte</dt>
+              <dd style="margin: 0; font-family: monospace; font-weight: 600;">{{ report.reportId || 'Desconocido' }}</dd>
+            </div>
+            <div>
+              <dt style="font-weight: 500; color: var(--text-muted, #888); margin-bottom: 0.15rem;">Usuario Denunciado</dt>
+              <dd style="margin: 0; font-family: monospace; font-weight: 600; color: #f87171;">{{ report.reportedUserId || 'Sin id' }}</dd>
+            </div>
+          </dl>
+
+          <div class="table-actions" style="display: flex; gap: 0.5rem; margin-top: 0.25rem;">
+            <button type="button" class="primary-action small-action" (click)="fillSuspendForm(report.reportedUserId, report.reason, report.reportId)">
+              Suspender Usuario
+            </button>
+            <button type="button" class="danger-action small-action" (click)="dismissUserReport(report.reportId)">
+              Descartar Reporte
+            </button>
+          </div>
+        </article>
+      } @empty {
+        <app-state-card tone="empty" title="Sin reportes pendientes" message="No hay denuncias a cuentas de usuarios esperando revisión." />
+      }
+    </div>
+  </section>
 
   <section class="detail-grid">
     <article class="surface-card action-card">
@@ -33,6 +91,13 @@
 
       <form class="stack" [formGroup]="suspendForm" (ngSubmit)="suspend()">
         <label class="field"><span>ID de usuario</span><input formControlName="userId" /></label>
+        <label class="field">
+          <span>Tipo de suspensión</span>
+          <select formControlName="suspensionType">
+            <option value="Temporary">Temporal</option>
+            <option value="Permanent">Permanente</option>
+          </select>
+        </label>
         <label class="field"><span>Motivo</span><input formControlName="reason" /></label>
         <label class="field"><span>Hasta</span><input type="datetime-local" formControlName="until" /></label>
 
@@ -59,61 +124,5 @@
         </div>
       </form>
     </article>
-  </section>
-
-  <section class="surface-card panel-stack">
-    <header class="section-head">
-      <div>
-        <h2>Historial</h2>
-        <p>Consulta el historial de suspensiones de una cuenta.</p>
-      </div>
-    </header>
-
-    <form class="stack compact-shell" [formGroup]="lookupForm" (ngSubmit)="lookup()">
-      <label class="field"><span>ID de usuario</span><input formControlName="userId" /></label>
-      <div class="button-row">
-        <button type="submit" class="primary-action" [disabled]="loadingHistory()">{{ loadingHistory() ? 'Cargando...' : 'Cargar historial' }}</button>
-      </div>
-    </form>
-
-    @if (loadingHistory() && !history().length) {
-      <app-state-card tone="loading" title="Cargando historial" message="Un momento..." />
-    } @else if (!loadingHistory() && !history().length) {
-      <app-state-card
-        tone="empty"
-        title="Sin historial"
-        message="Ingresa un ID de usuario para ver su historial de suspensiones."
-      />
-    } @else {
-      <div class="history-list">
-        @for (item of history(); track trackHistory($index, item)) {
-          <article class="history-item">
-            <div class="history-head">
-              <strong>{{ item.reason || 'Sin motivo registrado' }}</strong>
-              <span class="chip" [class.warn]="!!item.liftedAt">{{ item.liftedAt ? 'Levantada' : 'Activa' }}</span>
-            </div>
-
-            <dl>
-              <div>
-                <dt>Usuario</dt>
-                <dd>{{ item.userId || 'Desconocido' }}</dd>
-              </div>
-              <div>
-                <dt>Creada</dt>
-                <dd>{{ (item.createdAt | date: 'medium') || 'Desconocido' }}</dd>
-              </div>
-              <div>
-                <dt>Hasta</dt>
-                <dd>{{ (item.until | date: 'medium') || 'Sin límite' }}</dd>
-              </div>
-              <div>
-                <dt>Levantada</dt>
-                <dd>{{ (item.liftedAt | date: 'medium') || 'Aún activa' }}</dd>
-              </div>
-            </dl>
-          </article>
-        }
-      </div>
-    }
   </section>
 </section>

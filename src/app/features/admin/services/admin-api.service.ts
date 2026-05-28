@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiClientService } from '../../../core/api/api-client.service';
-import { AdminConfigEntry, AdminDashboardStats, AdminPostRecord, AdminReportDto, AdminUserRecord, AuditLogEntry, ChangeUserRoleRequest, CreateReportRequest, FlagPostRequest, LiftSuspensionRequest, ResolveReportRequest, SuspendUserRequest, SuspensionDto, UpdateConfigRequest } from '../models/admin.models';
+import { AdminConfigEntry, AdminDashboardStats, AdminPostRecord, AdminReportDto, AdminUserRecord, AuditLogEntry, ChangeUserRoleRequest, CreateReportRequest, FlagPostRequest, LiftSuspensionRequest, ResolveReportRequest, RoleDto, SuspendUserRequest, SuspensionDto, UpdateConfigRequest } from '../models/admin.models';
 import { JsonRecord } from '../../../core/api/api.models';
 
 
@@ -21,6 +21,10 @@ export class AdminApiService {
 
   listUsers(): Observable<AdminUserRecord[]> {
     return this.api.get<AdminUserRecord[]>('/api/admin/users/list');
+  }
+
+  listRoles(): Observable<RoleDto[]> {
+    return this.api.get<RoleDto[]>('/api/admin/users/roles');
   }
 
   deleteAdminUser(id: string): Observable<JsonRecord> {

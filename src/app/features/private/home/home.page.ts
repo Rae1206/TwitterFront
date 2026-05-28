@@ -724,6 +724,11 @@ export class HomePage {
     this.attachments.update((list) => list.filter((_, i) => i !== index));
   }
 
+  protected onImagePasted(file: File): void {
+    const objectUrl = URL.createObjectURL(file);
+    this.attachments.update((list) => [...list, { file, url: objectUrl, type: 'image' as const }]);
+  }
+
   protected isPostImageUrl(url: string): boolean {
     return !this.isPostAudioUrl(url) && !this.isPostVideoUrl(url);
   }

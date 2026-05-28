@@ -164,16 +164,21 @@
   <aside class="rail right-rail" aria-label="Panel lateral">
     <section class="panel">
       <h2>Qué está pasando</h2>
-      <p class="panel-copy">
-        Mantén la interfaz enfocada: publica, revisa y administra tu cuenta sin perderte entre
-        menús.
-      </p>
 
-      @for (trend of trends; track trend) {
+      <div class="trend-item hashtag-item">
+        <span>Hashtag destacado</span>
+        <strong>{{ hashtag }}</strong>
+      </div>
+
+      @for (post of trendingPosts(); track post.postId) {
         <div class="trend-item">
-          <span>Tendencia</span>
-          <strong>{{ trend }}</strong>
+          <span>{{ post.userNickname || 'Usuario' }} · ❤️ {{ post.likesCount ?? 0 }} · 🔁 {{ post.retweetsCount ?? 0 }} · 💬 {{ post.repliesCount ?? 0 }}</span>
+          <strong>{{ (post.content ?? '').slice(0, 60) }}{{ (post.content ?? '').length > 60 ? '...' : '' }}</strong>
         </div>
+      }
+
+      @if (!trendingPosts().length) {
+        <p class="panel-copy">No hay publicaciones con interacción aún.</p>
       }
     </section>
   </aside>

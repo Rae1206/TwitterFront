@@ -6,6 +6,9 @@ import { firstValueFrom } from 'rxjs';
 import { getErrorMessage } from '../../../core/api/api.utils';
 import { ConfirmService } from '../../../core/ui/confirm.service';
 import { FeedbackService } from '../../../core/ui/feedback.service';
+import { PostDto } from '../../posts/models/posts.models';
+import { PostsApiService } from '../../posts/services/posts-api.service';
+import { PostMediaCarouselComponent } from '../../private/home/components/post-media-carousel/post-media-carousel.component';
 import { StateCardComponent } from '../../../shared/components/state-card/state-card.component';
 
 import { AdminReportDto } from '../models/admin.models';
@@ -16,16 +19,18 @@ type ReportHistoryFilter = 'all' | 'pending' | 'resolved' | 'dismissed';
 @Component({
   selector: 'app-admin-reports-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, ReactiveFormsModule, StateCardComponent],
+  imports: [DatePipe, ReactiveFormsModule, StateCardComponent, PostMediaCarouselComponent],
   templateUrl: './admin-reports.page.html',
   styleUrl: './admin-reports.page.scss',
 })
 export class AdminReportsPage {
   private readonly adminApi = inject(AdminApiService);
+  private readonly postsApi = inject(PostsApiService);
   private readonly formBuilder = inject(NonNullableFormBuilder);
   private readonly feedback = inject(FeedbackService);
   private readonly confirm = inject(ConfirmService);
   private isInitialLoad = true;
+  private readonly carouselIndexes = new Map<string, number>();
 
   readonly pendingReports = signal<AdminReportDto[]>([]);
   readonly allReports = signal<AdminReportDto[]>([]);
@@ -34,8 +39,10 @@ export class AdminReportsPage {
   readonly error = signal<string | null>(null);
   readonly selected = signal<AdminReportDto | null>(null);
   readonly historyFilter = signal<ReportHistoryFilter>('all');
+  readonly previewPost = signal<PostDto | null>(null);
+  readonly previewLoading = signal(false);
   readonly createForm = this.formBuilder.group({ postId: ['', Validators.required], reason: ['', Validators.required], description: [''] });
-  readonly resolveForm = this.formBuilder.group({ reportId: ['', Validators.required], resolutionNote: [''] });
+  readonly resolveForm = this.formBuilder.group({ reportId: ['', Validators.required], resolutionNote: [''], postAction: ['none'] });
   readonly queueFocus = computed(() => this.selected() ?? this.pendingReports()[0] ?? this.allReports()[0] ?? null);
   readonly pendingCount = computed(() => this.pendingReports().length);
   readonly resolvedCount = computed(() => this.allReports().filter((report) => this.reportStatus(report) === 'Resuelto').length);
@@ -53,11 +60,11 @@ export class AdminReportsPage {
 
       switch (filter) {
         case 'pending':
-          return status === 'pending';
+          return status === 'pendiente';
         case 'resolved':
-          return status === 'resolved';
+          return status === 'resuelto';
         case 'dismissed':
-          return status === 'dismissed';
+          return status === 'descartado';
         default:
           return true;
       }
@@ -74,9 +81,11 @@ export class AdminReportsPage {
         firstValueFrom(this.adminApi.getPendingReports()),
         firstValueFrom(this.adminApi.getAllReports()),
       ]);
-      this.pendingReports.set(pending);
-      this.allReports.set(all);
-      this.syncSelection(pending, all);
+      const postPending = pending.filter((r) => r.entityType === 'Post' || Boolean(r.postId));
+      const postAll = all.filter((r) => r.entityType === 'Post' || Boolean(r.postId));
+      this.pendingReports.set(postPending);
+      this.allReports.set(postAll);
+      this.syncSelection(postPending, postAll);
     } catch (error) {
       this.error.set(getErrorMessage(error, 'No pudimos cargar los reportes.'));
     } finally {
@@ -87,6 +96,12 @@ export class AdminReportsPage {
   protected pick(report: AdminReportDto): void {
     this.selected.set(report);
     this.resolveForm.patchValue({ reportId: report.reportId ?? '' });
+    setTimeout(() => {
+      const el = document.querySelector('.workspace-grid');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
   }
 
   protected setHistoryFilter(filter: ReportHistoryFilter): void {
@@ -102,7 +117,7 @@ export class AdminReportsPage {
 
   protected async resolve(): Promise<void> {
     if (this.resolveForm.invalid) { this.resolveForm.markAllAsTouched(); return; }
-    const { reportId, resolutionNote } = this.resolveForm.getRawValue();
+    const { reportId, resolutionNote, postAction } = this.resolveForm.getRawValue();
 
     const report = this.findReport(reportId);
     const confirmed = await this.confirm.confirm({
@@ -117,10 +132,17 @@ export class AdminReportsPage {
     }
 
     await this.run(reportId, async () => { 
+      if (report && report.postId) {
+        if (postAction === 'flag') {
+          await firstValueFrom(this.adminApi.flagPost(report.postId, { reason: report.reason || 'Reporte aprobado por moderación.' }));
+        } else if (postAction === 'delete') {
+          await firstValueFrom(this.adminApi.deleteAdminPost(report.postId));
+        }
+      }
       await firstValueFrom(this.adminApi.resolveReport(reportId, { resolutionNote })); 
       this.feedback.success('El reporte se resolvió.', { title: 'Reporte resuelto' }); 
       this.selected.set(null);
-      this.resolveForm.reset();
+      this.resolveForm.reset({ reportId: '', resolutionNote: '', postAction: 'none' }); 
       await this.load(); 
     }, 'Falló la resolución del reporte.');
   }
@@ -158,10 +180,6 @@ export class AdminReportsPage {
   protected reportStatus(report: AdminReportDto): string {
     const status = (report.status ?? '').trim().toLowerCase();
 
-    if (!status || status === 'open' || status === 'assigned' || status === 'in_review' || status === 'in-review') {
-      return 'Pendiente';
-    }
-
     if (status === 'resolved') {
       return 'Resuelto';
     }
@@ -170,7 +188,7 @@ export class AdminReportsPage {
       return 'Descartado';
     }
 
-    return status.charAt(0).toUpperCase() + status.slice(1);
+    return 'Pendiente';
   }
 
   protected reportSummary(report: AdminReportDto): string {
@@ -215,5 +233,45 @@ export class AdminReportsPage {
 
   private async run(reportId: string | null, task: () => Promise<void>, fallback: string): Promise<void> {
     try { this.actingReportId.set(reportId); this.error.set(null); await task(); } catch (error) { const message = getErrorMessage(error, fallback); this.error.set(message); this.feedback.error(message, { title: 'Error en la acción de administración' }); } finally { this.actingReportId.set(null); }
+  }
+
+  protected async openPostPreview(postId: string): Promise<void> {
+    try {
+      this.previewLoading.set(true);
+      const post = await firstValueFrom(this.postsApi.getPostById(postId));
+      this.previewPost.set(post);
+    } catch {
+      this.feedback.error('No se pudo cargar la publicación.', { title: 'Error' });
+    } finally {
+      this.previewLoading.set(false);
+    }
+  }
+
+  protected closePostPreview(): void {
+    this.previewPost.set(null);
+  }
+
+  protected previewAuthorName(post: PostDto): string {
+    return post.userNickname || post.username || 'Usuario';
+  }
+
+  protected previewAuthorHandle(post: PostDto): string {
+    return post.username ? `@${post.username}` : '';
+  }
+
+  protected getCarouselIndex(postId: string | undefined): number {
+    return this.carouselIndexes.get(postId ?? '') ?? 0;
+  }
+
+  protected prevCarousel(postId: string | undefined, total: number): void {
+    const id = postId ?? '';
+    const current = this.carouselIndexes.get(id) ?? 0;
+    this.carouselIndexes.set(id, current > 0 ? current - 1 : total - 1);
+  }
+
+  protected nextCarousel(postId: string | undefined, total: number): void {
+    const id = postId ?? '';
+    const current = this.carouselIndexes.get(id) ?? 0;
+    this.carouselIndexes.set(id, current < total - 1 ? current + 1 : 0);
   }
 }

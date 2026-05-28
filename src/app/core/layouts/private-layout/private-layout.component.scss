@@ -294,6 +294,11 @@
   font-size: 0.75rem;
 }
 
+.hashtag-item strong {
+  color: var(--accent, #1d9bf0);
+  font-size: 1.1rem;
+}
+
 .mobile-top-bar {
   display: none;
 }

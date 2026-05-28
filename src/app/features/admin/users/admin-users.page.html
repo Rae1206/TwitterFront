@@ -1,4 +1,4 @@
-﻿<section class="page-shell">
+<section class="page-shell">
   <header class="page-header">
     <div>
       <p class="eyebrow">Administración</p>
@@ -11,17 +11,50 @@
     <p class="feedback error" role="alert">{{ message }}</p>
   }
 
+  <!-- Cambio de rol -->
+  <section class="surface-card compact-shell">
+    <header class="section-head">
+      <h2>Asignar rol</h2>
+    </header>
+
+    @if (selected(); as user) {
+      <p class="panel-copy">
+        <strong>{{ user.nickname }}</strong> — Roles actuales: {{ (user.roles ?? []).join(', ') || 'Ninguno' }}
+      </p>
+    }
+
+    <form class="stack" [formGroup]="roleForm" (ngSubmit)="submitRoleChange()">
+      <label class="field">
+        <span>ID de usuario</span>
+        <input type="text" formControlName="userId" readonly />
+      </label>
+
+      <label class="field">
+        <span>Rol a asignar</span>
+        <select formControlName="roleId">
+          <option value="" disabled>Seleccionar rol...</option>
+          @for (role of roles(); track role.roleId) {
+            <option [value]="role.roleId">{{ role.name }}</option>
+          }
+        </select>
+      </label>
+
+      <div class="button-row">
+        <button type="submit" class="primary-action" [disabled]="!!actingId() || roleForm.invalid">Asignar rol</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Usuarios activos -->
   <section class="surface-card data-grid-card">
+    <header class="section-head">
+      <h2>Usuarios activos</h2>
+    </header>
+
     @if (loading() && !users().length) {
       <app-state-card tone="loading" title="Cargando usuarios" message="Un momento..." />
-    } @else if (!loading() && !users().length) {
-      <app-state-card
-        tone="empty"
-        title="Sin usuarios"
-        message="No hay usuarios para mostrar."
-        actionLabel="Recargar"
-        (action)="load()"
-      />
+    } @else if (!activeUsers().length) {
+      <app-state-card tone="empty" title="Sin usuarios activos" message="No hay usuarios activos." actionLabel="Recargar" (action)="load()" />
     } @else {
       <div class="table-wrap">
         <table class="data-table">
@@ -30,29 +63,23 @@
               <th>Nombre</th>
               <th>Correo</th>
               <th>Roles</th>
-              <th>Estado</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            @for (user of users(); track user.userId ?? user.email ?? $index) {
+            @for (user of activeUsers(); track user.userId ?? $index) {
               <tr>
                 <td>{{ user.nickname || 'Desconocido' }}</td>
                 <td>{{ user.email || '—' }}</td>
-                <td>{{ (user.roles ?? []).join(', ') || 'Usuario' }}</td>
-                <td>{{ user.deletedAt ? 'Eliminado' : user.isVerified ? 'Verificado' : 'Activo' }}</td>
+                <td>{{ (user.roles ?? []).join(', ') || 'Sin rol asignado' }}</td>
                 <td>
                   <div class="table-actions">
                     <button type="button" class="secondary-action small-action" (click)="pick(user)">Seleccionar</button>
-                    <button type="button" class="secondary-action small-action" (click)="verifyUser(user.userId, !!user.isVerified)">
-                      {{ user.isVerified ? 'Quitar verificación' : 'Verificar' }}
-                    </button>
                     @if (isSelf(user.userId)) {
                       <span class="chip warn" title="No podés eliminar tu propia cuenta">Tu cuenta</span>
                     } @else {
-                      <button type="button" class="danger-action small-action" (click)="deleteUser(user.userId)">Eliminar</button>
+                      <button type="button" class="danger-action small-action" [disabled]="actingId() === user.userId" (click)="deleteUser(user.userId)">Eliminar</button>
                     }
-                    <button type="button" class="secondary-action small-action" (click)="restoreUser(user.userId)">Restaurar</button>
                   </div>
                 </td>
               </tr>
@@ -63,30 +90,41 @@
     }
   </section>
 
-  <section class="surface-card compact-shell">
+  <!-- Usuarios inactivos -->
+  <section class="surface-card data-grid-card">
     <header class="section-head">
-      <div>
-        <h2>Cambiar rol</h2>
-      </div>
+      <h2>Usuarios inactivos</h2>
     </header>
 
-    <form class="stack" [formGroup]="roleForm" (ngSubmit)="submitRoleChange()">
-      <label class="field">
-        <span>ID de usuario</span>
-        <input type="text" formControlName="userId" />
-      </label>
-
-      <label class="field">
-        <span>Rol</span>
-        <input type="text" formControlName="role" />
-      </label>
-
-      <div class="button-row">
-        <button type="submit" class="primary-action" [disabled]="!!actingId()">Actualizar rol</button>
+    @if (!inactiveUsers().length) {
+      <app-state-card tone="empty" title="Sin usuarios inactivos" message="Todos los usuarios están activos." />
+    } @else {
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Correo</th>
+              <th>Roles</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of inactiveUsers(); track user.userId ?? $index) {
+              <tr>
+                <td>{{ user.nickname || 'Desconocido' }}</td>
+                <td>{{ user.email || '—' }}</td>
+                <td>{{ (user.roles ?? []).join(', ') || 'Sin rol asignado' }}</td>
+                <td>
+                  <div class="table-actions">
+                    <button type="button" class="primary-action small-action" [disabled]="actingId() === user.userId" (click)="verifyUser(user.userId, false)">Activar</button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
       </div>
-    </form>
+    }
   </section>
-
-  @if (selected(); as user) {
-  }
 </section>

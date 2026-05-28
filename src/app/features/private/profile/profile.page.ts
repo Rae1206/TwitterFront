@@ -1,4 +1,4 @@
-﻿import { DatePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -380,6 +380,9 @@ export class ProfilePage {
   readonly reportTargetPostId = signal<string | null>(null);
   readonly isReportSubmitting = signal(false);
 
+  readonly isUserReportModalOpen = signal(false);
+  readonly reportTargetUserId = signal<string | null>(null);
+
   protected getCarouselIndex(postId: string | undefined): number {
     if (!postId) return 0;
     return this.activeCarouselIndex()[postId] || 0;
@@ -685,6 +688,36 @@ export class ProfilePage {
     this.isReportSubmitting.set(false);
     if (success) {
       this.closeReportModal();
+    }
+  }
+
+  protected openUserReportModal(): void {
+    const userId = this.resolvedUserId();
+    if (!userId) return;
+    this.reportTargetUserId.set(userId);
+    this.isUserReportModalOpen.set(true);
+  }
+
+  protected closeUserReportModal(): void {
+    this.isUserReportModalOpen.set(false);
+    this.reportTargetUserId.set(null);
+  }
+
+  protected isUserReported(userId: string | undefined): boolean {
+    return userId ? this.reportStore.isReported(userId) : false;
+  }
+
+  protected async submitUserReport(payload: { entityType: string; entityId: string; category: string; description?: string }): Promise<void> {
+    this.isReportSubmitting.set(true);
+    const success = await this.reportStore.submitReport({
+      entityType: payload.entityType,
+      entityId: payload.entityId,
+      category: payload.category,
+      description: payload.description ?? null,
+    });
+    this.isReportSubmitting.set(false);
+    if (success) {
+      this.closeUserReportModal();
     }
   }
 }

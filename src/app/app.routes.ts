@@ -101,14 +101,6 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/admin/suspensions/admin-suspensions.page').then((module) => module.AdminSuspensionsPage),
       },
-      {
-        path: 'config',
-        loadComponent: () => import('./features/admin/config/admin-config.page').then((module) => module.AdminConfigPage),
-      },
-      {
-        path: 'audit',
-        loadComponent: () => import('./features/admin/audit/admin-audit.page').then((module) => module.AdminAuditPage),
-      },
     ],
   },
   {

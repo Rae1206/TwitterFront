@@ -16,30 +16,71 @@
     <p class="feedback error" role="alert">{{ message }}</p>
   }
 
-  <section class="summary-grid">
-    @if (loading() && !entries().length) {
-      <app-state-card tone="loading" title="Cargando estadísticas" message="Un momento..." />
-    } @else if (!loading() && !entries().length) {
-      <app-state-card
-        tone="empty"
-        title="Sin estadísticas"
-        message="No hay contadores disponibles ahora mismo."
-        actionLabel="Recargar"
-        (action)="load()"
-      />
-    } @else {
-      @for (item of entries(); track item.label) {
-        <article class="surface-card summary-card">
-          <span>{{ item.label }}</span>
-          <strong>{{ item.value ?? '—' }}</strong>
+  @if (loading() && !stats()) {
+    <app-state-card tone="loading" title="Cargando estadísticas" message="Un momento..." />
+  } @else if (!loading() && !stats()) {
+    <app-state-card
+      tone="empty"
+      title="Sin estadísticas"
+      message="No hay contadores disponibles ahora mismo."
+      actionLabel="Recargar"
+      (action)="load()"
+    />
+  } @else {
+    @if (pills(); as items) {
+      <div class="stats-row">
+        @for (pill of items; track pill.label) {
+          <article class="surface-card stat-pill">
+            <span class="stat-label">{{ pill.label }}</span>
+            <strong class="stat-value">{{ pill.value }}</strong>
+          </article>
+        }
+      </div>
+    }
+
+    <div class="charts-grid">
+      @if (usersDonut(); as uc) {
+        <article class="surface-card chart-card">
+          <h2>Usuarios</h2>
+          <apx-chart
+            [series]="uc.series"
+            [chart]="uc.chart"
+            [labels]="uc.labels"
+            [colors]="uc.colors"
+            [legend]="uc.legend"
+            [dataLabels]="uc.dataLabels"
+          />
         </article>
       }
-    }
-  </section>
 
-  @if (stats(); as stats) {
-  }
+      @if (postsDonut(); as pc) {
+        <article class="surface-card chart-card">
+          <h2>Posts</h2>
+          <apx-chart
+            [series]="pc.series"
+            [chart]="pc.chart"
+            [labels]="pc.labels"
+            [colors]="pc.colors"
+            [legend]="pc.legend"
+            [dataLabels]="pc.dataLabels"
+          />
+        </article>
+      }
 
-  @if (actionResult(); as result) {
+      @if (overviewRadial(); as ov) {
+        <article class="surface-card chart-card">
+          <h2>Vista general</h2>
+          <apx-chart
+            [series]="ov.series"
+            [chart]="ov.chart"
+            [plotOptions]="ov.plotOptions"
+            [labels]="ov.labels"
+            [colors]="ov.colors"
+            [fill]="ov.fill"
+            [stroke]="ov.stroke"
+          />
+        </article>
+      }
+    </div>
   }
 </section>

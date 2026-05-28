@@ -3,15 +3,19 @@ import { PostDto } from '../../posts/models/posts.models';
 import { UserDto } from '../../users/models/users.models';
 
 
-export interface AdminDashboardStats extends JsonRecord {
-  usersCount?: number;
-  postsCount?: number;
-  pendingReports?: number;
-  suspendedUsers?: number;
+export interface AdminDashboardStats {
+  totalUsers: number;
+  activeUsers: number;
+  newUsersToday: number;
+  suspendedUsers: number;
+  totalPosts: number;
+  flaggedPosts: number;
+  pendingReports: number;
 }
 
 export interface AdminReportDto extends JsonRecord {
   reportId?: string;
+  entityType?: string;
   postId?: string;
   reportedUserId?: string;
   assignedToUserId?: string | null;
@@ -50,7 +54,12 @@ export interface AdminUsersListQuery extends PaginationQuery {
 }
 
 export interface ChangeUserRoleRequest {
-  role: string;
+  roleId: string;
+}
+
+export interface RoleDto {
+  roleId: string;
+  name: string;
 }
 
 export interface FlagPostRequest {
@@ -73,8 +82,9 @@ export interface ResolveReportRequest {
 
 export interface SuspendUserRequest {
   userId: string;
+  suspensionType: string;
   reason: string;
-  until?: string;
+  endsAt?: string | null;
 }
 
 export interface LiftSuspensionRequest {

@@ -1,4 +1,4 @@
-﻿<article class="surface-card post-card clickable-card" [class.retweet-card]="post().retweetOfPostId && !post().content" (click)="onPostClick()">
+<article class="surface-card post-card clickable-card" [class.retweet-card]="post().retweetOfPostId && !post().content" (click)="onPostClick()">
   <!-- 1. RETWEET PURO HEADER BANNER -->
   @if (post().retweetOfPostId && !post().content) {
     <div class="retweet-indicator-row" aria-hidden="true">
@@ -190,6 +190,18 @@
           <button type="button" class="reply-target-btn" (click)="onParentAuthorClick(); $event.stopPropagation()">
             {{ getParentAuthorHandle(post().repliedToPostId) }}
           </button>
+        </div>
+      }
+
+      @if (post().isFlagged && isOwnPost()) {
+        <div class="moderation-warning" style="margin-bottom: 0.75rem; padding: 0.75rem; border-radius: 8px; background-color: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; font-size: 0.85rem; display: flex; align-items: flex-start; gap: 0.6rem;" (click)="$event.stopPropagation()">
+          <svg style="width: 18px; height: 18px; min-width: 18px; margin-top: 1px; color: #ef4444;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <div>
+            <strong style="font-weight: 600; color: #f87171;">Publicación marcada por moderación</strong>
+            <p style="margin: 0.15rem 0 0 0; opacity: 0.9;">Acumula {{ post().reportCount ?? 0 }}/3 advertencias antes de su eliminación automática.</p>
+          </div>
         </div>
       }
 
