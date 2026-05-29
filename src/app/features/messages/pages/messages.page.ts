@@ -13,7 +13,7 @@ import { StateCardComponent } from '../../../shared/components/state-card/state-
 import { MessagesApiService } from '../services/messages-api.service';
 import { MessageDto } from '../models/messages.models';
 import { UserAvatarComponent } from '../../users/components/user-avatar.component';
-import { UserDto, getUserDisplayName } from '../../users/models/users.models';
+import { UserDto } from '../../users/models/users.models';
 
 
 @Component({

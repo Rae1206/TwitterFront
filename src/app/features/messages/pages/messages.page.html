@@ -7,57 +7,6 @@
   </div>
 
   <div class="messages-layout">
-    <!-- Conversations List -->
-    <div class="conversations-list" [class.hidden-mobile]="hasSelectedConversation()">
-      @if (loading()) {
-        <app-state-card
-          tone="loading"
-          title="Cargando"
-          message="Obteniendo tus conversaciones..."
-        />
-      } @else if (error()) {
-        <app-state-card tone="error" title="Error" [message]="error()!" />
-      } @else if (conversations().length === 0) {
-        <app-state-card
-          tone="empty"
-          title="Sin conversaciones"
-          message="Aún no tienes mensajes. Inicia una conversación desde el perfil de un usuario."
-        />
-      } @else {
-        <div class="conversation-items">
-          @for (conv of conversations(); track trackMessage($index, conv)) {
-            <button
-              type="button"
-              class="conversation-item"
-              [class.unread]="isUnread(conv)"
-              [class.active]="getOtherUserId(conv) === selectedUserId()"
-              (click)="selectConversation(conv)"
-            >
-              <app-user-avatar
-                [user]="toUserDto(conv, conv.senderId !== currentUserId())"
-                class="conversation-avatar"
-              />
-              <div class="online-indicator-wrapper">
-                @if (isUserOnline(getOtherUserId(conv))) {
-                  <span class="online-indicator"></span>
-                }
-              </div>
-              <div class="conversation-content">
-                <div class="conversation-header">
-                  <strong class="conversation-name">{{ getOtherUserName(conv) }}</strong>
-                  <span class="conversation-time">{{ conv.createdAt | date: 'short' }}</span>
-                </div>
-                <p class="conversation-preview">{{ conv.content }}</p>
-              </div>
-              @if (isUnread(conv)) {
-                <span class="unread-dot"></span>
-              }
-            </button>
-          }
-        </div>
-      }
-    </div>
-
     <!-- Chat Window -->
     <div class="chat-window" [class.visible-mobile]="hasSelectedConversation()">
       @if (hasSelectedConversation()) {
@@ -148,6 +97,57 @@
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
           <p>Selecciona una conversación para comenzar</p>
+        </div>
+      }
+    </div>
+
+    <!-- Conversations List -->
+    <div class="conversations-list" [class.hidden-mobile]="hasSelectedConversation()">
+      @if (loading()) {
+        <app-state-card
+          tone="loading"
+          title="Cargando"
+          message="Obteniendo tus conversaciones..."
+        />
+      } @else if (error()) {
+        <app-state-card tone="error" title="Error" [message]="error()!" />
+      } @else if (conversations().length === 0) {
+        <app-state-card
+          tone="empty"
+          title="Sin conversaciones"
+          message="Aún no tienes mensajes. Inicia una conversación desde el perfil de un usuario."
+        />
+      } @else {
+        <div class="conversation-items">
+          @for (conv of conversations(); track trackMessage($index, conv)) {
+            <button
+              type="button"
+              class="conversation-item"
+              [class.unread]="isUnread(conv)"
+              [class.active]="getOtherUserId(conv) === selectedUserId()"
+              (click)="selectConversation(conv)"
+            >
+              <app-user-avatar
+                [user]="toUserDto(conv, conv.senderId !== currentUserId())"
+                class="conversation-avatar"
+              />
+              <div class="online-indicator-wrapper">
+                @if (isUserOnline(getOtherUserId(conv))) {
+                  <span class="online-indicator"></span>
+                }
+              </div>
+              <div class="conversation-content">
+                <div class="conversation-header">
+                  <strong class="conversation-name">{{ getOtherUserName(conv) }}</strong>
+                  <span class="conversation-time">{{ conv.createdAt | date: 'short' }}</span>
+                </div>
+                <p class="conversation-preview">{{ conv.content }}</p>
+              </div>
+              @if (isUnread(conv)) {
+                <span class="unread-dot"></span>
+              }
+            </button>
+          }
         </div>
       }
     </div>

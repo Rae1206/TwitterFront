@@ -2,6 +2,9 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } 
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { interval, switchMap } from 'rxjs';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter, map, startWith } from 'rxjs';
 
 import { SessionService } from '../../auth/session.service';
 import { adminRoles } from '../../auth/session.model';
@@ -14,6 +17,7 @@ import { UserStoreService } from '../../../features/users/services/user-store.se
 import { SignalRService } from '../../realtime/signalr.service';
 import { MessagesApiService } from '../../../features/messages/services/messages-api.service';
 import { FollowsApiService } from '../../../features/follows/services/follows-api.service';
+import { TrendingMediaThumbComponent } from '../../../shared/components/trending-media-thumb/trending-media-thumb.component';
 
 @Component({
   selector: 'app-private-layout',
@@ -25,6 +29,7 @@ import { FollowsApiService } from '../../../features/follows/services/follows-ap
     UserAvatarComponent,
     ThemeToggleComponent,
     AccentPickerComponent,
+    TrendingMediaThumbComponent,
   ],
   templateUrl: './private-layout.component.html',
   styleUrl: './private-layout.component.scss',
@@ -60,6 +65,21 @@ export class PrivateLayoutComponent {
     ),
     { initialValue: 0 }
   );
+
+  /**
+   * Tracks the current URL so we can hide the right rail (trending panel)
+   * on routes that benefit from full width — like the messages page.
+   */
+  private readonly currentUrl = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      map((event) => event.urlAfterRedirects),
+      startWith(this.router.url),
+    ),
+    { initialValue: this.router.url },
+  );
+
+  protected readonly hideRightRail = computed(() => this.currentUrl().startsWith('/messages'));
 
   protected toggleMobileMenu(): void {
     this.mobileMenuOpen.update((value) => !value);
