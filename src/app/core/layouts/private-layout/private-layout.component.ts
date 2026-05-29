@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { filter, interval, map, startWith, switchMap } from 'rxjs';
+import { filter, map, startWith } from 'rxjs';
 
 import { SessionService } from '../../auth/session.service';
 import { adminRoles } from '../../auth/session.model';
@@ -12,7 +12,7 @@ import { ThemeToggleComponent } from '../../ui/theme-toggle.component';
 import { UserAvatarComponent } from '../../../features/users/components/user-avatar.component';
 import { UserStoreService } from '../../../features/users/services/user-store.service';
 import { SignalRService } from '../../realtime/signalr.service';
-import { MessagesApiService } from '../../../features/messages/services/messages-api.service';
+import { UnreadCountService } from '../../../features/messages/services/unread-count.service';
 import { FollowsApiService } from '../../../features/follows/services/follows-api.service';
 import { TrendingMediaThumbComponent } from '../../../shared/components/trending-media-thumb/trending-media-thumb.component';
 
@@ -38,7 +38,7 @@ export class PrivateLayoutComponent {
   private readonly router = inject(Router);
   private readonly trending = inject(TrendingService);
   private readonly signalRService = inject(SignalRService);
-  private readonly messagesApi = inject(MessagesApiService);
+  private readonly unreadCountService = inject(UnreadCountService);
   private readonly followsApi = inject(FollowsApiService);
 
   protected readonly mobileMenuOpen = signal(false);
@@ -55,13 +55,9 @@ export class PrivateLayoutComponent {
   protected readonly accountBiography = computed(() => this.currentUser()?.biography?.trim() || 'Aún no has agregado una biografía.');
   protected readonly accountMeta = computed(() => this.currentUser()?.email || this.sessionService.userId() || 'Sin identificador de sesión');
 
-  // Contador de mensajes no leídos
-  protected readonly unreadMessagesCount = toSignal(
-    interval(10000).pipe(
-      switchMap(() => this.messagesApi.getUnreadCount())
-    ),
-    { initialValue: 0 }
-  );
+  // Contador de mensajes no leídos (state-driven, sin polling).
+  // El UnreadCountService se sincroniza vía SignalR onMessageReceived.
+  protected readonly unreadMessagesCount = this.unreadCountService.count;
 
   /**
    * Tracks the current URL so we can hide the right rail (trending panel)

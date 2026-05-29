@@ -144,7 +144,9 @@ export class SignalRService {
 
         try {
             const snapshot = await this.hubConnection.invoke<unknown>('GetOnlineUsers');
-            const ids = this.normalizeOnlineSnapshot(snapshot);
+            const myUserId = this.sessionService.userId();
+            const ids = this.normalizeOnlineSnapshot(snapshot)
+                .filter((id) => id !== myUserId); // defensa adicional contra self
             if (ids.length) {
                 this.onlineUsers.set(new Set(ids));
                 console.log(`SignalR: Snapshot inicial recibido (${ids.length} usuarios en línea)`);
@@ -243,6 +245,13 @@ export class SignalRService {
         // Se dispara cuando un usuario se conecta
         // ========================================
         this.hubConnection.on('UserOnline', (userInfo: { userId: string; nickname: string }) => {
+            // Defensa: si el backend (por bug o reconexión) emite UserOnline para
+            // nuestro propio userId, lo descartamos. No tiene sentido vernos a
+            // nosotros mismos como "online" en nuestra propia UI.
+            const myUserId = this.sessionService.userId();
+            if (myUserId && userInfo.userId === myUserId) {
+                return;
+            }
             console.log('SignalR: Usuario en línea', userInfo);
             // Actualizar el set compartido (inmutable: nuevo Set para que el signal dispare cambios)
             this.onlineUsers.update((current) => {
@@ -258,6 +267,11 @@ export class SignalRService {
         // Se dispara cuando un usuario se desconecta
         // ========================================
         this.hubConnection.on('UserOffline', (userId: string) => {
+            // Mismo principio: ignoramos UserOffline para self.
+            const myUserId = this.sessionService.userId();
+            if (myUserId && userId === myUserId) {
+                return;
+            }
             console.log('SignalR: Usuario fuera de línea', userId);
             this.onlineUsers.update((current) => {
                 if (!current.has(userId)) return current;
@@ -302,6 +316,10 @@ export class SignalRService {
             console.log('SignalR: Reconectado exitosamente', connectionId);
             this.connectionState.set(HubConnectionState.Connected);
             this.isConnected.set(true);
+            // Tras un drop nuestra cache de presencia puede estar obsoleta
+            // (otros pueden haberse conectado/desconectado mientras estábamos fuera).
+            // Re-pedir snapshot para resincronizar.
+            void this.requestOnlineUsersSnapshot();
         });
 
         // Cuando la conexión se cierra

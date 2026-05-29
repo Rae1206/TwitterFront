@@ -1,9 +1,8 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, viewChild, ElementRef } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { firstValueFrom, interval, switchMap } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 
 import { getErrorMessage } from '../../../core/api/api.utils';
 import { SessionService } from '../../../core/auth/session.service';
@@ -11,6 +10,7 @@ import { FeedbackService } from '../../../core/ui/feedback.service';
 import { SignalRService } from '../../../core/realtime/signalr.service';
 import { StateCardComponent } from '../../../shared/components/state-card/state-card.component';
 import { MessagesApiService } from '../services/messages-api.service';
+import { UnreadCountService } from '../services/unread-count.service';
 import { MessageDto } from '../models/messages.models';
 import { UserAvatarComponent } from '../../users/components/user-avatar.component';
 import { UserDto } from '../../users/models/users.models';
@@ -30,7 +30,8 @@ export class MessagesPage {
     private readonly sessionService = inject(SessionService);
     private readonly formBuilder = inject(NonNullableFormBuilder);
     private readonly route = inject(ActivatedRoute);
-    private readonly signalRService = inject(SignalRService);
+    readonly signalRService = inject(SignalRService);
+    private readonly unreadCountService = inject(UnreadCountService);
 
     readonly conversations = signal<MessageDto[]>([]);
     readonly selectedConversation = signal<MessageDto[]>([]);
@@ -40,19 +41,16 @@ export class MessagesPage {
     readonly sending = signal(false);
     readonly error = signal<string | null>(null);
 
-    readonly onlineUsers = signal<Set<string>>(new Set());
+    /** Conjunto de IDs que están escribiendo. Mantenido localmente porque
+     *  typing es un estado transiente, no requiere snapshot inicial. */
     readonly typingUsers = signal<Set<string>>(new Set());
-    private typingTimeout: any = null;
+    private typingTimeout: ReturnType<typeof setTimeout> | null = null;
 
     // Referencia al contenedor de mensajes para scroll automático
     readonly messagesContainer = viewChild<ElementRef<HTMLDivElement>>('messagesContainer');
 
-    readonly unreadCount = toSignal(
-        interval(10000).pipe(
-            switchMap(() => this.messagesApi.getUnreadCount())
-        ),
-        { initialValue: 0 }
-    );
+    /** Contador global de mensajes no leídos (state-driven, sin polling). */
+    readonly unreadCount = this.unreadCountService.count;
 
     readonly messageForm = this.formBuilder.group({
         content: ['', [Validators.required, Validators.maxLength(1000)]],
@@ -97,7 +95,7 @@ export class MessagesPage {
 
     readonly isSelectedUserOnline = computed(() => {
         const userId = this.selectedUserId();
-        return userId ? this.onlineUsers().has(userId) : false;
+        return this.signalRService.isUserOnline(userId);
     });
 
     readonly isSelectedUserTyping = computed(() => {
@@ -148,11 +146,15 @@ export class MessagesPage {
         this.signalRService.onMessageReceived.subscribe((message) => {
             console.log('Nuevo mensaje recibido:', message);
 
-            // Si es de la conversación actual, agregarlo
+            const currentUserId = this.currentUserId();
             const selectedUserId = this.selectedUserId();
-            if (selectedUserId &&
-                (message.senderId === selectedUserId || message.receiverId === selectedUserId)) {
+            const isForMe = message.receiverId === currentUserId;
+            const isFromActiveConversation =
+                selectedUserId !== null &&
+                (message.senderId === selectedUserId || message.receiverId === selectedUserId);
 
+            // Si es de la conversación actual, agregarlo
+            if (isFromActiveConversation) {
                 // Verificar que no exista ya en la lista
                 this.selectedConversation.update(messages => {
                     const exists = messages.some(m => m.messageId === message.messageId);
@@ -164,13 +166,24 @@ export class MessagesPage {
 
                 // Actualizar info del usuario si no existe
                 if (!this.selectedUserInfo()) {
-                    const currentUserId = this.currentUserId();
                     const isOtherUserSender = message.senderId !== currentUserId;
                     this.selectedUserInfo.set({
                         name: isOtherUserSender ? message.senderUsername : message.receiverUsername,
                         avatar: isOtherUserSender ? message.senderAvatar : message.receiverAvatar
                     });
                 }
+            }
+
+            // Si llegó dirigido a mí Y estoy mirando esa conversación → marcar leído
+            // inmediatamente. Esto evita que aparezca el puntito azul fugaz.
+            // El UnreadCountService ya hizo +1 al recibir el evento; lo compensamos
+            // restando 1 acá para que el contador global no sume mensajes que el
+            // usuario YA está viendo.
+            if (isForMe && isFromActiveConversation && message.senderId === selectedUserId) {
+                this.messagesApi.markAsRead(message.messageId).subscribe({
+                    error: (err) => console.warn('No se pudo marcar mensaje como leído', err),
+                });
+                this.unreadCountService.decrement(1);
             }
 
             // Actualizar la lista de conversaciones
@@ -210,27 +223,12 @@ export class MessagesPage {
     }
 
     /**
-     * Escucha eventos de estado de usuarios (online/offline, typing)
+     * Escucha eventos de typing.
+     * NOTA: presencia online/offline se maneja centralmente en SignalRService
+     * (signal compartido `onlineUsers`). Este componente la lee vía
+     * `signalRService.isUserOnline()` — no hay suscripción duplicada acá.
      */
     private listenToUserStatus(): void {
-        // Usuario se conectó
-        this.signalRService.onUserOnline.subscribe((userInfo) => {
-            this.onlineUsers.update(users => {
-                const newSet = new Set(users);
-                newSet.add(userInfo.userId);
-                return newSet;
-            });
-        });
-
-        // Usuario se desconectó
-        this.signalRService.onUserOffline.subscribe((userId) => {
-            this.onlineUsers.update(users => {
-                const newSet = new Set(users);
-                newSet.delete(userId);
-                return newSet;
-            });
-        });
-
         // Usuario está escribiendo
         this.signalRService.onUserTyping.subscribe((userId) => {
             this.typingUsers.update(users => {
@@ -269,6 +267,11 @@ export class MessagesPage {
     async startNewConversation(userId: string): Promise<void> {
         this.selectedUserId.set(userId);
 
+        // OPTIMISTIC: si entramos a una conversación con no-leídos (vía click,
+        // queryParam o navegación directa), el puntito azul desaparece YA.
+        // Idempotente: si selectConversation ya lo hizo, esta llamada no hace nada.
+        this.markConversationAsReadLocally(userId);
+
         try {
             // Intentar cargar mensajes existentes
             const messages = await firstValueFrom(
@@ -287,15 +290,14 @@ export class MessagesPage {
                     avatar: isOtherUserSender ? firstMsg.senderAvatar : firstMsg.receiverAvatar
                 });
 
-                // Marcar como leído si hay mensajes
-                await firstValueFrom(this.messagesApi.markConversationAsRead(userId));
+                // Marcar como leído + actualizar local state
+                await this.markConversationAsReadAndSync(userId);
             } else {
                 // Si no hay mensajes, intentar obtener info de conversations
                 const conv = this.conversations().find(
                     (m) => m.senderId === userId || m.receiverId === userId
                 );
                 if (conv) {
-                    const currentUserId = this.currentUserId();
                     const isSender = conv.senderId === userId;
                     this.selectedUserInfo.set({
                         name: isSender ? conv.senderUsername : conv.receiverUsername,
@@ -303,7 +305,7 @@ export class MessagesPage {
                     });
                 }
             }
-        } catch (err) {
+        } catch {
             // Si no hay mensajes, simplemente iniciar una conversación vacía
             this.selectedConversation.set([]);
 
@@ -312,13 +314,81 @@ export class MessagesPage {
                 (m) => m.senderId === userId || m.receiverId === userId
             );
             if (conv) {
-                const currentUserId = this.currentUserId();
                 const isSender = conv.senderId === userId;
                 this.selectedUserInfo.set({
                     name: isSender ? conv.senderUsername : conv.receiverUsername,
                     avatar: isSender ? conv.senderAvatar : conv.receiverAvatar
                 });
             }
+        }
+    }
+
+    /**
+     * Update LOCAL inmediato (sin tocar la red).
+     * Marca isRead=true en todos los mensajes de la conversación con `otherUserId`
+     * que el usuario actual aún tenía como no leídos, y decrementa el contador
+     * global por esa cantidad exacta.
+     *
+     * Esto es lo que hace que el puntito azul desaparezca AL INSTANTE en cuanto
+     * el usuario interactúa con la conversación (click o typing), sin esperar
+     * la respuesta del servidor.
+     *
+     * Es idempotente: llamarlo dos veces seguidas no decrementa de más.
+     *
+     * @returns cantidad de mensajes que pasaron de no-leído a leído.
+     */
+    private markConversationAsReadLocally(otherUserId: string): number {
+        const currentUserId = this.currentUserId();
+        if (!currentUserId) return 0;
+
+        const isUnreadFromOther = (m: MessageDto) =>
+            m.receiverId === currentUserId &&
+            m.senderId === otherUserId &&
+            !m.isRead;
+
+        const unreadInConv =
+            this.conversations().filter(isUnreadFromOther).length +
+            this.selectedConversation().filter(isUnreadFromOther).length;
+
+        if (unreadInConv === 0) {
+            return 0; // Nada que marcar, evita updates innecesarios al signal
+        }
+
+        this.conversations.update((convs) =>
+            convs.map((c) =>
+                isUnreadFromOther(c) ? { ...c, isRead: true } : c
+            )
+        );
+        this.selectedConversation.update((msgs) =>
+            msgs.map((m) =>
+                isUnreadFromOther(m) ? { ...m, isRead: true } : m
+            )
+        );
+        this.unreadCountService.decrement(unreadInConv);
+
+        return unreadInConv;
+    }
+
+    /**
+     * Marca la conversación con `otherUserId` como leída en el backend Y
+     * sincroniza el estado local: pone isRead=true en todos los mensajes
+     * de esa conversación que el usuario actual aún tenía como no leídos,
+     * y decrementa el contador global de no leídos en esa cantidad.
+     *
+     * Hace el local update PRIMERO (optimistic) para que el puntito azul
+     * desaparezca instantáneamente; luego confirma con el backend.
+     */
+    private async markConversationAsReadAndSync(otherUserId: string): Promise<void> {
+        // 1. Optimistic local update — puntito azul fuera al instante
+        this.markConversationAsReadLocally(otherUserId);
+
+        // 2. Confirmación con el backend
+        try {
+            await firstValueFrom(this.messagesApi.markConversationAsRead(otherUserId));
+        } catch (err) {
+            console.warn('No se pudo marcar la conversación como leída en el servidor', err);
+            // El optimistic ya quedó. Si el servidor falla, en el próximo
+            // load el estado se reconcilia con el real.
         }
     }
 
@@ -341,6 +411,11 @@ export class MessagesPage {
         if (!currentUserId) return;
 
         const otherUserId = message.senderId === currentUserId ? message.receiverId : message.senderId;
+
+        // OPTIMISTIC: el puntito azul tiene que desaparecer en el milisegundo del click,
+        // antes de cualquier llamada de red. Marcamos local primero. La confirmación
+        // con el server la hace después markConversationAsReadAndSync (idempotente).
+        this.markConversationAsReadLocally(otherUserId);
 
         // Guardar info del usuario antes de cargar la conversación
         const isSender = message.senderId !== currentUserId;
@@ -392,14 +467,28 @@ export class MessagesPage {
     }
 
     /**
-     * Maneja el evento de escritura en el input
-     * Notifica al otro usuario que está escribiendo
+     * Maneja el evento de escritura en el input.
+     * - Si todavía quedaba algún mensaje no-leído en la conversación abierta,
+     *   lo marca como leído al instante (el puntito azul desaparece apenas
+     *   el usuario empieza a escribir).
+     * - Notifica al otro usuario que estoy escribiendo.
      */
     onInputChange(): void {
         const userId = this.selectedUserId();
         if (!userId) return;
 
-        // Notificar que está escribiendo
+        // Empezar a escribir es señal clara de que el usuario VIO la conversación.
+        // Idempotente con el optimistic ya hecho al click.
+        const marked = this.markConversationAsReadLocally(userId);
+        if (marked > 0) {
+            // Si efectivamente había mensajes que pasaron a leído, confirmar al server
+            // de forma asíncrona y silenciosa.
+            this.messagesApi.markConversationAsRead(userId).subscribe({
+                error: (err) => console.warn('No se pudo confirmar lectura al servidor', err),
+            });
+        }
+
+        // Notificar typing
         void this.signalRService.notifyTyping(userId);
 
         // Limpiar timeout anterior
@@ -441,7 +530,7 @@ export class MessagesPage {
     }
 
     isUserOnline(userId: string): boolean {
-        return this.onlineUsers().has(userId);
+        return this.signalRService.isUserOnline(userId);
     }
 
     isSentByMe(message: MessageDto): boolean {
