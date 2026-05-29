@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { HubConnection, HubConnectionBuilder, HubConnectionState, LogLevel } from '@microsoft/signalr';
+import { HubConnection, HubConnectionBuilder, HubConnectionState, LogLevel, HttpTransportType } from '@microsoft/signalr';
 import { Subject, Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
@@ -21,14 +21,14 @@ export class SignalRService {
 
     // Subjects para eventos del servidor
     private readonly messageReceived$ = new Subject<MessageDto>();
-    private readonly userOnline$ = new Subject<string>();
+    private readonly userOnline$ = new Subject<{ userId: string; nickname: string }>();
     private readonly userOffline$ = new Subject<string>();
     private readonly userTyping$ = new Subject<string>();
     private readonly userStopTyping$ = new Subject<string>();
 
     // Observables públicos para suscribirse a eventos
     readonly onMessageReceived: Observable<MessageDto> = this.messageReceived$.asObservable();
-    readonly onUserOnline: Observable<string> = this.userOnline$.asObservable();
+    readonly onUserOnline: Observable<{ userId: string; nickname: string }> = this.userOnline$.asObservable();
     readonly onUserOffline: Observable<string> = this.userOffline$.asObservable();
     readonly onUserTyping: Observable<string> = this.userTyping$.asObservable();
     readonly onUserStopTyping: Observable<string> = this.userStopTyping$.asObservable();
@@ -53,6 +53,9 @@ export class SignalRService {
 
         try {
             console.log(' SignalR: Iniciando conexión...');
+            console.log('SignalR: Token presente:', !!token);
+            console.log('SignalR: URL:', `${environment.apiBaseUrl}/hubs/message`);
+            console.log('SignalR: Producción:', environment.production);
 
             // Construir la conexión al Hub
             this.hubConnection = new HubConnectionBuilder()
@@ -60,6 +63,10 @@ export class SignalRService {
                     accessTokenFactory: () => token, // Enviar el token JWT
                     skipNegotiation: false, // Permitir negociación de transporte
                     withCredentials: true, // Enviar cookies/credenciales
+                    // Configurar transportes: intentar WebSockets primero, luego Long Polling
+                    transport: environment.production
+                        ? HttpTransportType.LongPolling | HttpTransportType.ServerSentEvents // Sin WebSockets en producción
+                        : HttpTransportType.WebSockets | HttpTransportType.ServerSentEvents | HttpTransportType.LongPolling // Todos en desarrollo
                 })
                 .withAutomaticReconnect([0, 2000, 5000, 10000, 30000]) // Reintentos automáticos
                 .configureLogging(LogLevel.Information) // Logs para debugging
@@ -171,9 +178,9 @@ export class SignalRService {
         // EVENTO: UserOnline
         // Se dispara cuando un usuario se conecta
         // ========================================
-        this.hubConnection.on('UserOnline', (userId: string) => {
-            console.log('SignalR: Usuario en línea', userId);
-            this.userOnline$.next(userId);
+        this.hubConnection.on('UserOnline', (userInfo: { userId: string; nickname: string }) => {
+            console.log('SignalR: Usuario en línea', userInfo);
+            this.userOnline$.next(userInfo);
         });
 
         // ========================================

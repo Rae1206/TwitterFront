@@ -152,7 +152,15 @@ export class MessagesPage {
             const selectedUserId = this.selectedUserId();
             if (selectedUserId &&
                 (message.senderId === selectedUserId || message.receiverId === selectedUserId)) {
-                this.selectedConversation.update(messages => [...messages, message]);
+
+                // Verificar que no exista ya en la lista
+                this.selectedConversation.update(messages => {
+                    const exists = messages.some(m => m.messageId === message.messageId);
+                    if (exists) {
+                        return messages;
+                    }
+                    return [...messages, message];
+                });
 
                 // Actualizar info del usuario si no existe
                 if (!this.selectedUserInfo()) {
@@ -165,9 +173,40 @@ export class MessagesPage {
                 }
             }
 
-            // Recargar la lista de conversaciones
-            void this.loadConversations();
+            // Actualizar la lista de conversaciones
+            this.updateConversationsList(message);
         });
+    }
+
+    /**
+     * Actualiza la lista de conversaciones con un nuevo mensaje
+     * Evita duplicados y mantiene la conversación más reciente arriba
+     */
+    private updateConversationsList(message: MessageDto): void {
+        const currentConversations = this.conversations();
+        const currentUserId = this.currentUserId();
+
+        // Encontrar si ya existe una conversación con este usuario
+        const otherUserId = message.senderId === currentUserId ? message.receiverId : message.senderId;
+        const existingIndex = currentConversations.findIndex(
+            c => {
+                const convOtherUserId = c.senderId === currentUserId ? c.receiverId : c.senderId;
+                return convOtherUserId === otherUserId;
+            }
+        );
+
+        if (existingIndex >= 0) {
+            // Actualizar conversación existente
+            const updated = [...currentConversations];
+            updated[existingIndex] = message;
+            // Mover al inicio
+            const [movedConv] = updated.splice(existingIndex, 1);
+            updated.unshift(movedConv);
+            this.conversations.set(updated);
+        } else {
+            // Agregar nueva conversación al inicio
+            this.conversations.set([message, ...currentConversations]);
+        }
     }
 
     /**
@@ -175,10 +214,10 @@ export class MessagesPage {
      */
     private listenToUserStatus(): void {
         // Usuario se conectó
-        this.signalRService.onUserOnline.subscribe((userId) => {
+        this.signalRService.onUserOnline.subscribe((userInfo) => {
             this.onlineUsers.update(users => {
                 const newSet = new Set(users);
-                newSet.add(userId);
+                newSet.add(userInfo.userId);
                 return newSet;
             });
         });
@@ -329,13 +368,22 @@ export class MessagesPage {
                 this.messagesApi.sendMessage({ receiverId: userId, content })
             );
 
-            this.selectedConversation.update((messages) => [...messages, newMessage]);
+            // Verificar que no exista ya en la lista antes de agregar
+            this.selectedConversation.update((messages) => {
+                const exists = messages.some(m => m.messageId === newMessage.messageId);
+                if (exists) {
+                    return messages;
+                }
+                return [...messages, newMessage];
+            });
+
             this.messageForm.reset();
 
             // Notificar que dejó de escribir
             await this.signalRService.notifyStopTyping(userId);
 
-            await this.loadConversations();
+            // Actualizar la lista de conversaciones
+            this.updateConversationsList(newMessage);
         } catch (err) {
             this.feedback.error(getErrorMessage(err, 'No se pudo enviar el mensaje'));
         } finally {
