@@ -28,7 +28,7 @@
 
 .messages-layout {
   display: grid;
-  grid-template-columns: 350px 1fr;
+  grid-template-columns: 1fr 350px;
   gap: 1rem;
   height: calc(100vh - 200px);
   min-height: 500px;
