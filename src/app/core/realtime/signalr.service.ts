@@ -19,6 +19,22 @@ export class SignalRService {
     readonly connectionState = signal<HubConnectionState>(HubConnectionState.Disconnected);
     readonly isConnected = signal(false);
 
+    /**
+     * Conjunto reactivo de IDs de usuarios actualmente en línea.
+     * Cualquier componente puede leer este signal y derivar `isUserOnline(id)`
+     * sin tener que suscribirse manualmente a los eventos del hub.
+     */
+    readonly onlineUsers = signal<ReadonlySet<string>>(new Set());
+
+    /**
+     * Helper conveniente para chequear si un usuario está en línea.
+     * Útil en templates: `@if (signalRService.isUserOnline(user.userId))`.
+     */
+    isUserOnline(userId: string | null | undefined): boolean {
+        if (!userId) return false;
+        return this.onlineUsers().has(userId);
+    }
+
     // Subjects para eventos del servidor
     private readonly messageReceived$ = new Subject<MessageDto>();
     private readonly userOnline$ = new Subject<{ userId: string; nickname: string }>();
@@ -83,6 +99,10 @@ export class SignalRService {
             this.isConnected.set(true);
 
             console.log(' SignalR: Conectado exitosamente al hub de mensajes');
+
+            // Pedir snapshot inicial de usuarios online (si el backend lo soporta).
+            // Sin esto, solo veríamos online a quien se conecte DESPUÉS de nosotros.
+            await this.requestOnlineUsersSnapshot();
         } catch (error) {
             console.error(' SignalR: Error al conectar', error);
             this.connectionState.set(HubConnectionState.Disconnected);
@@ -101,11 +121,55 @@ export class SignalRService {
                 await this.hubConnection.stop();
                 this.connectionState.set(HubConnectionState.Disconnected);
                 this.isConnected.set(false);
+                this.onlineUsers.set(new Set()); // limpiar presencia al desconectar
                 console.log(' SignalR: Desconectado correctamente');
             } catch (error) {
                 console.error(' SignalR: Error al desconectar', error);
             }
         }
+    }
+
+    /**
+     * Pide al hub el snapshot actual de usuarios en línea.
+     * El backend debe exponer un método `GetOnlineUsers` que retorne `string[]`
+     * (o `{ userId: string; nickname?: string }[]`).
+     *
+     * Si el backend NO tiene ese método, esto falla silenciosamente y la
+     * presencia se construye gradualmente con los eventos UserOnline/UserOffline.
+     */
+    private async requestOnlineUsersSnapshot(): Promise<void> {
+        if (!this.hubConnection || this.hubConnection.state !== HubConnectionState.Connected) {
+            return;
+        }
+
+        try {
+            const snapshot = await this.hubConnection.invoke<unknown>('GetOnlineUsers');
+            const ids = this.normalizeOnlineSnapshot(snapshot);
+            if (ids.length) {
+                this.onlineUsers.set(new Set(ids));
+                console.log(`SignalR: Snapshot inicial recibido (${ids.length} usuarios en línea)`);
+            }
+        } catch (error) {
+            // Esperado si el hub aún no implementa GetOnlineUsers — no es fatal.
+            console.info('SignalR: GetOnlineUsers no disponible en el hub. Presencia se construirá por eventos.', error);
+        }
+    }
+
+    /**
+     * Acepta `string[]` o `{ userId: string }[]` y devuelve la lista de IDs.
+     */
+    private normalizeOnlineSnapshot(raw: unknown): string[] {
+        if (!Array.isArray(raw)) return [];
+        return raw
+            .map((item) => {
+                if (typeof item === 'string') return item;
+                if (item && typeof item === 'object' && 'userId' in item) {
+                    const id = (item as { userId: unknown }).userId;
+                    return typeof id === 'string' ? id : null;
+                }
+                return null;
+            })
+            .filter((id): id is string => Boolean(id));
     }
 
     /**
@@ -180,6 +244,12 @@ export class SignalRService {
         // ========================================
         this.hubConnection.on('UserOnline', (userInfo: { userId: string; nickname: string }) => {
             console.log('SignalR: Usuario en línea', userInfo);
+            // Actualizar el set compartido (inmutable: nuevo Set para que el signal dispare cambios)
+            this.onlineUsers.update((current) => {
+                const next = new Set(current);
+                next.add(userInfo.userId);
+                return next;
+            });
             this.userOnline$.next(userInfo);
         });
 
@@ -189,6 +259,12 @@ export class SignalRService {
         // ========================================
         this.hubConnection.on('UserOffline', (userId: string) => {
             console.log('SignalR: Usuario fuera de línea', userId);
+            this.onlineUsers.update((current) => {
+                if (!current.has(userId)) return current;
+                const next = new Set(current);
+                next.delete(userId);
+                return next;
+            });
             this.userOffline$.next(userId);
         });
 

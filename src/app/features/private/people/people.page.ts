@@ -7,6 +7,7 @@ import { getErrorMessage } from '../../../core/api/api.utils';
 import { SessionService } from '../../../core/auth/session.service';
 import { ConfirmService } from '../../../core/ui/confirm.service';
 import { FeedbackService } from '../../../core/ui/feedback.service';
+import { SignalRService } from '../../../core/realtime/signalr.service';
 import { StateCardComponent } from '../../../shared/components/state-card/state-card.component';
 import { UserAvatarComponent } from '../../users/components/user-avatar.component';
 import { SendMessageButtonComponent } from '../../messages/components/send-message-button.component';
@@ -29,6 +30,12 @@ export class PeoplePage {
   private readonly sessionService = inject(SessionService);
   private readonly feedback = inject(FeedbackService);
   private readonly confirm = inject(ConfirmService);
+  private readonly signalRService = inject(SignalRService);
+
+  /** Helper para template: ¿este usuario está actualmente conectado? */
+  protected isUserOnline(userId: string | undefined | null): boolean {
+    return this.signalRService.isUserOnline(userId);
+  }
 
   readonly selectedUser = signal<UserDto | null>(null);
 

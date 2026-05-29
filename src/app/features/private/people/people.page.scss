@@ -218,3 +218,34 @@
 .spotlight-actions > * {
   flex: 1;
 }
+
+
+/* === Indicador de presencia "en línea" en la grilla de Personas === */
+.person-avatar-wrapper {
+  position: relative;
+  display: inline-flex;
+  width: fit-content;
+}
+
+.person-online-dot {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: #22c55e; /* verde estilo Slack/Discord */
+  border: 2px solid var(--bg-card-inner, #fff);
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.25);
+  /* Pulso sutil para reforzar que es estado live */
+  animation: person-online-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes person-online-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15);
+  }
+}

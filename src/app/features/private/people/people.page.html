@@ -142,7 +142,12 @@
         @for (user of directory(); track user.userId ?? user.email ?? $index) {
           <article class="person-card" [class.selected]="selectedUser()?.userId === user.userId">
             <div class="person-head">
-              <app-user-avatar class="person-avatar person-avatar-image" [user]="user" />
+              <div class="person-avatar-wrapper">
+                <app-user-avatar class="person-avatar person-avatar-image" [user]="user" />
+                @if (isUserOnline(user.userId)) {
+                  <span class="person-online-dot" aria-label="En línea" title="En línea"></span>
+                }
+              </div>
 
               <div>
                 <h3>{{ user.nickname || 'Usuario' }}</h3>
