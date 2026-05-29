@@ -2,16 +2,26 @@ import { Injectable, signal } from '@angular/core';
 
 export type FeedbackTone = 'success' | 'error' | 'info';
 
+/**
+ * Where on the screen the toast renders.
+ * - `bottom-right` (default): action confirmations, errors, save results.
+ * - `top-right`: ambient notifications that should not crowd the action area
+ *   (e.g. "user online", "new follower").
+ */
+export type FeedbackPosition = 'bottom-right' | 'top-right';
+
 export interface FeedbackItem {
   id: number;
   tone: FeedbackTone;
   message: string;
   title?: string;
+  position: FeedbackPosition;
 }
 
 interface FeedbackOptions {
   duration?: number;
   title?: string;
+  position?: FeedbackPosition;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -43,6 +53,7 @@ export class FeedbackService {
       tone,
       message,
       title: options?.title,
+      position: options?.position ?? 'bottom-right',
     };
 
     this.itemsState.update((items) => [...items, item]);

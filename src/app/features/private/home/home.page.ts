@@ -68,7 +68,6 @@ export class HomePage {
   readonly likedPosts = this.postStore.likedPosts;
   readonly retweetedPosts = this.postStore.retweetedPosts;
   readonly openComments = signal<Record<string, boolean>>({});
-  readonly originalPostsCache = signal<Record<string, PostDto>>({});
   readonly activeRetweetMenu = signal<string | null>(null);
   readonly activePostMenu = signal<string | null>(null);
 
@@ -505,7 +504,7 @@ export class HomePage {
         try {
           const fetched = await firstValueFrom(this.postsApi.getPostById(post.retweetOfPostId));
           if (fetched) {
-            this.originalPostsCache.update(cache => ({ ...cache, [post.retweetOfPostId!]: fetched }));
+            this.postStore.setOriginalPost(fetched);
             this.postInDetail.set(fetched);
             this.isDetailModalOpen.set(true);
           }
@@ -527,7 +526,7 @@ export class HomePage {
         try {
           const fetchedParent = await firstValueFrom(this.postsApi.getPostById(repliedId));
           if (fetchedParent) {
-            this.originalPostsCache.update(cache => ({ ...cache, [repliedId]: fetchedParent }));
+            this.postStore.setOriginalPost(fetchedParent);
             this.postInDetail.set(fetchedParent);
             this.isDetailModalOpen.set(true);
           }
@@ -621,54 +620,10 @@ export class HomePage {
 
   protected getOriginalPost(retweetOfPostId: string | undefined): PostDto | null {
     if (!retweetOfPostId) return null;
-
-    const found = this.posts().find((p) => p.postId === retweetOfPostId);
-    if (found) return found;
-
-    const cached = this.originalPostsCache()[retweetOfPostId];
-    if (cached) return cached;
-
-    if (!(retweetOfPostId in this.originalPostsCache())) {
-      this.originalPostsCache.update((cache) => ({
-        ...cache,
-        [retweetOfPostId]: {
-          postId: retweetOfPostId,
-          userNickname: 'Autor original',
-          username: 'original',
-          content: 'Cargando detalles de la publicación compartida...',
-          createdAt: new Date().toISOString(),
-          isPublished: true,
-          likesCount: 0,
-          retweetsCount: 0,
-          repliesCount: 0
-        } as PostDto
-      }));
-
-      firstValueFrom(this.postsApi.getPostById(retweetOfPostId))
-        .then((original) => {
-          if (original) {
-            this.originalPostsCache.update((cache) => ({ ...cache, [retweetOfPostId]: original }));
-          }
-        })
-        .catch(() => {
-          this.originalPostsCache.update((cache) => ({
-            ...cache,
-            [retweetOfPostId]: {
-              postId: retweetOfPostId,
-              userNickname: 'No disponible',
-              username: 'no-disponible',
-              content: 'Esta publicación compartida no se pudo cargar (puede ser privada o estar eliminada).',
-              createdAt: new Date().toISOString(),
-              isPublished: true,
-              likesCount: 0,
-              retweetsCount: 0,
-              repliesCount: 0
-            } as PostDto
-          }));
-        });
-    }
-
-    return this.originalPostsCache()[retweetOfPostId] ?? null;
+    // Lookup centralizado en el store (compartido con todos los PostCards).
+    // El fetch real lo dispara cada PostCard via ensureOriginalPostLoaded
+    // en su effect; acá solo leemos.
+    return this.postStore.getOriginalPost(retweetOfPostId);
   }
 
   protected getParentAuthorHandle(repliedToPostId: string | null | undefined): string {

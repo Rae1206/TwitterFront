@@ -23,6 +23,26 @@ export class PostStoreService {
   private readonly retweetedPostsState = signal<Record<string, boolean>>({});
   private readonly retweetIdsState = signal<Record<string, string>>({});
 
+  /**
+   * Cache compartido de "posts originales" referidos por retweets o replies
+   * cuando NO están en el feed cargado. Centralizado acá (en lugar de tener
+   * un cache por componente) para deduplicar requests: si N PostCards apuntan
+   * al mismo postId, solo se hace UNA llamada al backend.
+   *
+   * Las entradas conviven con placeholders ("Cargando..." / "No disponible")
+   * para que la UI tenga algo que renderizar mientras el fetch está in flight
+   * o cuando el post fue eliminado / es privado.
+   */
+  private readonly originalPostsCacheState = signal<Record<string, PostDto>>({});
+  readonly originalPosts = this.originalPostsCacheState.asReadonly();
+
+  /**
+   * IDs de posts originales actualmente en proceso de fetch.
+   * Defensa adicional contra requests duplicados además del guard
+   * por presencia de key en el cache.
+   */
+  private readonly inFlightOriginalPostIds = new Set<string>();
+
   readonly posts = this.postsState.asReadonly();
   readonly loading = this.loadingState.asReadonly();
   readonly saving = this.savingState.asReadonly();
@@ -46,6 +66,109 @@ export class PostStoreService {
     } finally {
       this.loadingState.set(false);
     }
+  }
+
+  // ============================================================
+  //  CACHE DE POSTS ORIGINALES (retweet target / reply parent)
+  // ============================================================
+
+  /**
+   * Lookup sincrónico de un post (por su id). Busca primero en el feed
+   * cargado y luego en el cache de originales. NO dispara red — para eso
+   * está `ensureOriginalPostLoaded`.
+   */
+  getOriginalPost(postId: string | null | undefined): PostDto | null {
+    if (!postId) return null;
+    const inFeed = this.postsState().find((p) => p.postId === postId);
+    if (inFeed) return inFeed;
+    return this.originalPostsCacheState()[postId] ?? null;
+  }
+
+  /**
+   * Garantiza que el post original esté cargado (o intentado).
+   * Idempotente: si ya está en feed, en cache, o hay un fetch en vuelo,
+   * no hace nada.
+   *
+   * Esto es lo que hace que N PostCards apuntando al mismo retweetOfPostId
+   * resulten en UNA sola llamada al backend.
+   */
+  ensureOriginalPostLoaded(postId: string | null | undefined): void {
+    if (!postId) return;
+
+    // ¿Ya lo tenemos en el feed?
+    if (this.postsState().some((p) => p.postId === postId)) return;
+
+    // ¿Ya está en el cache (incluso como placeholder/no-disponible)?
+    if (postId in this.originalPostsCacheState()) return;
+
+    // ¿Hay otra invocación que ya lo está pidiendo?
+    if (this.inFlightOriginalPostIds.has(postId)) return;
+
+    this.inFlightOriginalPostIds.add(postId);
+
+    // Placeholder mientras carga (le da algo que renderizar a la UI).
+    this.originalPostsCacheState.update((cache) => ({
+      ...cache,
+      [postId]: this.buildLoadingPlaceholder(postId),
+    }));
+
+    firstValueFrom(this.postsApi.getPostById(postId))
+      .then((original) => {
+        if (original) {
+          this.originalPostsCacheState.update((cache) => ({ ...cache, [postId]: original }));
+        } else {
+          this.markOriginalPostUnavailable(postId);
+        }
+      })
+      .catch(() => {
+        // Incluye 404 (post borrado / privado) y errores de red.
+        this.markOriginalPostUnavailable(postId);
+      })
+      .finally(() => {
+        this.inFlightOriginalPostIds.delete(postId);
+      });
+  }
+
+  /**
+   * Inserta o actualiza una entrada del cache de posts originales.
+   * Útil cuando un componente acaba de hacer un fetch explícito
+   * (por ej. al abrir un modal de detalle) y quiere que el resto
+   * de la UI se beneficie sin tener que volver a pedirlo.
+   */
+  setOriginalPost(post: PostDto): void {
+    if (!post?.postId) return;
+    this.originalPostsCacheState.update((cache) => ({ ...cache, [post.postId!]: post }));
+  }
+
+  private buildLoadingPlaceholder(postId: string): PostDto {
+    return {
+      postId,
+      userNickname: 'Autor original',
+      username: 'original',
+      content: 'Cargando detalles de la publicación compartida...',
+      createdAt: new Date().toISOString(),
+      isPublished: true,
+      likesCount: 0,
+      retweetsCount: 0,
+      repliesCount: 0,
+    } as PostDto;
+  }
+
+  private markOriginalPostUnavailable(postId: string): void {
+    this.originalPostsCacheState.update((cache) => ({
+      ...cache,
+      [postId]: {
+        postId,
+        userNickname: 'No disponible',
+        username: 'no-disponible',
+        content: 'Esta publicación compartida no se pudo cargar (puede ser privada o estar eliminada).',
+        createdAt: new Date().toISOString(),
+        isPublished: true,
+        likesCount: 0,
+        retweetsCount: 0,
+        repliesCount: 0,
+      } as PostDto,
+    }));
   }
 
   async createPost(payload: SavePostRequest): Promise<PostDto | null> {
