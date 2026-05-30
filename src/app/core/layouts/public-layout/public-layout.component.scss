@@ -368,6 +368,13 @@
     font-size: 1.6rem;
   }
 
+  .badge-logo {
+    height: 2.25rem;
+    width: auto;
+    object-fit: contain;
+    border-radius: 4px;
+  }
+
   div {
     display: flex;
     flex-direction: column;
