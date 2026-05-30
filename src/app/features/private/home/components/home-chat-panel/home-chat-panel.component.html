@@ -3,11 +3,15 @@
     <div>
       <p class="chat-panel-eyebrow">Mensajes</p>
       @if (hasActiveConversation()) {
-        <h3>{{ selectedUserName() }}</h3>
-        @if (isSelectedUserOnline()) {
-          <span class="thread-user-status is-online">En línea</span>
+        @if (isChatbotSelected()) {
+          <h3>Groq <span class="ai-badge">IA</span></h3>
         } @else {
-          <span class="thread-user-status">Sin conexión ahora</span>
+          <h3>{{ selectedUserName() }}</h3>
+          @if (isSelectedUserOnline()) {
+            <span class="thread-user-status is-online">En línea</span>
+          } @else {
+            <span class="thread-user-status">Sin conexión ahora</span>
+          }
         }
       } @else {
         <h3>Conversaciones</h3>
@@ -60,83 +64,178 @@
 
   <div class="chat-panel-body">
     @if (hasActiveConversation()) {
-      <section class="thread-view" [attr.aria-busy]="threadLoading()">
-        <div class="thread-messages" #threadContainer>
-          @if (threadLoading()) {
-            <app-state-card tone="loading" title="Cargando conversación" message="Trayendo los mensajes recientes." />
-          } @else if (threadError(); as threadError) {
-            <app-state-card
-              tone="error"
-              title="No pudimos abrir este chat"
-              [message]="threadError"
-              actionLabel="Reintentar"
-              (action)="retryThread()"
-            />
-          } @else if (!threadMessages().length) {
-            <app-state-card
-              tone="empty"
-              title="Sin mensajes todavía"
-              message="Podés enviar la primera respuesta desde este panel."
-            />
-          } @else {
-            <div class="thread-list" role="log" aria-live="polite" aria-relevant="additions text">
-              @for (message of threadMessages(); track trackConversation($index, message)) {
-                <div class="message-wrapper" [class.sent]="isSentByMe(message)" [class.received]="!isSentByMe(message)">
-                  <div class="message-bubble">
-                    <p class="message-content">{{ message.content }}</p>
-                    <span class="message-time">{{ message.createdAt | date: 'shortTime' }}</span>
+      @if (isChatbotSelected()) {
+        @if (chatbotService.loading()) {
+          <app-state-card tone="loading" title="Cargando" message="Obteniendo historial..." />
+        } @else {
+          <section class="thread-view">
+            <div class="thread-messages" #threadContainer>
+              @if (chatbotService.isEmpty()) {
+                <div class="chatbot-welcome">
+                  <div class="chatbot-welcome-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8Z" />
+                      <path d="M12 6v6l4 2" />
+                    </svg>
                   </div>
+                  <h4>Hola, soy Groq</h4>
+                  <p>Tu asistente de IA. Preguntame lo que quieras.</p>
+                </div>
+              } @else {
+                <div class="thread-list" role="log" aria-live="polite" aria-relevant="additions text">
+                  @for (msg of chatbotService.messages(); track trackChatbotMessage($index, msg)) {
+                    <div class="message-wrapper" [class.sent]="msg.role === 'user'" [class.received]="msg.role === 'assistant'">
+                      <div class="message-bubble">
+                        <p class="message-content">{{ msg.content }}</p>
+                        <span class="message-time">{{ msg.createdAt | date: 'shortTime' }}</span>
+                        @if (msg.role === 'assistant') {
+                          <span class="ai-badge">Agente IA</span>
+                        }
+                      </div>
+                    </div>
+                  }
                 </div>
               }
-            </div>
-          }
-        </div>
 
-        <form class="thread-form" [formGroup]="messageForm" (ngSubmit)="sendMessage()">
-          <label class="sr-only" for="home-chat-message">Escribí tu mensaje</label>
-          <textarea
-            id="home-chat-message"
-            class="thread-input"
-            formControlName="content"
-            rows="2"
-            placeholder="Escribí un mensaje..."
-            [readonly]="sending()"
-            [attr.aria-describedby]="sendError() ? 'home-chat-send-error' : null"
-          ></textarea>
+              @if (chatbotService.sending()) {
+                <div class="chatbot-typing">
+                  <span class="typing-dot"></span>
+                  <span class="typing-dot"></span>
+                  <span class="typing-dot"></span>
+                  <span class="chatbot-typing-text">Groq está pensando...</span>
+                </div>
+              }
 
-          <div class="thread-form-footer">
-            @if (sendError(); as sendError) {
-              <p id="home-chat-send-error" class="thread-form-error" role="alert">{{ sendError }}</p>
-            }
-
-            <div class="thread-form-actions">
-              <button type="submit" class="send-message-button" [disabled]="messageForm.invalid || sending()">
-                @if (sending()) {
-                  Enviando...
-                } @else {
-                  Enviar
-                }
-              </button>
-
-              @if (hasActiveConversation()) {
-                <button
-                  type="button"
-                  class="expand-chat-button"
-                  (click)="openActiveConversationInInbox()"
-                  aria-label="Abrir este chat en mensajería completa"
-                  title="Abrir en mensajería completa"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M15 3h6v6" />
-                    <path d="M9 21H3v-6" />
-                    <path d="M21 3 10 14" />
-                  </svg>
-                </button>
+              @if (chatbotService.error()) {
+                <p class="thread-form-error" role="alert">{{ chatbotService.error() }}</p>
               }
             </div>
+
+            <form class="thread-form" [formGroup]="messageForm" (ngSubmit)="sendChatbotMessage()">
+              <label class="sr-only" for="home-chat-message">Escribí tu mensaje</label>
+              <textarea
+                id="home-chat-message"
+                class="thread-input"
+                formControlName="content"
+                rows="2"
+                placeholder="Pregunta a Groq..."
+                [readonly]="chatbotService.sending()"
+                [attr.aria-describedby]="chatbotService.error() ? 'home-chat-send-error' : null"
+              ></textarea>
+
+              <div class="thread-form-footer">
+                @if (chatbotService.error(); as sendError) {
+                  <p id="home-chat-send-error" class="thread-form-error" role="alert">{{ sendError }}</p>
+                }
+
+                <div class="thread-form-actions">
+                  <button type="submit" class="send-message-button" [disabled]="messageForm.invalid || chatbotService.sending()">
+                    @if (chatbotService.sending()) {
+                      Enviando...
+                    } @else {
+                      Enviar
+                    }
+                  </button>
+
+                  @if (hasActiveConversation()) {
+                    <button
+                      type="button"
+                      class="expand-chat-button"
+                      (click)="openActiveConversationInInbox()"
+                      aria-label="Abrir este chat en mensajería completa"
+                      title="Abrir en mensajería completa"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 3h6v6" />
+                        <path d="M9 21H3v-6" />
+                        <path d="M21 3 10 14" />
+                      </svg>
+                    </button>
+                  }
+                </div>
+              </div>
+            </form>
+          </section>
+        }
+      } @else {
+        <section class="thread-view" [attr.aria-busy]="threadLoading()">
+          <div class="thread-messages" #threadContainer>
+            @if (threadLoading()) {
+              <app-state-card tone="loading" title="Cargando conversación" message="Trayendo los mensajes recientes." />
+            } @else if (threadError(); as threadError) {
+              <app-state-card
+                tone="error"
+                title="No pudimos abrir este chat"
+                [message]="threadError"
+                actionLabel="Reintentar"
+                (action)="retryThread()"
+              />
+            } @else if (!threadMessages().length) {
+              <app-state-card
+                tone="empty"
+                title="Sin mensajes todavía"
+                message="Podés enviar la primera respuesta desde este panel."
+              />
+            } @else {
+              <div class="thread-list" role="log" aria-live="polite" aria-relevant="additions text">
+                @for (message of threadMessages(); track trackConversation($index, message)) {
+                  <div class="message-wrapper" [class.sent]="isSentByMe(message)" [class.received]="!isSentByMe(message)">
+                    <div class="message-bubble">
+                      <p class="message-content">{{ message.content }}</p>
+                      <span class="message-time">{{ message.createdAt | date: 'shortTime' }}</span>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
           </div>
-        </form>
-      </section>
+
+          <form class="thread-form" [formGroup]="messageForm" (ngSubmit)="sendMessage()">
+            <label class="sr-only" for="home-chat-message">Escribí tu mensaje</label>
+            <textarea
+              id="home-chat-message"
+              class="thread-input"
+              formControlName="content"
+              rows="2"
+              placeholder="Escribí un mensaje..."
+              [readonly]="sending()"
+              [attr.aria-describedby]="sendError() ? 'home-chat-send-error' : null"
+            ></textarea>
+
+            <div class="thread-form-footer">
+              @if (sendError(); as sendError) {
+                <p id="home-chat-send-error" class="thread-form-error" role="alert">{{ sendError }}</p>
+              }
+
+              <div class="thread-form-actions">
+                <button type="submit" class="send-message-button" [disabled]="messageForm.invalid || sending()">
+                  @if (sending()) {
+                    Enviando...
+                  } @else {
+                    Enviar
+                  }
+                </button>
+
+                @if (hasActiveConversation()) {
+                  <button
+                    type="button"
+                    class="expand-chat-button"
+                    (click)="openActiveConversationInInbox()"
+                    aria-label="Abrir este chat en mensajería completa"
+                    title="Abrir en mensajería completa"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M15 3h6v6" />
+                      <path d="M9 21H3v-6" />
+                      <path d="M21 3 10 14" />
+                    </svg>
+                  </button>
+                }
+              </div>
+            </div>
+          </form>
+        </section>
+      }
     } @else {
       @if (conversationsResource.isLoading()) {
         <app-state-card tone="loading" title="Cargando conversaciones" message="Trayendo tus chats recientes." />
@@ -149,6 +248,27 @@
           (action)="reloadConversations()"
         />
       } @else if (!conversations().length) {
+        <div class="conversation-list" role="list">
+          <div
+            class="chatbot-item"
+            [class.active]="isChatbotSelected()"
+            (click)="openChatbotConversation()"
+          >
+            <div class="chatbot-avatar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8Z" />
+                <path d="M12 6v6l4 2" />
+              </svg>
+            </div>
+            <div class="conversation-copy">
+              <div class="conversation-meta-row">
+                <strong class="conversation-name">Groq</strong>
+                <span class="ai-badge">IA</span>
+              </div>
+              <p class="conversation-preview">Asistente de IA</p>
+            </div>
+          </div>
+        </div>
         <app-state-card
           tone="empty"
           title="Sin conversaciones"
@@ -156,6 +276,25 @@
         />
       } @else {
         <div class="conversation-list" role="list">
+          <div
+            class="chatbot-item"
+            [class.active]="isChatbotSelected()"
+            (click)="openChatbotConversation()"
+          >
+            <div class="chatbot-avatar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8Z" />
+                <path d="M12 6v6l4 2" />
+              </svg>
+            </div>
+            <div class="conversation-copy">
+              <div class="conversation-meta-row">
+                <strong class="conversation-name">Groq</strong>
+                <span class="ai-badge">IA</span>
+              </div>
+              <p class="conversation-preview">Asistente de IA</p>
+            </div>
+          </div>
           @for (conversation of conversations(); track trackConversation($index, conversation)) {
             <button
               type="button"

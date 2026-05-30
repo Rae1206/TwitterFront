@@ -10,7 +10,9 @@ import { SessionService } from '../../../../../core/auth/session.service';
 import { SignalRService } from '../../../../../core/realtime/signalr.service';
 import { FeedbackService } from '../../../../../core/ui/feedback.service';
 import { StateCardComponent } from '../../../../../shared/components/state-card/state-card.component';
+import { ChatbotMessageDto } from '../../../../messages/models/chatbot.models';
 import { MessageDto } from '../../../../messages/models/messages.models';
+import { ChatbotService, GROQ_BOT_DISPLAY_NAME, GROQ_BOT_USER_ID } from '../../../../messages/services/chatbot.service';
 import { MessagesApiService } from '../../../../messages/services/messages-api.service';
 import { UnreadCountService } from '../../../../messages/services/unread-count.service';
 import { UserAvatarComponent } from '../../../../users/components/user-avatar.component';
@@ -31,6 +33,7 @@ export class HomeChatPanelComponent {
   private readonly feedback = inject(FeedbackService);
   private readonly unreadCountService = inject(UnreadCountService);
   private readonly formBuilder = inject(NonNullableFormBuilder);
+  readonly chatbotService = inject(ChatbotService);
 
   readonly closeRequested = output<void>();
   readonly currentUserId = computed(() => this.sessionService.userId());
@@ -50,16 +53,21 @@ export class HomeChatPanelComponent {
   readonly sending = signal(false);
 
   readonly messageForm = this.formBuilder.group({
-    content: ['', [Validators.required, Validators.maxLength(1000)]],
+    content: ['', [Validators.required, Validators.maxLength(2000)]],
   });
 
   readonly hasActiveConversation = computed(() => this.selectedUserId() !== null);
+  readonly isChatbotSelected = computed(() => this.selectedUserId() === GROQ_BOT_USER_ID);
   readonly conversations = computed(() => this.conversationsState());
   readonly errorMessage = computed(() => {
     const error = this.conversationsResource.error();
     return error ? getErrorMessage(error, 'No pudimos cargar tus conversaciones.') : null;
   });
   readonly selectedUserName = computed(() => {
+    if (this.isChatbotSelected()) {
+      return GROQ_BOT_DISPLAY_NAME;
+    }
+
     const userInfo = this.selectedUserInfo();
     if (userInfo) {
       return userInfo.name;
@@ -77,6 +85,10 @@ export class HomeChatPanelComponent {
     return conversation ? this.getOtherUserName(conversation) : 'Conversación';
   });
   readonly selectedUserAvatar = computed(() => {
+    if (this.isChatbotSelected()) {
+      return undefined;
+    }
+
     const userInfo = this.selectedUserInfo();
     if (userInfo) {
       return userInfo.avatar;
@@ -93,7 +105,9 @@ export class HomeChatPanelComponent {
 
     return conversation ? this.toUserDto(conversation).profilePhotoUrl : undefined;
   });
-  readonly isSelectedUserOnline = computed(() => this.signalRService.isUserOnline(this.selectedUserId()));
+  readonly isSelectedUserOnline = computed(() =>
+    this.isChatbotSelected() ? false : this.signalRService.isUserOnline(this.selectedUserId()),
+  );
 
   constructor() {
     effect(() => {
@@ -112,6 +126,18 @@ export class HomeChatPanelComponent {
       }
 
       globalThis.setTimeout(() => this.scrollThreadToBottom(), 0);
+    });
+
+    // Scroll automático cuando llegan mensajes del chatbot
+    effect(() => {
+      if (!this.isChatbotSelected()) {
+        return;
+      }
+
+      const chatbotMessages = this.chatbotService.messages();
+      if (chatbotMessages.length > 0) {
+        globalThis.setTimeout(() => this.scrollThreadToBottom(), 0);
+      }
     });
 
     void this.ensureRealtimeConnection();
@@ -142,6 +168,15 @@ export class HomeChatPanelComponent {
     await this.loadConversationThread(userId);
   }
 
+  protected async openChatbotConversation(): Promise<void> {
+    this.selectedUserId.set(GROQ_BOT_USER_ID);
+    this.selectedUserInfo.set({
+      name: 'Groq',
+      avatar: undefined,
+    });
+    await this.chatbotService.loadHistory();
+  }
+
   protected async openInbox(): Promise<void> {
     await this.router.navigate(['/messages']);
     this.closeRequested.emit();
@@ -161,6 +196,7 @@ export class HomeChatPanelComponent {
     this.threadMessages.set([]);
     this.threadError.set(null);
     this.sendError.set(null);
+    this.chatbotService.reset();
     this.messageForm.reset();
   }
 
@@ -174,6 +210,11 @@ export class HomeChatPanelComponent {
   }
 
   protected async sendMessage(): Promise<void> {
+    if (this.isChatbotSelected()) {
+      await this.sendChatbotMessage();
+      return;
+    }
+
     if (this.messageForm.invalid || this.sending()) {
       return;
     }
@@ -207,6 +248,23 @@ export class HomeChatPanelComponent {
     } finally {
       this.sending.set(false);
     }
+  }
+
+  protected async sendChatbotMessage(): Promise<void> {
+    if (this.messageForm.invalid || this.chatbotService.sending()) {
+      return;
+    }
+
+    const { content } = this.messageForm.getRawValue();
+    await this.chatbotService.sendMessage(content ?? '');
+
+    const error = this.chatbotService.error();
+    if (error) {
+      this.feedback.error(error, { title: 'Error al enviar mensaje' });
+      return;
+    }
+
+    this.messageForm.reset();
   }
 
   private async loadConversationThread(otherUserId: string): Promise<void> {
@@ -392,5 +450,9 @@ export class HomeChatPanelComponent {
 
   protected trackConversation(_index: number, conversation: MessageDto): string {
     return conversation.messageId;
+  }
+
+  protected trackChatbotMessage(_index: number, message: ChatbotMessageDto): string {
+    return message.chatbotMessageId;
   }
 }
