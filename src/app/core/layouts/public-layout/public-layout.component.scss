@@ -53,10 +53,20 @@
 }
 
 .brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--brand-color);
   text-decoration: none;
+}
+
+.brand-logo {
+  height: 2.25rem;
+  width: auto;
+  object-fit: contain;
+  border-radius: 6px;
 }
 
 .public-nav {

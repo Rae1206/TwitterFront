@@ -1,6 +1,8 @@
 <header class="mobile-top-bar">
   <div class="mobile-brand-row">
-    <a routerLink="/home" class="mobile-brand" aria-label="Ir al inicio">T</a>
+    <a routerLink="/home" class="mobile-brand" aria-label="Ir al inicio">
+      <img src="logo-vmtdev.png" alt="VMTDEV Logo" class="brand-img" />
+    </a>
     <div class="mobile-actions">
       <app-theme-toggle />
       <app-accent-picker />
@@ -47,7 +49,9 @@
 <div class="private-shell" [class.private-shell--no-right-rail]="hideRightRail()">
   <aside class="rail left-rail" aria-label="Navegación principal">
     <div class="brand-row">
-      <a routerLink="/home" class="brand" aria-label="Ir al inicio">T</a>
+      <a routerLink="/home" class="brand" aria-label="Ir al inicio">
+        <img src="logo-vmtdev.png" alt="VMTDEV Logo" class="brand-img" />
+      </a>
       <app-theme-toggle />
       <app-accent-picker />
     </div>

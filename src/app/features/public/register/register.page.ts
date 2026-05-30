@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { getErrorMessage } from '../../../core/api/api.utils';
+import { AuthApiService } from '../../../core/auth/auth-api.service';
+import { SessionService } from '../../../core/auth/session.service';
 import { FeedbackService } from '../../../core/ui/feedback.service';
 import { UsersApiService } from '../../users/services/users-api.service';
 
@@ -18,7 +20,10 @@ import { UsersApiService } from '../../users/services/users-api.service';
 export class RegisterPage {
   private readonly formBuilder = inject(NonNullableFormBuilder);
   private readonly usersApi = inject(UsersApiService);
+  private readonly authApi = inject(AuthApiService);
+  private readonly sessionService = inject(SessionService);
   private readonly feedback = inject(FeedbackService);
+  private readonly router = inject(Router);
 
   readonly registerForm = this.formBuilder.group({
     nickname: ['', [Validators.required, Validators.minLength(3)]],
@@ -41,10 +46,22 @@ export class RegisterPage {
       this.loading.set(true);
       this.errorMessage.set(null);
       this.successMessage.set(null);
-      await firstValueFrom(this.usersApi.register(this.registerForm.getRawValue()));
-      this.successMessage.set('Solicitud de registro enviada. Ahora puedes intentar iniciar sesión.');
-      this.feedback.success('Cuenta creada. Ahora puedes iniciar sesión.', { title: 'Registro completado' });
-      this.registerForm.reset({ nickname: '', email: '', password: '' });
+      const rawForm = this.registerForm.getRawValue();
+      await firstValueFrom(this.usersApi.register(rawForm));
+
+      // Auto login after successful registration
+      const sessionResponse = await firstValueFrom(
+        this.authApi.login({
+          email: rawForm.email,
+          password: rawForm.password,
+        })
+      );
+      this.sessionService.startSession(sessionResponse);
+
+      this.feedback.success('¡Registro completado e inicio de sesión automático exitoso!', {
+        title: '¡Bienvenido!',
+      });
+      await this.router.navigateByUrl('/home');
     } catch (error) {
       const message = getErrorMessage(error, 'No pudimos crear el usuario todavía.');
       this.errorMessage.set(message);

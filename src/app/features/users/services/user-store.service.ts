@@ -7,6 +7,7 @@ import { FeedbackService } from '../../../core/ui/feedback.service';
 import { UserAvatarRevisionService } from './user-avatar-revision.service';
 import { UsersApiService } from './users-api.service';
 import { UpdateUserRequest, UserDto } from '../models/users.models';
+import { PostStoreService } from '../../posts/services/post-store.service';
 
 @Injectable({ providedIn: 'root' })
 export class UserStoreService {
@@ -14,6 +15,7 @@ export class UserStoreService {
   private readonly sessionService = inject(SessionService);
   private readonly feedback = inject(FeedbackService);
   private readonly avatarRevisions = inject(UserAvatarRevisionService);
+  private readonly postStore = inject(PostStoreService);
 
   private readonly currentUserState = signal<UserDto | null>(null);
   private readonly usersState = signal<UserDto[]>([]);
@@ -59,6 +61,9 @@ export class UserStoreService {
       const user = await firstValueFrom(this.usersApi.updateUser(payload));
       this.currentUserState.set(user);
       this.usersState.update((users) => users.map((item) => (item.userId === user.userId ? user : item)));
+      if (user.userId && user.nickname) {
+        this.postStore.updateUserInPosts(user.userId, user.nickname, user.profilePhotoUrl ?? null);
+      }
       this.feedback.success('Tu perfil se actualizó.', { title: 'Perfil guardado' });
       return user;
     } catch (error) {
@@ -86,6 +91,9 @@ export class UserStoreService {
       this.usersState.update((users) => users.map((item) => (item.userId === user.userId ? user : item)));
       if (user.userId) {
         this.avatarRevisions.bump(user.userId);
+        if (user.nickname) {
+          this.postStore.updateUserInPosts(user.userId, user.nickname, user.profilePhotoUrl ?? null);
+        }
       }
       this.feedback.success('Tu foto de perfil se actualizó.', { title: 'Avatar actualizado' });
       return user;

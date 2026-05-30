@@ -406,6 +406,39 @@ export class PostStoreService {
     }
   }
 
+  updateUserInPosts(userId: string, nickname: string, avatarUrl: string | null): void {
+    // Update postsState
+    this.postsState.update((posts) =>
+      posts.map((post) => {
+        if (post.userId === userId) {
+          return {
+            ...post,
+            userNickname: nickname,
+            userAvatar: avatarUrl ?? post.userAvatar,
+          };
+        }
+        return post;
+      })
+    );
+
+    // Update originalPostsCacheState
+    this.originalPostsCacheState.update((cache) => {
+      const next = { ...cache };
+      let changed = false;
+      for (const id in next) {
+        if (next[id].userId === userId) {
+          next[id] = {
+            ...next[id],
+            userNickname: nickname,
+            userAvatar: avatarUrl ?? next[id].userAvatar,
+          };
+          changed = true;
+        }
+      }
+      return changed ? next : cache;
+    });
+  }
+
   private patchPost(post: PostDto): void {
     this.postsState.update((posts) => {
       const next = posts.map((item) => (item.postId === post.postId ? post : item));
