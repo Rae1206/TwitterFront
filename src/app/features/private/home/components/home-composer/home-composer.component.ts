@@ -18,8 +18,11 @@ export class HomeComposerComponent {
   readonly uploadingFile = input(false);
   readonly canPost = input(false);
   readonly saving = input(false);
+  readonly canImproveWithAi = input(false);
+  readonly aiGenerating = input(false);
 
   readonly submitted = output<void>();
+  readonly improveWithAiRequested = output<void>();
   readonly fileInputRequested = output<string>();
   readonly recorderOpened = output<void>();
   readonly attachmentRemoved = output<number>();

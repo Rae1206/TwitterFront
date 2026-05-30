@@ -1,0 +1,194 @@
+<aside class="chat-panel" id="home-chat-panel" aria-label="Conversaciones" aria-modal="false">
+  <header class="chat-panel-header">
+    <div>
+      <p class="chat-panel-eyebrow">Mensajes</p>
+      @if (hasActiveConversation()) {
+        <h3>{{ selectedUserName() }}</h3>
+        @if (isSelectedUserOnline()) {
+          <span class="thread-user-status is-online">En línea</span>
+        } @else {
+          <span class="thread-user-status">Sin conexión ahora</span>
+        }
+      } @else {
+        <h3>Conversaciones</h3>
+      }
+    </div>
+
+    <div class="chat-panel-actions">
+      @if (hasActiveConversation()) {
+        <button
+          type="button"
+          class="panel-icon-button"
+          (click)="closeConversation()"
+          aria-label="Volver a la lista de conversaciones"
+          title="Volver"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5" />
+            <path d="m12 19-7-7 7-7" />
+          </svg>
+        </button>
+      }
+
+      <button
+        type="button"
+        class="panel-icon-button"
+        (click)="reloadConversations()"
+        aria-label="Actualizar conversaciones"
+        title="Actualizar conversaciones"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+          <path d="M21 3v6h-6" />
+        </svg>
+      </button>
+
+      <button
+        type="button"
+        class="panel-icon-button"
+        (click)="closePanel()"
+        aria-label="Cerrar panel de conversaciones"
+        title="Cerrar panel"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6 6 18" />
+          <path d="m6 6 12 12" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="chat-panel-body">
+    @if (hasActiveConversation()) {
+      <section class="thread-view" [attr.aria-busy]="threadLoading()">
+        <div class="thread-messages" #threadContainer>
+          @if (threadLoading()) {
+            <app-state-card tone="loading" title="Cargando conversación" message="Trayendo los mensajes recientes." />
+          } @else if (threadError(); as threadError) {
+            <app-state-card
+              tone="error"
+              title="No pudimos abrir este chat"
+              [message]="threadError"
+              actionLabel="Reintentar"
+              (action)="retryThread()"
+            />
+          } @else if (!threadMessages().length) {
+            <app-state-card
+              tone="empty"
+              title="Sin mensajes todavía"
+              message="Podés enviar la primera respuesta desde este panel."
+            />
+          } @else {
+            <div class="thread-list" role="log" aria-live="polite" aria-relevant="additions text">
+              @for (message of threadMessages(); track trackConversation($index, message)) {
+                <div class="message-wrapper" [class.sent]="isSentByMe(message)" [class.received]="!isSentByMe(message)">
+                  <div class="message-bubble">
+                    <p class="message-content">{{ message.content }}</p>
+                    <span class="message-time">{{ message.createdAt | date: 'shortTime' }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <form class="thread-form" [formGroup]="messageForm" (ngSubmit)="sendMessage()">
+          <label class="sr-only" for="home-chat-message">Escribí tu mensaje</label>
+          <textarea
+            id="home-chat-message"
+            class="thread-input"
+            formControlName="content"
+            rows="2"
+            placeholder="Escribí un mensaje..."
+            [readonly]="sending()"
+            [attr.aria-describedby]="sendError() ? 'home-chat-send-error' : null"
+          ></textarea>
+
+          <div class="thread-form-footer">
+            @if (sendError(); as sendError) {
+              <p id="home-chat-send-error" class="thread-form-error" role="alert">{{ sendError }}</p>
+            }
+
+            <div class="thread-form-actions">
+              <button type="submit" class="send-message-button" [disabled]="messageForm.invalid || sending()">
+                @if (sending()) {
+                  Enviando...
+                } @else {
+                  Enviar
+                }
+              </button>
+
+              @if (hasActiveConversation()) {
+                <button
+                  type="button"
+                  class="expand-chat-button"
+                  (click)="openActiveConversationInInbox()"
+                  aria-label="Abrir este chat en mensajería completa"
+                  title="Abrir en mensajería completa"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 3h6v6" />
+                    <path d="M9 21H3v-6" />
+                    <path d="M21 3 10 14" />
+                  </svg>
+                </button>
+              }
+            </div>
+          </div>
+        </form>
+      </section>
+    } @else {
+      @if (conversationsResource.isLoading()) {
+        <app-state-card tone="loading" title="Cargando conversaciones" message="Trayendo tus chats recientes." />
+      } @else if (errorMessage(); as errorMessage) {
+        <app-state-card
+          tone="error"
+          title="No pudimos abrir tus chats"
+          [message]="errorMessage"
+          actionLabel="Reintentar"
+          (action)="reloadConversations()"
+        />
+      } @else if (!conversations().length) {
+        <app-state-card
+          tone="empty"
+          title="Sin conversaciones"
+          message="Todavía no tenés chats activos. Cuando recibas mensajes aparecerán acá."
+        />
+      } @else {
+        <div class="conversation-list" role="list">
+          @for (conversation of conversations(); track trackConversation($index, conversation)) {
+            <button
+              type="button"
+              class="conversation-item"
+              (click)="openConversation(conversation)"
+              [attr.aria-label]="'Abrir chat con ' + getOtherUserName(conversation)"
+            >
+              <app-user-avatar [user]="toUserDto(conversation)" class="conversation-avatar" />
+
+              <div class="conversation-copy">
+                <div class="conversation-meta-row">
+                  <strong class="conversation-name">{{ getOtherUserName(conversation) }}</strong>
+                  <span class="conversation-time">{{ conversation.createdAt | date: 'shortTime' }}</span>
+                </div>
+
+                <p class="conversation-preview">{{ conversation.content }}</p>
+              </div>
+
+              @if (isUnread(conversation)) {
+                <span class="conversation-unread-dot" aria-hidden="true"></span>
+              }
+            </button>
+          }
+        </div>
+      }
+    }
+  </div>
+
+  <footer class="chat-panel-footer">
+    @if (!hasActiveConversation()) {
+      <button type="button" class="open-inbox-button" (click)="openInbox()">
+        Abrir mensajería completa
+      </button>
+    }
+  </footer>
+</aside>

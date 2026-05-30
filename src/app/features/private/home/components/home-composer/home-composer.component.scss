@@ -7,6 +7,46 @@
   gap: 1rem;
 }
 
+.field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.ai-assist-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-radius: 999px;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  .icon {
+    width: 0.95rem;
+    height: 0.95rem;
+    stroke: var(--brand-color);
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--brand-light);
+    border-color: rgba(29, 155, 240, 0.35);
+    color: var(--brand-color);
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
 .composer-media-section {
   padding: 0.75rem 0;
   border-top: 1.5px solid var(--border-color);

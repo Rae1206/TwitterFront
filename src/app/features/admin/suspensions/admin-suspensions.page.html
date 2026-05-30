@@ -116,8 +116,7 @@
       </header>
 
       <form class="stack" [formGroup]="liftForm" (ngSubmit)="lift()">
-        <label class="field"><span>ID de usuario</span><input formControlName="userId" /></label>
-        <label class="field"><span>Motivo</span><input formControlName="reason" /></label>
+        <label class="field"><span>ID de suspensión</span><input formControlName="suspensionId" /></label>
 
         <div class="button-row">
           <button type="submit" class="primary-action" [disabled]="!!acting()">Levantar suspensión</button>

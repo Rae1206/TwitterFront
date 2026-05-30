@@ -7,6 +7,7 @@ import { firstValueFrom } from 'rxjs';
 import { getErrorMessage } from '../../../core/api/api.utils';
 import { SessionService } from '../../../core/auth/session.service';
 import { ConfirmService } from '../../../core/ui/confirm.service';
+import { FeedbackService } from '../../../core/ui/feedback.service';
 import { TrendingService } from '../../../core/ui/trending.service';
 import { StateCardComponent } from '../../../shared/components/state-card/state-card.component';
 import { AudioPlayerComponent } from '../../posts/components/audio-player.component';
@@ -17,6 +18,7 @@ import { PostStoreService } from '../../posts/services/post-store.service';
 import { UserAvatarComponent } from '../../users/components/user-avatar.component';
 
 import { HomeComposerComponent } from './components/home-composer/home-composer.component';
+import { HomeChatPanelComponent } from './components/home-chat-panel/home-chat-panel.component';
 import { PostActionsComponent } from './components/post-actions/post-actions.component';
 import { PostMediaCarouselComponent } from './components/post-media-carousel/post-media-carousel.component';
 import { PostCardComponent } from '../../posts/components/post-card.component';
@@ -37,7 +39,7 @@ export interface MediaAttachment {
 @Component({
   selector: 'app-home-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, ReactiveFormsModule, StateCardComponent, UserAvatarComponent, AudioRecorderModalComponent, AudioPlayerComponent, HomeComposerComponent, PostActionsComponent, PostMediaCarouselComponent, PostCardComponent, ReportModalComponent],
+  imports: [DatePipe, ReactiveFormsModule, StateCardComponent, UserAvatarComponent, AudioRecorderModalComponent, AudioPlayerComponent, HomeComposerComponent, HomeChatPanelComponent, PostActionsComponent, PostMediaCarouselComponent, PostCardComponent, ReportModalComponent],
   host: {
     '(document:click)': 'closeAllMenus()',
   },
@@ -45,16 +47,19 @@ export interface MediaAttachment {
   styleUrl: './home.page.scss',
 })
 export class HomePage {
+  private aiGenerationRequestId = 0;
   private readonly formBuilder = inject(NonNullableFormBuilder);
   private readonly postStore = inject(PostStoreService);
   private readonly postsApi = inject(PostsApiService);
   private readonly confirm = inject(ConfirmService);
+  private readonly feedback = inject(FeedbackService);
   private readonly sessionService = inject(SessionService);
   private readonly reportStore = inject(ReportStoreService);
   private readonly trendingService = inject(TrendingService);
   private readonly composerSection = viewChild<ElementRef<HTMLElement>>('composerSection');
   readonly attachments = signal<MediaAttachment[]>([]);
   readonly uploadingFile = signal(false);
+  readonly aiGenerating = signal(false);
   readonly feedVideoSoundEnabled = signal(false);
 
   readonly posts = this.postStore.posts;
@@ -75,6 +80,7 @@ export class HomePage {
   readonly postToQuote = signal<PostDto | null>(null);
 
   readonly isComposeModalOpen = signal(false);
+  readonly isChatPanelOpen = signal(false);
   readonly isDetailModalOpen = signal(false);
   readonly postInDetail = signal<PostDto | null>(null);
   readonly isRecorderOpen = signal(false);
@@ -99,6 +105,7 @@ export class HomePage {
     const hasAttachments = this.attachments().length > 0;
     return hasText || hasAttachments;
   });
+  readonly canImproveWithAi = computed(() => (this.contentValue() ?? '').trim().length > 0);
   readonly publishedCount = computed(() => this.posts().filter((post) => Boolean(post.isPublished)).length);
   readonly draftCount = computed(() => this.posts().filter((post) => !post.isPublished).length);
   readonly highlightedPost = computed(() => this.posts()[0] ?? null);
@@ -164,7 +171,7 @@ export class HomePage {
   }
 
   protected async submit(): Promise<void> {
-    if (!this.canPost() || this.saving()) {
+    if (!this.canPost() || this.saving() || this.aiGenerating()) {
       return;
     }
 
@@ -470,6 +477,44 @@ export class HomePage {
     this.isComposeModalOpen.set(true);
   }
 
+  protected toggleChatPanel(): void {
+    this.isChatPanelOpen.update((isOpen) => !isOpen);
+  }
+
+  protected closeChatPanel(): void {
+    this.isChatPanelOpen.set(false);
+  }
+
+  protected async improveDraftWithAi(): Promise<void> {
+    const idea = (this.form.controls.content.value ?? '').trim();
+    if (!idea || this.aiGenerating() || this.saving()) {
+      return;
+    }
+
+    const requestId = ++this.aiGenerationRequestId;
+
+    try {
+      this.aiGenerating.set(true);
+      const generated = await firstValueFrom(this.postsApi.generateText({
+        idea,
+        maxLength: 280,
+      }));
+
+      if (requestId === this.aiGenerationRequestId) {
+        this.form.controls.content.setValue(generated.content);
+      }
+    } catch (error) {
+      if (requestId === this.aiGenerationRequestId) {
+        const message = getErrorMessage(error, 'No pudimos mejorar el texto con IA.');
+        this.feedback.error(message, { title: 'Error al mejorar' });
+      }
+    } finally {
+      if (requestId === this.aiGenerationRequestId) {
+        this.aiGenerating.set(false);
+      }
+    }
+  }
+
   protected closeComposeModal(): void {
     this.isComposeModalOpen.set(false);
     this.resetForm();
@@ -716,8 +761,10 @@ export class HomePage {
   }
 
   private resetForm(): void {
+    this.aiGenerationRequestId++;
     this.editingPostId.set(null);
     this.form.reset({ content: '', isPublished: true });
+    this.aiGenerating.set(false);
     this.attachments().forEach((att) => {
       if (att.file) {
         URL.revokeObjectURL(att.url);

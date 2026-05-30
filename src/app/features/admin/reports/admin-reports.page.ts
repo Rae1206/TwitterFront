@@ -42,7 +42,7 @@ export class AdminReportsPage {
   readonly previewPost = signal<PostDto | null>(null);
   readonly previewLoading = signal(false);
   readonly createForm = this.formBuilder.group({ postId: ['', Validators.required], reason: ['', Validators.required], description: [''] });
-  readonly resolveForm = this.formBuilder.group({ reportId: ['', Validators.required], resolutionNote: [''], postAction: ['none'] });
+  readonly resolveForm = this.formBuilder.group({ reportId: ['', Validators.required], resolution: [''], postAction: ['none'] });
   readonly queueFocus = computed(() => this.selected() ?? this.pendingReports()[0] ?? this.allReports()[0] ?? null);
   readonly pendingCount = computed(() => this.pendingReports().length);
   readonly resolvedCount = computed(() => this.allReports().filter((report) => this.reportStatus(report) === 'Resuelto').length);
@@ -117,7 +117,7 @@ export class AdminReportsPage {
 
   protected async resolve(): Promise<void> {
     if (this.resolveForm.invalid) { this.resolveForm.markAllAsTouched(); return; }
-    const { reportId, resolutionNote, postAction } = this.resolveForm.getRawValue();
+    const { reportId, resolution, postAction } = this.resolveForm.getRawValue();
 
     const report = this.findReport(reportId);
     const confirmed = await this.confirm.confirm({
@@ -139,10 +139,10 @@ export class AdminReportsPage {
           await firstValueFrom(this.adminApi.deleteAdminPost(report.postId));
         }
       }
-      await firstValueFrom(this.adminApi.resolveReport(reportId, { resolutionNote })); 
+      await firstValueFrom(this.adminApi.resolveReport(reportId, { resolution })); 
       this.feedback.success('El reporte se resolvió.', { title: 'Reporte resuelto' }); 
       this.selected.set(null);
-      this.resolveForm.reset({ reportId: '', resolutionNote: '', postAction: 'none' }); 
+      this.resolveForm.reset({ reportId: '', resolution: '', postAction: 'none' }); 
       await this.load(); 
     }, 'Falló la resolución del reporte.');
   }
@@ -164,11 +164,11 @@ export class AdminReportsPage {
       return;
     }
 
-    await this.run(reportId, async () => { 
-      await firstValueFrom(this.adminApi.dismissReport(reportId, {})); 
+      await this.run(reportId, async () => { 
+      await firstValueFrom(this.adminApi.dismissReport(reportId, { reason: 'Descartado desde la consola de moderación.' })); 
       this.feedback.info('El reporte se descartó.', { title: 'Reporte descartado' }); 
       this.selected.set(null);
-      this.resolveForm.reset();
+      this.resolveForm.reset({ reportId: '', resolution: '', postAction: 'none' });
       await this.load(); 
     }, 'Falló el descarte del reporte.');
   }

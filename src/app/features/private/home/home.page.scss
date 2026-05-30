@@ -609,6 +609,46 @@
   }
 }
 
+.field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.ai-assist-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-radius: 999px;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  .icon {
+    width: 0.95rem;
+    height: 0.95rem;
+    stroke: var(--brand-color);
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--brand-light);
+    border-color: rgba(29, 155, 240, 0.35);
+    color: var(--brand-color);
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
 @keyframes modalFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -680,7 +720,8 @@
 }
 
 .floating-compose-btn,
-.floating-scroll-top-btn {
+.floating-scroll-top-btn,
+.floating-chat-btn {
   width: 3.5rem;
   height: 3.5rem;
   border-radius: 9999px;
@@ -728,6 +769,23 @@
 
   &:hover {
     background: rgb(240, 249, 255);
+    transform: scale(1.06) translateY(-2px);
+    box-shadow: 0 10px 28px rgba(29, 155, 240, 0.24);
+  }
+}
+
+.floating-chat-btn {
+  background: color-mix(in srgb, rgb(29 155 240) 12%, white);
+  color: rgb(29, 155, 240);
+  border: 1px solid rgba(29, 155, 240, 0.2);
+  box-shadow: 0 8px 24px rgba(29, 155, 240, 0.16);
+
+  .compose-btn-icon {
+    stroke: currentColor;
+  }
+
+  &:hover {
+    background: color-mix(in srgb, rgb(29 155 240) 16%, white);
     transform: scale(1.06) translateY(-2px);
     box-shadow: 0 10px 28px rgba(29, 155, 240, 0.24);
   }

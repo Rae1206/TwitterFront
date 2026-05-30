@@ -35,3 +35,14 @@ export interface SavePostRequest {
 export interface ChangePostStatusRequest {
   isPublished: boolean;
 }
+
+export interface GeneratePostTextRequest {
+  idea: string;
+  tone?: string;
+  maxLength?: number;
+}
+
+export interface GeneratedPostTextDto extends JsonRecord {
+  content: string;
+  model: string;
+}

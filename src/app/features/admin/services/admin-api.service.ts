@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiClientService } from '../../../core/api/api-client.service';
-import { AdminConfigEntry, AdminDashboardStats, AdminPostRecord, AdminReportDto, AdminUserRecord, AuditLogEntry, ChangeUserRoleRequest, CreateReportRequest, FlagPostRequest, LiftSuspensionRequest, ResolveReportRequest, RoleDto, SuspendUserRequest, SuspensionDto, UpdateConfigRequest } from '../models/admin.models';
+import { AdminConfigEntry, AdminDashboardStats, AdminPostRecord, AdminReportDto, AdminUserRecord, AuditLogEntry, ChangeUserRoleRequest, CreateReportRequest, DismissReportRequest, FlagPostRequest, LiftSuspensionRequest, ResolveReportRequest, RoleDto, SuspendUserRequest, SuspensionDto, UpdateConfigRequest } from '../models/admin.models';
 import { JsonRecord } from '../../../core/api/api.models';
 
 
@@ -83,8 +83,8 @@ export class AdminApiService {
     return this.api.put<JsonRecord, ResolveReportRequest>(`/api/admin/reports/${id}/resolve`, payload);
   }
 
-  dismissReport(id: string, payload: ResolveReportRequest): Observable<JsonRecord> {
-    return this.api.put<JsonRecord, ResolveReportRequest>(`/api/admin/reports/${id}/dismiss`, payload);
+  dismissReport(id: string, payload: DismissReportRequest): Observable<JsonRecord> {
+    return this.api.put<JsonRecord, DismissReportRequest>(`/api/admin/reports/${id}/dismiss`, payload);
   }
 
   suspendUser(payload: SuspendUserRequest): Observable<JsonRecord> {

@@ -77,7 +77,11 @@ export interface AssignReportRequest {
 }
 
 export interface ResolveReportRequest {
-  resolutionNote?: string;
+  resolution?: string;
+}
+
+export interface DismissReportRequest {
+  reason?: string;
 }
 
 export interface SuspendUserRequest {
@@ -88,8 +92,7 @@ export interface SuspendUserRequest {
 }
 
 export interface LiftSuspensionRequest {
-  userId: string;
-  reason?: string;
+  suspensionId: string;
 }
 
 export interface UpdateConfigRequest {

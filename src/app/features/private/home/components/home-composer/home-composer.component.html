@@ -7,7 +7,22 @@
 
   <form class="stack" [formGroup]="form()" (ngSubmit)="submitted.emit()">
     <label class="field">
-      <span>Contenido</span>
+      <span class="field-label-row">
+        <span>Contenido</span>
+        <button
+          type="button"
+          class="ai-assist-btn"
+          title="mejorar con ia"
+          aria-label="mejorar con ia"
+          [disabled]="!canImproveWithAi() || aiGenerating() || saving()"
+          (click)="improveWithAiRequested.emit()">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z" />
+            <path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15z" />
+          </svg>
+          <span>{{ aiGenerating() ? 'Mejorando...' : 'IA' }}</span>
+        </button>
+      </span>
       <textarea rows="5" formControlName="content" placeholder="¿Qué vale la pena publicar hoy?" (paste)="onPaste($event)"></textarea>
     </label>
 
@@ -51,7 +66,7 @@
     </div>
 
     <div class="button-row">
-      <button type="submit" class="primary-action" [disabled]="!canPost() || saving()">
+      <button type="submit" class="primary-action" [disabled]="!canPost() || saving() || aiGenerating()">
         {{ saving() ? 'Guardando...' : editingPostId() ? 'Actualizar publicación' : 'Crear publicación' }}
       </button>
 

@@ -4,7 +4,14 @@ import { map, Observable } from 'rxjs';
 import { ApiClientService } from '../../../core/api/api-client.service';
 import { environment } from '../../../../environments/environment';
 import { GenericResponse, JsonRecord } from '../../../core/api/api.models';
-import { ChangePostStatusRequest, PostDto, PostListQuery, SavePostRequest } from '../models/posts.models';
+import {
+  ChangePostStatusRequest,
+  GeneratedPostTextDto,
+  GeneratePostTextRequest,
+  PostDto,
+  PostListQuery,
+  SavePostRequest,
+} from '../models/posts.models';
 
 
 
@@ -37,6 +44,10 @@ export class PostsApiService {
 
   updatePost(id: string, payload: SavePostRequest): Observable<PostDto> {
     return this.api.put<PostDto, SavePostRequest>(`/api/post/${id}/update`, payload);
+  }
+
+  generateText(payload: GeneratePostTextRequest): Observable<GeneratedPostTextDto> {
+    return this.api.post<GeneratedPostTextDto, GeneratePostTextRequest>('/api/post/generate-text', payload);
   }
 
   changeStatus(id: string, payload: ChangePostStatusRequest): Observable<PostDto> {

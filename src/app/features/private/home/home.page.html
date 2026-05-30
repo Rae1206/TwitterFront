@@ -17,7 +17,10 @@
       [uploadingFile]="uploadingFile()"
       [canPost]="canPost()"
       [saving]="saving()"
+      [canImproveWithAi]="canImproveWithAi()"
+      [aiGenerating]="aiGenerating()"
       (submitted)="submit()"
+      (improveWithAiRequested)="improveDraftWithAi()"
       (fileInputRequested)="triggerFileInput($event)"
       (recorderOpened)="openRecorder()"
       (attachmentRemoved)="removeAttachment($event)"
@@ -171,8 +174,26 @@
       </div>
     </div>
   }
+  @if (isChatPanelOpen()) {
+    <app-home-chat-panel (closeRequested)="closeChatPanel()" />
+  }
+
   <!-- Floating Compose Action Button -->
   <div class="floating-actions" aria-label="Acciones rápidas">
+    <button
+      type="button"
+      class="floating-chat-btn"
+      (click)="toggleChatPanel()"
+      title="Abrir conversaciones"
+      aria-label="Abrir conversaciones"
+      aria-controls="home-chat-panel"
+      [attr.aria-expanded]="isChatPanelOpen()"
+    >
+      <svg class="compose-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      </svg>
+    </button>
+
     <button type="button" class="floating-scroll-top-btn" (click)="scrollToTop()" title="Subir al inicio" aria-label="Subir al inicio">
       <svg class="compose-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25">
         <path d="M12 19V5" />
@@ -198,7 +219,22 @@
 
         <form class="stack" [formGroup]="form" (ngSubmit)="submit()">
           <label class="field">
-            <span>Contenido</span>
+            <span class="field-label-row">
+              <span>Contenido</span>
+              <button
+                type="button"
+                class="ai-assist-btn"
+                title="mejorar con ia"
+                aria-label="mejorar con ia"
+                [disabled]="!canImproveWithAi() || aiGenerating() || saving()"
+                (click)="improveDraftWithAi()">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z" />
+                  <path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15z" />
+                </svg>
+                <span>{{ aiGenerating() ? 'Mejorando...' : 'IA' }}</span>
+              </button>
+            </span>
             <textarea rows="4" formControlName="content" placeholder="¿Qué vale la pena publicar hoy?"></textarea>
           </label>
 
@@ -242,7 +278,7 @@
           </div>
 
           <div class="button-row">
-            <button type="submit" class="primary-action" [disabled]="!canPost() || saving()">
+            <button type="submit" class="primary-action" [disabled]="!canPost() || saving() || aiGenerating()">
               {{ saving() ? 'Guardando...' : 'Crear publicación' }}
             </button>
             <button type="button" class="secondary-action" (click)="closeComposeModal()">Cancelar</button>

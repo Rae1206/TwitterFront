@@ -34,7 +34,7 @@ export class AdminSuspensionsPage {
     reason: ['Revisión de política requerida', Validators.required],
     until: [''],
   });
-  readonly liftForm = this.formBuilder.group({ userId: ['', Validators.required], reason: ['Revisión de moderación completada'] });
+  readonly liftForm = this.formBuilder.group({ suspensionId: ['', Validators.required] });
   readonly error = signal<string | null>(null);
   readonly acting = signal<string | null>(null);
 
@@ -79,7 +79,7 @@ export class AdminSuspensionsPage {
 
         const reportId = this.activeResolvingReportId();
         if (reportId) {
-          await firstValueFrom(this.adminApi.resolveReport(reportId, { resolutionNote: `Usuario suspendido: ${payload.reason}` }));
+          await firstValueFrom(this.adminApi.resolveReport(reportId, { resolution: `Usuario suspendido: ${payload.reason}` }));
           this.activeResolvingReportId.set(null);
           await this.loadUserReports();
         }
@@ -146,7 +146,7 @@ export class AdminSuspensionsPage {
     await this.run(
       'Descartando reporte',
       async () => {
-        await firstValueFrom(this.adminApi.dismissReport(reportId, {}));
+        await firstValueFrom(this.adminApi.dismissReport(reportId, { reason: 'Reporte descartado sin suspensión.' }));
         this.feedback.info('El reporte de usuario fue descartado.', { title: 'Reporte descartado' });
         await this.loadUserReports();
       },
@@ -164,8 +164,8 @@ export class AdminSuspensionsPage {
     const confirmed = await this.confirm.confirm({
       title: '¿Levantar esta suspensión?',
       message: 'Úsalo solo después de que la revisión de moderación esté completa y la cuenta pueda volver al estado normal con seguridad.',
-      details: payload.reason || 'No se proporcionó motivo del levantamiento.',
-      confirmLabel: 'Levantar suspensión',
+        details: payload.suspensionId,
+        confirmLabel: 'Levantar suspensión',
     });
 
     if (!confirmed) {
@@ -174,11 +174,11 @@ export class AdminSuspensionsPage {
 
     await this.run(
       'Levantando suspensión',
-      async () => {
-        await firstValueFrom(this.adminApi.liftSuspension(payload));
-        this.feedback.success('La suspensión fue levantada.', { title: 'Suspensión levantada' });
-        this.liftForm.reset({ userId: '', reason: 'Revisión de moderación completada' });
-      },
+        async () => {
+          await firstValueFrom(this.adminApi.liftSuspension(payload));
+          this.feedback.success('La suspensión fue levantada.', { title: 'Suspensión levantada' });
+          this.liftForm.reset({ suspensionId: '' });
+        },
       'Falló el levantamiento de la suspensión.',
     );
   }
