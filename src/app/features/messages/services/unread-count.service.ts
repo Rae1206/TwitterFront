@@ -5,16 +5,16 @@ import { SignalRService } from '../../../core/realtime/signalr.service';
 import { MessagesApiService } from './messages-api.service';
 
 /**
- * Estado centralizado del contador de mensajes no leídos.
+ * @description Estado centralizado del contador de mensajes no leídos.
  *
- * Reemplaza el polling cada 10s al endpoint /messages/unread/count por un
- * patrón event-driven sobre SignalR:
- *   - 1 sola llamada al backend cuando se establece la conexión SignalR
- *   - +1 local cuando llega un onMessageReceived dirigido al usuario actual
- *   - decrement(N) o refresh() cuando el componente marca mensajes como leídos
+ * Reemplaza el sondeo constante (polling) cada 10 segundos al endpoint `/messages/unread/count`
+ * por un patrón guiado por eventos sobre SignalR:
+ *   - Realiza una sola llamada al backend cuando se establece la conexión de SignalR.
+ *   - Incrementa localmente (+1) cuando llega un evento `onMessageReceived` para el usuario en sesión.
+ *   - Decrementa (`decrement`) o refresca (`refresh`) cuando el componente correspondiente marca los mensajes como leídos.
  *
- * Se provee en root para que tanto PrivateLayout como MessagesPage lean del
- * mismo signal y la UI se mantenga consistente sin tráfico de red redundante.
+ * Se provee en la raíz para que tanto el diseño privado (`PrivateLayout`) como la página de mensajes
+ * utilicen la misma señal reactiva, manteniendo la interfaz consistente sin tráfico de red redundante.
  */
 @Injectable({ providedIn: 'root' })
 export class UnreadCountService {
@@ -22,12 +22,12 @@ export class UnreadCountService {
   private readonly signalR = inject(SignalRService);
   private readonly session = inject(SessionService);
 
-  /** Contador reactivo. Cualquier componente lo consume con `unreadCount()`. */
+  /** Contador reactivo expuesto para su lectura directa por los componentes. */
   readonly count = signal(0);
 
   constructor() {
-    // Refrescar cuando hay conexión SignalR + usuario autenticado.
-    // Si se desautentica, resetear a 0.
+    // Refrescar automáticamente cuando hay conexión activa y el usuario está autenticado.
+    // Si la sesión finaliza, el contador se restablece a 0.
     effect(() => {
       const isConnected = this.signalR.isConnected();
       const userId = this.session.userId();
@@ -42,9 +42,9 @@ export class UnreadCountService {
       }
     });
 
-    // Auto-incrementar cuando llega un mensaje no leído dirigido al usuario actual.
-    // Si el componente que tiene la conversación abierta lo marca como leído
-    // inmediatamente (vía markAsRead → decrement), el contador queda correcto.
+    // Auto-incrementar el contador local al recibir un mensaje no leído destinado a nosotros.
+    // Si el componente de chat abierto marca de inmediato el mensaje como leído (usando decrement),
+    // el contador reflejará la cifra correcta de manera instantánea.
     this.signalR.onMessageReceived.subscribe((message) => {
       const myUserId = this.session.userId();
       if (myUserId && message.receiverId === myUserId && !message.isRead) {
@@ -54,10 +54,8 @@ export class UnreadCountService {
   }
 
   /**
-   * Pide al backend el conteo actualizado y actualiza el signal.
-   * Debe llamarse:
-   *   - Al conectar (lo hace el effect del constructor)
-   *   - Cuando se sospecha que el local state diverge del servidor
+   * @description Solicita al servidor el conteo de mensajes sin leer actualizado y refresca la señal.
+   * Se invoca automáticamente al establecer conexión o si se requiere sincronizar el estado.
    */
   refresh(): void {
     this.api.getUnreadCount().subscribe({
@@ -67,16 +65,18 @@ export class UnreadCountService {
   }
 
   /**
-   * Resta una cantidad conocida del contador local sin tocar la red.
-   * Útil cuando el componente acaba de marcar como leídos N mensajes
-   * y conoce N localmente (evita una llamada extra a /unread/count).
+   * @description Resta una cantidad específica al contador local de forma optimista sin realizar peticiones de red.
+   * Útil tras marcar un conjunto conocido de mensajes como leídos para evitar llamadas redundantes.
+   * @param amount Cantidad de mensajes marcados como leídos.
    */
   decrement(amount: number): void {
     if (amount <= 0) return;
     this.count.update((c) => Math.max(0, c - amount));
   }
 
-  /** Forzar a 0 (ej. al cerrar sesión). */
+  /**
+   * @description Restablece por completo el contador a 0 (por ejemplo, al cerrar la sesión).
+   */
   reset(): void {
     this.count.set(0);
   }

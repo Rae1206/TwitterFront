@@ -5,9 +5,9 @@ import { SignalRService } from './signalr.service';
 import { SessionService } from '../auth/session.service';
 
 /**
- * Inicializador de SignalR
- * Conecta automáticamente cuando el usuario está autenticado
- * y desconecta cuando cierra sesión
+ * @description Inicializador de SignalR.
+ * Conecta automáticamente el servicio cuando el usuario está autenticado y
+ * maneja la desconexión segura en caso de cerrar sesión o cambiar de estado.
  */
 export function initializeSignalR() {
     const signalRService = inject(SignalRService);
@@ -17,7 +17,7 @@ export function initializeSignalR() {
     return async () => {
         console.log('Inicializando SignalR...');
 
-        // Si el usuario está autenticado, conectar
+        // Si el usuario está autenticado al cargar la aplicación, inicia la conexión
         if (sessionService.isAuthenticated()) {
             try {
                 await signalRService.startConnection();
@@ -27,16 +27,16 @@ export function initializeSignalR() {
             }
         }
 
-        // Escuchar cambios en la navegación para conectar/desconectar
+        // Escucha eventos de navegación y cambios de sesión para conectar o desconectar dinámicamente
         router.events.subscribe(() => {
             const isAuthenticated = sessionService.isAuthenticated();
             const isConnected = signalRService.isConnectionActive();
 
-            // Si está autenticado pero no conectado, conectar
+            // Conectar si el usuario está autenticado pero no hay conexión activa
             if (isAuthenticated && !isConnected) {
                 signalRService.startConnection().catch(console.error);
             }
-            // Si no está autenticado pero está conectado, desconectar
+            // Desconectar si la sesión expiró o se cerró, pero la conexión sigue activa
             else if (!isAuthenticated && isConnected) {
                 signalRService.stopConnection().catch(console.error);
             }

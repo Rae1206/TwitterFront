@@ -1,23 +1,24 @@
 import { computed, Injectable, signal } from '@angular/core';
 
 /**
- * Estados del grabador. La UI cambia según este estado:
- *  - idle:       inactivo, listo para empezar
- *  - requesting: esperando permiso del micrófono
- *  - recording:  grabando audio
- *  - recorded:   se detuvo y hay un blob disponible para usar/descartar
- *  - denied:     el usuario denegó el permiso del micrófono
- *  - error:      otro error (sin micrófono disponible, navegador no soportado, etc.)
+ * @description Estados del grabador de audio. La interfaz de usuario cambia según este estado:
+ *  - `idle`:       Inactivo, listo para iniciar una nueva grabación.
+ *  - `requesting`: Esperando que el usuario apruebe el permiso de uso del micrófono.
+ *  - `recording`:  Grabando audio en curso.
+ *  - `recorded`:   Grabación detenida y hay un archivo binario (blob) disponible.
+ *  - `denied`:     El usuario denegó expresamente el acceso al micrófono.
+ *  - `error`:      Ocurrió otro error (sin micrófono físico, navegador incompatible, etc.).
  */
 export type RecorderState = 'idle' | 'requesting' | 'recording' | 'recorded' | 'denied' | 'error';
 
 /**
- * Servicio que envuelve la API nativa MediaRecorder. NO se provee en root
- * a propósito: cada modal tiene su propia instancia y la libera al cerrarse.
+ * @description Servicio encargado de envolver la API nativa de `MediaRecorder` del navegador.
+ * No se provee de manera global (root) a propósito: cada componente o modal instancia su propio
+ * grabador de manera aislada y libera los recursos al cerrarse.
  */
 @Injectable()
 export class AudioRecorderService {
-  /** Duración máxima de grabación, en segundos. */
+  /** Duración máxima permitida para las grabaciones de audio, expresada en segundos. */
   readonly maxDurationSeconds = 180;
 
   readonly state = signal<RecorderState>('idle');
@@ -39,8 +40,8 @@ export class AudioRecorderService {
   private startMs = 0;
 
   /**
-   * Solicita permiso de micrófono y empieza a grabar. Si ya hay una grabación
-   * previa, primero la limpia.
+   * @description Solicita los permisos del micrófono al usuario e inicia la grabación.
+   * Si existía alguna grabación previa sin guardar, limpia los recursos primero.
    */
   async start(): Promise<void> {
     if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
@@ -93,7 +94,10 @@ export class AudioRecorderService {
     }
   }
 
-  /** Detiene la grabación. La transición a `recorded` ocurre en el handler `stop`. */
+  /**
+   * @description Detiene la grabación activa del micrófono.
+   * La transición al estado `recorded` ocurre de forma interna en el manejador del evento `stop`.
+   */
   stop(): void {
     if (this.state() !== 'recording' || !this.mediaRecorder) {
       return;
@@ -102,7 +106,9 @@ export class AudioRecorderService {
     this.mediaRecorder.stop();
   }
 
-  /** Vuelve al estado inicial conservando el permiso pero descartando la grabación. */
+  /**
+   * @description Restablece el servicio al estado inicial, conservando permisos pero descartando la grabación.
+   */
   reset(): void {
     this.cleanupActiveResources();
     this.discardRecording();
@@ -111,17 +117,18 @@ export class AudioRecorderService {
     this.errorMessage.set(null);
   }
 
-  /** Libera todos los recursos. Llamar cuando el modal se cierra. */
+  /**
+   * @description Libera y destruye todos los recursos activos. Debe invocarse al cerrar el modal o componente.
+   */
   destroy(): void {
     this.cleanupActiveResources();
     this.discardRecording();
   }
 
   /**
-   * Convierte la grabación actual en un `File` listo para subir, con un nombre
-   * legible y la extensión correcta según el MIME negociado. El MIME del File
-   * usa el tipo base (sin parámetros de codec) para que pase por backends que
-   * validan whitelists estrictas.
+   * @description Convierte la grabación de audio actual en un objeto `File` listo para subir al servidor,
+   * asignándole un nombre de archivo único con fecha y hora y la extensión de archivo adecuada.
+   * @returns Un objeto `File` listo para subir, o `null` si no hay grabación disponible.
    */
   toFile(): File | null {
     const blob = this.recordedBlob();
@@ -135,6 +142,9 @@ export class AudioRecorderService {
     return new File([blob], filename, { type: baseMime });
   }
 
+  /**
+   * Maneja la finalización exitosa del grabador nativo, consolidando los fragmentos.
+   */
   private onRecorderStop(): void {
     this.stopTicker();
 
@@ -157,6 +167,9 @@ export class AudioRecorderService {
     this.cleanupActiveResources();
   }
 
+  /**
+   * Inicia el temporizador interno para actualizar los segundos transcurridos.
+   */
   private startTicker(): void {
     this.stopTicker();
     this.timer = setInterval(() => {
@@ -168,6 +181,9 @@ export class AudioRecorderService {
     }, 250);
   }
 
+  /**
+   * Detiene el temporizador interno.
+   */
   private stopTicker(): void {
     if (this.timer) {
       clearInterval(this.timer);
@@ -175,6 +191,9 @@ export class AudioRecorderService {
     }
   }
 
+  /**
+   * Limpia los recursos y detiene las pistas de audio activas del micrófono.
+   */
   private cleanupActiveResources(): void {
     this.stopTicker();
     this.mediaRecorder = null;
@@ -184,6 +203,9 @@ export class AudioRecorderService {
     }
   }
 
+  /**
+   * Descarta la grabación en memoria y libera el objectURL asociado de forma segura.
+   */
   private discardRecording(): void {
     const url = this.recordedUrl();
     if (url) {
@@ -194,6 +216,9 @@ export class AudioRecorderService {
     this.chunks = [];
   }
 
+  /**
+   * Gestiona de manera amigable los posibles fallos al solicitar acceso al micrófono.
+   */
   private handleStartError(error: unknown): void {
     this.cleanupActiveResources();
     const err = error as DOMException | Error;

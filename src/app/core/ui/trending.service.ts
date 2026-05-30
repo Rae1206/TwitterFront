@@ -18,6 +18,6 @@ export class TrendingService {
         .sort((a, b) => b._eng - a._eng)
         .slice(0, 5);
       this.posts.set(sorted);
-    } catch { /* silent */ }
+    } catch { /* ignorar error */ }
   }
 }

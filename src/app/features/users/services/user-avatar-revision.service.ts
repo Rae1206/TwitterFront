@@ -1,30 +1,42 @@
 import { Injectable, Signal, signal, WritableSignal } from '@angular/core';
 
 /**
- * Tracks an avatar revision counter per user so consumers can append it
- * as a cache-busting query string after a successful avatar upload.
+ * @description Rastrea un contador de revisión de avatares por usuario.
+ * Permite a los consumidores adjuntarlo como parámetro de consulta (query param)
+ * para evadir la caché del navegador tras subir una nueva foto de perfil.
  *
- * Without this counter the avatar URL is identical before and after an
- * upload (it is always `/api/user/{id}/avatar`), so the browser can keep
- * serving the cached old image.
+ * Sin este contador, la URL del avatar es idéntica antes y después de subirlo
+ * (siempre es `/api/user/{id}/avatar`), por lo que el navegador podría seguir
+ * sirviendo la imagen antigua almacenada en caché.
  *
- * Usage:
- *   bump(userId)    -> after a successful upload
- *   getRevision(id) -> readonly signal; 0 means "no upload happened in
- *                      this session, render the bare URL".
+ * Uso:
+ *   bump(userId)    -> Invocar tras una subida de avatar exitosa.
+ *   getRevision(id) -> Obtener señal de solo lectura; 0 significa "sin cambios en esta sesión".
  */
 @Injectable({ providedIn: 'root' })
 export class UserAvatarRevisionService {
   private readonly revisions = new Map<string, WritableSignal<number>>();
 
+  /**
+   * @description Obtiene el número de revisión actual del avatar de un usuario específico.
+   * @param userId ID del usuario.
+   * @returns Una Signal con la revisión actual.
+   */
   getRevision(userId: string): Signal<number> {
     return this.entry(userId).asReadonly();
   }
 
+  /**
+   * @description Incrementa el contador de revisión para forzar la recarga del avatar del usuario.
+   * @param userId ID del usuario.
+   */
   bump(userId: string): void {
     this.entry(userId).update((value) => value + 1);
   }
 
+  /**
+   * Obtiene o inicializa la señal de revisión para un usuario.
+   */
   private entry(userId: string): WritableSignal<number> {
     let entry = this.revisions.get(userId);
 

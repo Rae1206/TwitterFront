@@ -55,13 +55,13 @@ export class PrivateLayoutComponent {
   protected readonly accountBiography = computed(() => this.currentUser()?.biography?.trim() || 'Aún no has agregado una biografía.');
   protected readonly accountMeta = computed(() => this.currentUser()?.email || this.sessionService.userId() || 'Sin identificador de sesión');
 
-  // Contador de mensajes no leídos (state-driven, sin polling).
-  // El UnreadCountService se sincroniza vía SignalR onMessageReceived.
+  // Contador de mensajes no leídos (gestionado por estado, sin sondeos/polling).
+  // El UnreadCountService se sincroniza mediante SignalR con onMessageReceived.
   protected readonly unreadMessagesCount = this.unreadCountService.count;
 
   /**
-   * Tracks the current URL so we can hide the right rail (trending panel)
-   * on routes that benefit from full width — like the messages page.
+   * Rastrea la URL actual para poder ocultar la columna derecha (panel de tendencias)
+   * en aquellas rutas que se benefician de ocupar el ancho completo — como la de mensajes.
    */
   private readonly currentUrl = toSignal(
     this.router.events.pipe(
@@ -87,47 +87,47 @@ export class PrivateLayoutComponent {
       const userId = this.sessionService.userId();
       const loadedUserId = this.currentUser()?.userId;
 
-      // Load (or reload) whenever authenticated userId changes
+      // Carga (o vuelve a cargar) los datos cada vez que cambia el userId autenticado
       if (userId && userId !== loadedUserId) {
         void this.userStore.loadCurrentUser(true);
       }
     });
     void this.trending.refresh();
 
-    // Escuchar notificaciones de SignalR
+    // Escuchar notificaciones de SignalR en tiempo real
     this.listenToSignalRNotifications();
   }
 
   /**
-   * Escucha notificaciones de SignalR para mostrar toasts
+   * @description Escucha notificaciones en tiempo real desde SignalR para mostrar avisos emergentes (toasts).
    */
   private listenToSignalRNotifications(): void {
-    // Notificar cuando un usuario se conecta
+    // Avisar cuando un usuario de interés se conecta (online)
     this.signalRService.onUserOnline.subscribe((userInfo) => {
       const currentUserId = this.sessionService.userId();
 
-      // Solo notificar si no es el usuario actual
+      // Solo avisar si el evento no corresponde al propio usuario en sesión
       if (userInfo.userId !== currentUserId) {
-        // Verificar si sigues a ese usuario
+        // Verificar si sigues a ese usuario antes de lanzar la notificación
         this.followsApi.isFollowing(userInfo.userId).subscribe({
           next: (response) => {
             if (response.isFollowing) {
-              // Solo mostrar notificación si sigues al usuario
+              // Solo mostrar el aviso si el usuario actual sigue a quien se conectó
               this.feedback.success(`🟢 ${userInfo.nickname}`, {
                 duration: 3000
               });
             }
           },
           error: (err) => {
-            console.error('Error al verificar si sigues al usuario:', err);
+            console.error('Error al verificar seguimiento del usuario:', err);
           }
         });
       }
     });
 
-    // Notificar cuando llega un mensaje nuevo
+    // Avisar cuando ingresa un mensaje nuevo
     this.signalRService.onMessageReceived.subscribe((message) => {
-      // Solo notificar si no estamos en la página de mensajes
+      // Solo lanzar aviso emergente si no nos encontramos en la pantalla de mensajes
       if (!this.router.url.includes('/messages')) {
         this.feedback.info(`💬 ${message.senderUsername}`, {
           duration: 5000

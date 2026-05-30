@@ -1,22 +1,27 @@
 import { Injectable, signal, effect } from '@angular/core';
 
+/**
+ * @description Servicio encargado de gestionar el tema visual (claro/oscuro) de la aplicación.
+ * Mantiene el estado en localStorage para recordar la preferencia del usuario.
+ */
 @Injectable({
   providedIn: 'root'
 })
 export class ThemeService {
+  /** Señal reactiva que indica si el tema oscuro está activo. */
   readonly isDark = signal<boolean>(true);
 
   constructor() {
-    // Load preference from localStorage or check system preference
+    // Cargar preferencia guardada desde localStorage
     const savedTheme = localStorage.getItem('theme-preference');
     if (savedTheme) {
       this.isDark.set(savedTheme === 'dark');
     } else {
-      // Default to dark theme matching standard app styling
+      // Usar tema oscuro por defecto para alinearse con el estilo predeterminado de la app
       this.isDark.set(true);
     }
 
-    // Apply class to document body on changes
+    // Aplicar la clase CSS correspondiente en el body del documento ante cualquier cambio
     effect(() => {
       const dark = this.isDark();
       if (dark) {
@@ -31,6 +36,9 @@ export class ThemeService {
     });
   }
 
+  /**
+   * @description Alterna entre el tema claro y el tema oscuro.
+   */
   toggleTheme(): void {
     this.isDark.update((dark) => !dark);
   }

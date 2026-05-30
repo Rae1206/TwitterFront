@@ -56,7 +56,7 @@ export class PublicLayoutComponent {
       return;
     }
     this.contactSubmitting.set(true);
-    // Simulate API request
+    // Simular petición a la API
     setTimeout(() => {
       this.contactSubmitting.set(false);
       this.contactSuccess.set(true);

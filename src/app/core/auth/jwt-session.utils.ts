@@ -5,6 +5,7 @@ interface JwtClaims {
   userId: string | null;
 }
 
+/** Claves habituales de claims para obtener el rol desde el payload del JWT. */
 const roleClaimKeys = [
   'role',
   'roles',
@@ -12,6 +13,7 @@ const roleClaimKeys = [
   'http://schemas.microsoft.com/ws/2008/06/identity/claims/role',
 ] as const;
 
+/** Claves habituales de claims para obtener el ID de usuario desde el payload del JWT. */
 const userIdClaimKeys = [
   'sub',
   'id',
@@ -23,6 +25,11 @@ const userIdClaimKeys = [
   'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier',
 ] as const;
 
+/**
+ * @description Decodifica un token JWT y extrae los claims de rol e ID de usuario.
+ * @param token Token JWT en formato string.
+ * @returns Un objeto `JwtClaims` que contiene el rol y el ID de usuario decodificados, o null si no se encontraron.
+ */
 export function readJwtClaims(token: string | null): JwtClaims {
   if (!token) {
     return { role: null, userId: null };
@@ -36,6 +43,9 @@ export function readJwtClaims(token: string | null): JwtClaims {
   };
 }
 
+/**
+ * Extrae y decodifica la sección del payload (segunda sección) de un token JWT.
+ */
 function parseJwtPayload(token: string): Record<string, unknown> | null {
   const [, payload] = token.split('.');
 
@@ -53,9 +63,12 @@ function parseJwtPayload(token: string): Record<string, unknown> | null {
   }
 }
 
+/**
+ * Decodifica una cadena Base64Url de forma segura para entornos de navegador.
+ */
 function decodeBase64Url(value: string): string {
   if (typeof globalThis.atob !== 'function') {
-    throw new Error('Base64 decoding is unavailable in the current environment.');
+    throw new Error('La decodificación Base64 no está disponible en este entorno.');
   }
 
   const normalizedValue = value.replace(/-/g, '+').replace(/_/g, '/');
@@ -66,6 +79,9 @@ function decodeBase64Url(value: string): string {
   return new TextDecoder().decode(bytes);
 }
 
+/**
+ * Busca y extrae el claim de rol en el payload usando las claves predefinidas.
+ */
 function readRoleClaim(payload: Record<string, unknown> | null): AppRole | null {
   if (!payload) {
     return null;
@@ -83,6 +99,9 @@ function readRoleClaim(payload: Record<string, unknown> | null): AppRole | null 
   return null;
 }
 
+/**
+ * Busca y extrae el claim de ID de usuario en el payload usando las claves predefinidas.
+ */
 function readUserIdClaim(payload: Record<string, unknown> | null): string | null {
   if (!payload) {
     return null;
@@ -103,6 +122,9 @@ function readUserIdClaim(payload: Record<string, unknown> | null): string | null
   return null;
 }
 
+/**
+ * Normaliza el valor de un claim de rol, soportando tanto strings individuales como arrays.
+ */
 function normalizeRoleClaim(claim: unknown): AppRole | null {
   if (typeof claim === 'string') {
     return normalizeRoleValue(claim);
@@ -125,6 +147,9 @@ function normalizeRoleClaim(claim: unknown): AppRole | null {
   return null;
 }
 
+/**
+ * Verifica si un rol extraído coincide con los roles de administración del sistema.
+ */
 function normalizeRoleValue(role: string): AppRole | null {
   const trimmedRole = role.trim();
 
@@ -137,6 +162,9 @@ function normalizeRoleValue(role: string): AppRole | null {
   return knownRole ?? trimmedRole;
 }
 
+/**
+ * Type guard para validar que un valor decodificado es un objeto clave-valor de TypeScript.
+ */
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }

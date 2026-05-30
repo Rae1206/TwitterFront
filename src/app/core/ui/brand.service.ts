@@ -9,14 +9,21 @@ export interface AccentSwatch {
   readonly value: string;
 }
 
+/**
+ * @description Servicio encargado de gestionar el color de acento de la aplicación.
+ * Permite cambiar dinámicamente el tono principal de la interfaz y lo persiste en localStorage.
+ */
 @Injectable({ providedIn: 'root' })
 export class BrandService {
   private readonly document = inject(DOCUMENT);
   private readonly platformId = inject(PLATFORM_ID);
 
+  /** Señal reactiva que contiene el color de acento actual en formato hexadecimal. */
   readonly accentColor = signal<string | null>(null);
+  /** Señal computada para verificar si hay un color de acento personalizado activo. */
   readonly hasAccent = computed(() => this.accentColor() !== null);
 
+  /** Paleta de colores predefinidos disponibles para que el usuario elija. */
   readonly palette: ReadonlyArray<AccentSwatch> = [
     { id: 'red', label: 'Rojo', value: '#ef4444' },
     { id: 'pink', label: 'Rosa', value: '#ec4899' },
@@ -31,6 +38,7 @@ export class BrandService {
   constructor() {
     this.accentColor.set(this.loadStored());
 
+    // Efecto reactivo para aplicar y persistir el color de acento ante cualquier cambio.
     effect(() => {
       const accent = this.accentColor();
       this.applyAccent(accent);
@@ -38,6 +46,10 @@ export class BrandService {
     });
   }
 
+  /**
+   * @description Establece un nuevo color de acento para la interfaz.
+   * @param color El código hexadecimal del color (por ejemplo, `#ef4444`), o `null` para restablecer al de fábrica.
+   */
   setAccent(color: string | null): void {
     if (color === null) {
       this.accentColor.set(null);
@@ -50,13 +62,20 @@ export class BrandService {
     }
   }
 
+  /**
+   * @description Restablece el color de acento por defecto de la aplicación.
+   */
   reset(): void {
     this.accentColor.set(null);
   }
 
   /**
-   * Convert a hex color (e.g. `#ef4444` or `#fff`) to an `rgba(...)` string with the given alpha.
-   * Returns the original input untouched if it cannot be parsed, so callers stay safe.
+   * @description Convierte un color hexadecimal (ej. `#ef4444` o `#fff`) a formato `rgba(...)`
+   * aplicando el nivel de transparencia (alfa) solicitado.
+   * Devuelve el color de entrada intacto si no se puede analizar correctamente.
+   * @param hex Color en hexadecimal.
+   * @param alpha Nivel de opacidad (valor de 0 a 1).
+   * @returns El string en formato `rgba(r, g, b, alpha)`.
    */
   toRgba(hex: string, alpha: number): string {
     const normalized = this.normalizeHex(hex);
@@ -72,18 +91,20 @@ export class BrandService {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 
+  /**
+   * Aplica los estilos CSS personalizados sobreescribiendo las variables del sistema.
+   */
   private applyAccent(accent: string | null): void {
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
 
-    // We write the override on `<body>` (not `<html>`) on purpose: `styles.scss`
-    // declares the light-mode tokens via `body.light-theme { ... }`. Variables
-    // defined on `<body>` are closer in the cascade than ones on `<html>`, so an
-    // inline `<html>` style would lose to the light-theme rule. Writing on
-    // `<body>` puts the override on the SAME element as the light-theme rule,
-    // and inline always wins over a selector for the same element — so the
-    // accent now overrides borders in BOTH dark and light modes.
+    // Escribimos la anulación directamente en `<body>` (no en `<html>`) con un propósito: `styles.scss`
+    // declara los tokens de tema claro mediante `body.light-theme { ... }`. Las variables
+    // definidas en `<body>` están más cerca en la cascada que las de `<html>`, por lo que un estilo
+    // inline en `<html>` perdería contra la regla light-theme. Escribir en `<body>` coloca la anulación
+    // en el MISMO elemento que la regla del tema, y el estilo inline siempre gana frente a un selector
+    // para el mismo elemento. De este modo, el acento sobrescribe los bordes tanto en modo claro como oscuro.
     const target = this.document.body;
     if (!target) {
       return;
@@ -101,6 +122,9 @@ export class BrandService {
     target.style.setProperty('--border-strong', this.toRgba(accent, 0.6));
   }
 
+  /**
+   * Persiste el color de acento actual en localStorage.
+   */
   private persist(accent: string | null): void {
     if (!isPlatformBrowser(this.platformId)) {
       return;
@@ -113,10 +137,13 @@ export class BrandService {
         this.document.defaultView?.localStorage.removeItem(accentColorStorageKey);
       }
     } catch {
-      // Ignore storage write failures so theming never breaks the app.
+      // Ignorar fallos de almacenamiento para que la personalización nunca rompa el inicio de la app.
     }
   }
 
+  /**
+   * Recupera el color de acento guardado en localStorage.
+   */
   private loadStored(): string | null {
     if (!isPlatformBrowser(this.platformId)) {
       return null;
@@ -129,6 +156,9 @@ export class BrandService {
     }
   }
 
+  /**
+   * Limpia y normaliza un string para asegurar que sea un hexadecimal de 6 dígitos válido.
+   */
   private normalizeHex(value: string): string | null {
     if (typeof value !== 'string') {
       return null;
