@@ -52,47 +52,56 @@ export class AdminDashboardPage {
     };
   });
 
-  readonly postsDonut = computed(() => {
-    const s = this.stats();
-    if (!s) return null;
-    const foreColor = this.theme.isDark() ? '#f8fafc' : '#0f1419';
-    const normalPosts = Math.max(s.totalPosts - s.flaggedPosts, 0);
-    return {
-      series: [normalPosts, s.flaggedPosts, s.pendingReports],
-      chart: { type: 'donut' as const, height: 300, foreColor },
-      labels: ['Normales', 'Flagged', 'Con reportes'],
-      colors: ['#008FFB', '#FEB019', '#FF4560'],
-      legend: { position: 'bottom' as const, fontSize: '13px' },
-      dataLabels: { enabled: true },
-    };
-  });
-
-  readonly overviewRadial = computed(() => {
+readonly postsArea = computed(() => {
     const s = this.stats();
     if (!s) return null;
     const dark = this.theme.isDark();
     const foreColor = dark ? '#f8fafc' : '#0f1419';
-    const values = [s.totalUsers, s.totalPosts, s.pendingReports + s.flaggedPosts, s.suspendedUsers];
-    const max = Math.max(...values, 1);
-    const series = values.map(v => Math.round((v / max) * 100));
+    const normalPosts = Math.max(s.totalPosts - s.flaggedPosts, 0);
+    const categories = ['Normales', 'Flagged', 'Con reportes'];
     return {
-      series,
-      chart: { type: 'radialBar' as const, height: 340, foreColor },
-      plotOptions: {
-        radialBar: {
-          hollow: { size: '28%' },
-          dataLabels: {
-            name: { fontSize: '13px' },
-            value: { fontSize: '15px' },
-            total: { show: true, label: 'Plataforma', formatter: () => `${s.totalUsers + s.totalPosts}` },
-          },
-          track: { background: dark ? '#334155' : '#e0e0e0' },
-        },
-      },
-      labels: ['Usuarios', 'Posts', 'Reportes', 'Suspendidos'],
-      colors: ['#008FFB', '#00E396', '#FEB019', '#FF4560'],
-      fill: { type: 'gradient' as const, gradient: { shade: 'dark' as const, type: 'vertical' as const, stops: [0, 100] } },
-      stroke: { lineCap: 'round' as const },
+      series: [{ name: 'Posts', data: [normalPosts, s.flaggedPosts, s.pendingReports + s.flaggedPosts] }],
+      chart: { type: 'bar' as const, height: 300, foreColor, toolbar: { show: false }, fontFamily: 'inherit' },
+      xaxis: { categories, labels: { style: { fontSize: '13px' } } },
+      colors: ['#008FFB', '#FEB019', '#FF4560'],
+      plotOptions: { bar: { borderRadius: 4, distributed: true } },
+      dataLabels: { enabled: true, style: { fontSize: '12px' } },
+      grid: { borderColor: dark ? '#334155' : '#e0e0e0', strokeDashArray: 4 },
+      tooltip: { theme: dark ? 'dark' : 'light' },
+      yaxis: { labels: { style: { fontSize: '12px' } }, title: { text: 'Cantidad', style: { fontSize: '12px' } } },
+      legend: { show: false },
+    };
+  });
+
+  readonly overviewMixed = computed(() => {
+    const s = this.stats();
+    if (!s) return null;
+    const dark = this.theme.isDark();
+    const foreColor = dark ? '#f8fafc' : '#0f1419';
+    const categories = ['Usuarios', 'Posts', 'Reportes', 'Suspendidos'];
+    const barValues = [s.totalUsers, s.totalPosts, s.pendingReports + s.flaggedPosts, s.suspendedUsers];
+    const activeRatio = s.totalUsers > 0 ? Math.round((s.activeUsers / s.totalUsers) * 100) : 0;
+    const lineValues = [activeRatio, null, null, null];
+    return {
+      series: [
+        { name: 'Cantidad', type: 'column' as const, data: barValues },
+        { name: '% Activos', type: 'line' as const, data: lineValues },
+      ],
+      chart: { type: 'bar' as const, height: 340, foreColor, toolbar: { show: false }, fontFamily: 'inherit' },
+      xaxis: { categories, labels: { style: { fontSize: '13px' } } },
+      yaxis: [
+        { title: { text: 'Cantidad', style: { fontSize: '12px' } }, labels: { style: { fontSize: '12px' } } },
+        { opposite: true, title: { text: '%', style: { fontSize: '12px' } }, max: 100, labels: { style: { fontSize: '12px' } } },
+      ],
+      stroke: { width: [0, 3] },
+      fill: { type: ['solid', 'solid'] },
+      colors: ['#008FFB', '#00E396'],
+      plotOptions: { bar: { borderRadius: 4, columnWidth: '55%' } },
+      dataLabels: { enabled: false },
+      grid: { borderColor: dark ? '#334155' : '#e0e0e0', strokeDashArray: 4 },
+      tooltip: { theme: dark ? 'dark' : 'light' },
+      legend: { position: 'top' as const, fontSize: '13px' },
+      markers: { size: [0, 5], strokeWidth: 2, hover: { size: 7 } },
     };
   });
 

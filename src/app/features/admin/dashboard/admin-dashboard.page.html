@@ -53,31 +53,40 @@
         </article>
       }
 
-      @if (postsDonut(); as pc) {
+      @if (postsArea(); as pc) {
         <article class="surface-card chart-card">
           <h2>Posts</h2>
           <apx-chart
             [series]="pc.series"
             [chart]="pc.chart"
-            [labels]="pc.labels"
+            [xaxis]="pc.xaxis"
             [colors]="pc.colors"
-            [legend]="pc.legend"
+            [plotOptions]="pc.plotOptions"
             [dataLabels]="pc.dataLabels"
+            [grid]="pc.grid"
+            [tooltip]="pc.tooltip"
+            [yaxis]="pc.yaxis"
+            [legend]="pc.legend"
           />
         </article>
       }
 
-      @if (overviewRadial(); as ov) {
+      @if (overviewMixed(); as ov) {
         <article class="surface-card chart-card">
           <h2>Vista general</h2>
           <apx-chart
             [series]="ov.series"
             [chart]="ov.chart"
-            [plotOptions]="ov.plotOptions"
-            [labels]="ov.labels"
-            [colors]="ov.colors"
-            [fill]="ov.fill"
+            [xaxis]="ov.xaxis"
+            [yaxis]="ov.yaxis"
             [stroke]="ov.stroke"
+            [colors]="ov.colors"
+            [plotOptions]="ov.plotOptions"
+            [dataLabels]="ov.dataLabels"
+            [grid]="ov.grid"
+            [tooltip]="ov.tooltip"
+            [legend]="ov.legend"
+            [markers]="ov.markers"
           />
         </article>
       }

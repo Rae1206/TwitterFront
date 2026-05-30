@@ -121,6 +121,7 @@
                 placeholder="Pregunta a Groq..."
                 [readonly]="chatbotService.sending()"
                 [attr.aria-describedby]="chatbotService.error() ? 'home-chat-send-error' : null"
+                (keydown)="onTextareaKeydown($event)"
               ></textarea>
 
               <div class="thread-form-footer">
@@ -200,6 +201,7 @@
               placeholder="Escribí un mensaje..."
               [readonly]="sending()"
               [attr.aria-describedby]="sendError() ? 'home-chat-send-error' : null"
+              (keydown)="onTextareaKeydown($event)"
             ></textarea>
 
             <div class="thread-form-footer">

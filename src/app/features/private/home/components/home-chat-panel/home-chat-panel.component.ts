@@ -200,6 +200,21 @@ export class HomeChatPanelComponent {
     this.messageForm.reset();
   }
 
+  /** Send on Enter (without Shift), allow Shift+Enter for newline. */
+  protected onTextareaKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      const form = this.messageForm;
+      if (form.valid) {
+        if (this.isChatbotSelected()) {
+          void this.sendChatbotMessage();
+        } else {
+          void this.sendMessage();
+        }
+      }
+    }
+  }
+
   protected async retryThread(): Promise<void> {
     const userId = this.selectedUserId();
     if (!userId) {
