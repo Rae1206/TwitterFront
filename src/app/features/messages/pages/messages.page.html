@@ -9,7 +9,109 @@
   <div class="messages-layout">
     <!-- Chat Window -->
     <div class="chat-window" [class.visible-mobile]="hasSelectedConversation()">
-      @if (hasSelectedConversation()) {
+      @if (isChatbotSelected()) {
+        <div class="chat-header">
+          <button type="button" class="back-button" (click)="closeConversation()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+          </button>
+
+          <div class="chat-header-user">
+            <div class="chatbot-avatar-lg">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8Z" />
+                <path d="M12 6v6l4 2" />
+              </svg>
+            </div>
+            <div class="chat-header-info">
+              <div class="user-name-row">
+                <strong class="user-name">Groq</strong>
+                <span class="ai-badge">IA</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-messages" #chatbotMessagesContainer>
+          @if (chatbotService.loading()) {
+            <app-state-card tone="loading" title="Cargando" message="Obteniendo historial..." />
+          } @else if (chatbotService.messages().length === 0) {
+            <div class="chatbot-welcome">
+              <div class="chatbot-welcome-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8Z" />
+                  <path d="M12 6v6l4 2" />
+                </svg>
+              </div>
+              <h3>Hola, soy Groq</h3>
+              <p>Tu asistente de IA. Preguntame lo que quieras.</p>
+            </div>
+          } @else {
+            @for (msg of chatbotService.messages(); track trackChatbotMessage($index, msg)) {
+              <div
+                class="message-wrapper"
+                [class.sent]="msg.role === 'user'"
+                [class.received]="msg.role === 'assistant'"
+              >
+                @if (msg.role === 'assistant') {
+                  <div class="message-avatar-mini">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8Z" />
+                      <path d="M12 6v6l4 2" />
+                    </svg>
+                  </div>
+                }
+                <div class="message-bubble">
+                  <p class="message-content">{{ msg.content }}</p>
+                  <span class="message-time">{{ msg.createdAt | date: 'short' }}</span>
+@if (msg.role === 'assistant') {
+                    <span class="ai-badge">Agente IA</span>
+                  }
+                </div>
+              </div>
+            }
+          }
+
+          @if (chatbotService.sending()) {
+            <div class="typing-indicator">
+              <div class="typing-bubble">
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+                <span class="typing-dot"></span>
+              </div>
+              <span class="typing-text">Groq está pensando...</span>
+            </div>
+          }
+
+          @if (chatbotService.error()) {
+            <div class="chatbot-error">
+              <p>{{ chatbotService.error() }}</p>
+              <button type="button" (click)="chatbotService.clearError()">Cerrar</button>
+            </div>
+          }
+        </div>
+
+        <form class="chat-input-form" [formGroup]="messageForm" (ngSubmit)="sendChatbotMessage()">
+          <input
+            type="text"
+            formControlName="content"
+            placeholder="Pregunta a Groq..."
+            class="chat-input"
+            [readonly]="chatbotService.sending()"
+          />
+          <button
+            type="submit"
+            class="send-button"
+            [disabled]="messageForm.invalid || chatbotService.sending()"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            </svg>
+          </button>
+        </form>
+      } @else if (hasSelectedConversation()) {
         <div class="chat-header">
           <button type="button" class="back-button" (click)="closeConversation()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -102,7 +204,7 @@
     </div>
 
     <!-- Conversations List -->
-    <div class="conversations-list" [class.hidden-mobile]="hasSelectedConversation()">
+<div class="conversations-list" [class.hidden-mobile]="hasSelectedConversation()">
       @if (loading()) {
         <app-state-card
           tone="loading"
@@ -111,20 +213,40 @@
         />
       } @else if (error()) {
         <app-state-card tone="error" title="Error" [message]="error()!" />
-      } @else if (conversations().length === 0) {
-        <app-state-card
-          tone="empty"
-          title="Sin conversaciones"
-          message="Aún no tienes mensajes. Inicia una conversación desde el perfil de un usuario."
-        />
       } @else {
         <div class="conversation-items">
+          <div
+            class="chatbot-item"
+            [class.active]="isChatbotSelected()"
+            (click)="selectChatbotConversation()"
+          >
+            <div class="chatbot-avatar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8Z" />
+                <path d="M12 6v6l4 2" />
+              </svg>
+            </div>
+            <div class="conversation-content">
+              <div class="conversation-header">
+                <strong class="conversation-name">Groq</strong>
+                <span class="ai-badge">IA</span>
+              </div>
+              <p class="conversation-preview">Asistente de IA</p>
+            </div>
+          </div>
+
+          @if (conversations().length === 0) {
+            <div class="no-conversations-hint">
+              <p>No hay conversaciones aún</p>
+            </div>
+          }
+
           @for (conv of conversations(); track trackMessage($index, conv)) {
             <button
               type="button"
               class="conversation-item"
               [class.unread]="isUnread(conv)"
-              [class.active]="getOtherUserId(conv) === selectedUserId()"
+              [class.active]="getOtherUserId(conv) === selectedUserId() && !isChatbotSelected()"
               (click)="selectConversation(conv)"
             >
               <app-user-avatar

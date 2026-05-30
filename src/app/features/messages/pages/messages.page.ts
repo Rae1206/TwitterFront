@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, viewChild, ElementRef } from '@angular/core';
-import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
@@ -12,6 +12,8 @@ import { StateCardComponent } from '../../../shared/components/state-card/state-
 import { MessagesApiService } from '../services/messages-api.service';
 import { UnreadCountService } from '../services/unread-count.service';
 import { MessageDto } from '../models/messages.models';
+import { ChatbotService, GROQ_BOT_DISPLAY_NAME, GROQ_BOT_USER_ID } from '../services/chatbot.service';
+import { ChatbotMessageDto } from '../models/chatbot.models';
 import { UserAvatarComponent } from '../../users/components/user-avatar.component';
 import { UserDto } from '../../users/models/users.models';
 
@@ -20,7 +22,7 @@ import { UserDto } from '../../users/models/users.models';
     selector: 'app-messages-page',
     changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: true,
-    imports: [DatePipe, ReactiveFormsModule, StateCardComponent, UserAvatarComponent],
+    imports: [DatePipe, FormsModule, ReactiveFormsModule, StateCardComponent, UserAvatarComponent],
     templateUrl: './messages.page.html',
     styleUrl: './messages.page.scss',
 })
@@ -32,6 +34,7 @@ export class MessagesPage {
     private readonly route = inject(ActivatedRoute);
     readonly signalRService = inject(SignalRService);
     private readonly unreadCountService = inject(UnreadCountService);
+    readonly chatbotService = inject(ChatbotService);
 
     readonly conversations = signal<MessageDto[]>([]);
     readonly selectedConversation = signal<MessageDto[]>([]);
@@ -48,16 +51,18 @@ export class MessagesPage {
 
     // Referencia al contenedor de mensajes para scroll automático
     readonly messagesContainer = viewChild<ElementRef<HTMLDivElement>>('messagesContainer');
+    readonly chatbotMessagesContainer = viewChild<ElementRef<HTMLDivElement>>('chatbotMessagesContainer');
 
     /** Contador global de mensajes no leídos (state-driven, sin polling). */
     readonly unreadCount = this.unreadCountService.count;
 
     readonly messageForm = this.formBuilder.group({
-        content: ['', [Validators.required, Validators.maxLength(1000)]],
+        content: ['', [Validators.required, Validators.maxLength(2000)]],
     });
 
     readonly currentUserId = computed(() => this.sessionService.userId());
     readonly hasSelectedConversation = computed(() => this.selectedUserId() !== null);
+    readonly isChatbotSelected = computed(() => this.selectedUserId() === GROQ_BOT_USER_ID);
 
     readonly selectedUserName = computed(() => {
         const userInfo = this.selectedUserInfo();
@@ -122,7 +127,14 @@ export class MessagesPage {
         effect(() => {
             const messages = this.selectedConversation();
             if (messages.length > 0) {
-                // Usar setTimeout para asegurar que el DOM se haya actualizado
+                setTimeout(() => this.scrollToBottom(), 100);
+            }
+        });
+
+        // Hacer scroll automático cuando llegan mensajes del chatbot
+        effect(() => {
+            const chatbotMessages = this.chatbotService.messages();
+            if (chatbotMessages.length > 0) {
                 setTimeout(() => this.scrollToBottom(), 100);
             }
         });
@@ -427,7 +439,19 @@ export class MessagesPage {
         await this.startNewConversation(otherUserId);
     }
 
+    async selectChatbotConversation(): Promise<void> {
+        this.selectedUserId.set(GROQ_BOT_USER_ID);
+        this.selectedUserInfo.set({ name: GROQ_BOT_DISPLAY_NAME, avatar: undefined });
+        this.selectedConversation.set([]);
+        await this.chatbotService.loadHistory();
+    }
+
     async sendMessage(): Promise<void> {
+        if (this.isChatbotSelected()) {
+            await this.sendChatbotMessage();
+            return;
+        }
+
         if (this.messageForm.invalid || this.sending()) {
             return;
         }
@@ -464,6 +488,22 @@ export class MessagesPage {
         } finally {
             this.sending.set(false);
         }
+    }
+
+    async sendChatbotMessage(): Promise<void> {
+        if (this.messageForm.invalid || this.chatbotService.sending()) {
+            return;
+        }
+
+        const { content } = this.messageForm.getRawValue();
+        await this.chatbotService.sendMessage(content ?? '');
+
+        if (this.chatbotService.error()) {
+            this.feedback.error(this.chatbotService.error()!);
+            return;
+        }
+
+        this.messageForm.reset();
     }
 
     /**
@@ -507,6 +547,7 @@ export class MessagesPage {
         this.selectedConversation.set([]);
         this.selectedUserInfo.set(null);
         this.messageForm.reset();
+        this.chatbotService.reset();
     }
 
     getOtherUserId(message: MessageDto): string {
@@ -550,13 +591,24 @@ export class MessagesPage {
         return message.messageId;
     }
 
+    trackChatbotMessage(_index: number, message: ChatbotMessageDto): string {
+        return message.chatbotMessageId;
+    }
+
     /**
      * Hace scroll automático al final del contenedor de mensajes
      */
     private scrollToBottom(): void {
-        const container = this.messagesContainer()?.nativeElement;
-        if (container) {
-            container.scrollTop = container.scrollHeight;
+        if (this.isChatbotSelected()) {
+            const container = this.chatbotMessagesContainer()?.nativeElement;
+            if (container) {
+                container.scrollTop = container.scrollHeight;
+            }
+        } else {
+            const container = this.messagesContainer()?.nativeElement;
+            if (container) {
+                container.scrollTop = container.scrollHeight;
+            }
         }
     }
 }
